@@ -51,6 +51,17 @@ This repo contains **only the files changed from ReactOS master commit
 - **Boot fixes** — `boot/freeldr/freeldr/ntldr/arch/amd64/winldr.c`
   (`MempMapSinglePage` accepts the mapped page for the same frame); build
   fixes in `sdk/include/asm/asm.inc` and `sdk/include/asm/trapamd64.inc`.
+- **SPSS compatibility** (`media/sdb/sysmain.xml`) — the built-in
+  application-compatibility database (`AppPatch\sysmain.sdb`) now applies the
+  Windows 7 SP1 version lie + `GlobalMemoryStatus2GB` to every IBM SPSS
+  Statistics executable (`spsswin.exe`, `spss.exe`, `stats.exe`,
+  `spssengine.exe`, `statisticsb.exe`, `spssprod.exe`), matched by file name so
+  it covers all SPSS releases. ReactOS reports NT 5.2 and SPSS 20+ refuses to
+  start below Windows 7. For the SPSS **installer**, right-click it →
+  Properties → Compatibility → "Windows 7" before running it.
+  Limits (not verified on real SPSS yet): Kush 1.1 is amd64 and ReactOS has
+  no WoW64, so only the **64-bit** SPSS builds can run; whether a given SPSS
+  version then works depends on ReactOS API coverage.
 
 ## Known notes
 
