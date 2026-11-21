@@ -1,0 +1,92 @@
+{
+  "date": "2026-11-21",
+  "goal": "تشغيل Firefox 160.0.1 (64-bit) على Kush 1.1، وكل تعديل يترفع لـ main مع توثيق في README",
+  "method": {
+    "summary": "حلقة مغلقة: تجربة، ثم قياس دقيق، ثم تحديد السبب الجذري، ثم إصلاح، ثم بناء، ثم نسخ للقرص، ثم إعادة التجربة. كل ده من غير ما أسأل، لأن كل خطوة ليها أداة بتقيس النتيجة بنفسها.",
+    "loop": [
+      "1. شغّل Kush في QEMU (بدون شاشة) وشغّل firefox.exe بالكيبورد عن طريق QEMU monitor (sendkey)",
+      "2. راقب سجل الـ serial (DbgPrint) بـ Monitor مفلتر على الأحداث المهمة بس (KUSH-EXC، calling stub، SE_ProcessDying، أخطاء d3d)",
+      "3. صوّر الشاشة (screendump) وشوف الصورة",
+      "4. لو فايرفوكس قفل: حدد مين قفله وليه (gdb، أو طباعة من الكيرنل)",
+      "5. حوّل العنوان لاسم دالة بملف رموز Mozilla (xul.sym)",
+      "6. اقرأ كود ReactOS/Kush المسؤول واعرف السبب الجذري",
+      "7. افحص الصنف كله مش الحالة الواحدة بس (مثلًا كل الـ stubs اللي فايرفوكس بيستوردها، مش أول واحدة)",
+      "8. اصلح على مستوى النظام، وابني الملف بـ ninja، وانسخه لصورة القرص بـ mcopy",
+      "9. ارفع لـ main واكتب في README، وارجع للخطوة 1"
+    ],
+    "why_no_questions": [
+      "كل سؤال ليه جواب يتقاس: السجل والصورة وgdb بيوضحوا النتيجة، فما محتاج رأي حد",
+      "الأهداف واضحة من الأول: Firefox 160 يشتغل، والرفع لـ main، والتوثيق بالعربي",
+      "القرارات اللي ليها خيار افتراضي واضح بتتاخد وتتكتب في README بدل ما أسأل عنها",
+      "الانتظار الطويل (إقلاع حوالي 4 دقائق، وفايرفوكس حوالي 10 دقائق تحت المحاكاة) بيتعمل بـ Monitor في الخلفية، فالشغل بيمشي لساعات"
+    ]
+  },
+  "tools_used": {
+    "qemu": "تشغيل Kush مع QEMU monitor socket (sendkey، screendump، gdbserver)",
+    "serial_log": "كل DbgPrint من النظام بيتسجل في serial.log",
+    "monitor_filters": "tail -F على السجل مع grep وawk بيعدّ التكرار، عشان الأحداث المتكررة ما تغرق المحادثة",
+    "gdb": "hbreak على دوال user mode (NtTerminateProcess، D3DKMTOpenAdapterFromGdiDisplayName) وقراءة PEB/TEB وقائمة الموديولات من Python",
+    "kernel_diagnostics": "KUSH-EXC في ntoskrnl/ke/amd64/except.c: بيطبع أي exception يوصل للفرصة التانية، والموديول والـ RVA، واسم الـ DLL والدالة لو فشل delay-load، وسبب MOZ_CRASH من r8",
+    "new_scripts": [
+      "tools/firefox_delayload_audit.py: بيقرأ جداول الـ delay-import في كل ملفات فايرفوكس ويقارنها بدوال Kush",
+      "tools/breakpad_sym.py: بيحوّل RVA لاسم دالة وملف وسطر من رموز Mozilla"
+    ],
+    "build": "ninja في build6 (amd64، DLL_EXPORT_VERSION=0x600)، وبعدها mcopy للملف جوه k.raw"
+  },
+  "problems_solved": [
+    {
+      "symptom": "WARNING: calling stub CreateWaitableTimerExW رغم إن الدالة اتكتبت",
+      "root_cause": "kernel32.spec فيه سطر @ stub قديم وسطر جديد لنفس الاسم، والـ loader بيلقى الـ stub الأول",
+      "fix": "سكربت بيشيل كل سطر stub مكرر (4 دوال)، وFlushProcessWriteBuffers اتكتبت لأنها ما كانت موجودة أصلًا"
+    },
+    {
+      "symptom": "فايرفوكس بيقفل بكود 128 من غير exception ظاهر",
+      "how_found": "gdb على NtTerminateProcess بيّن إن csrss.exe هو اللي بيقتله بـ 0x80 (STATUS_ABANDONED)، يعني exception وصل للفرصة التانية، فاتضافت الطباعة التشخيصية في الكيرنل",
+      "root_cause": "0xC06D007F: فشل delay-load لـ iphlpapi.dll!NotifyIpInterfaceChange",
+      "fix": "أداة فحص الـ delay-load طلّعت 26 دالة ناقصة في 8 مكتبات، واتكتبت كلها (iphlpapi، user32 touch، uxtheme، shell32، userenv، advapi32 AddMandatoryAce، shlwapi IsOS)"
+    },
+    {
+      "symptom": "exception 0x80000100 في GetApplicationRestartSettings",
+      "root_cause": "الـ @ stub العادية بترمي exception ما بيتلغى",
+      "fix": "فحص كل الـ stubs اللي فايرفوكس بيستوردها، واتكتبت 6 دوال في kernel32"
+    },
+    {
+      "symptom": "breakpoint 0x80000003 في xul.dll",
+      "how_found": "الرموز بيّنت RustMozCrash، والكيرنل طبع النص من r8",
+      "root_cause": "system time before Unix epoch: GetSystemTimePreciseAsFileTime كان جسمها STUB ورجعت 0",
+      "fix": "اتكتبت GetSystemTimePreciseAsFileTime، وكمان ReOpenFile وRegisterApplicationRestart (نتيجة فحص كل الدوال اللي جسمها STUB)"
+    },
+    {
+      "result": "Firefox 160 فتح نافذة Welcome to Firefox على Kush",
+      "evidence": "docs/firefox/10-firefox160-welcome-window.png و docs/firefox/11-firefox160-welcome-clean.png"
+    },
+    {
+      "symptom": "رسالة ReactOS - no 3D acceleration بتتكرر",
+      "fix": "wined3d: الرسالة بقت بتظهر مرة واحدة لكل مستخدم"
+    },
+    {
+      "symptom": "Failed to initialise output \\\\.\\DISPLAY1 بيتكرر آلاف المرات",
+      "root_cause": "جدول handles الـ D3DKMT المحاكية (16 خانة) بيتملي",
+      "fix": "gdi32_vista: handles stateless، رقم الشاشة جوه الـ handle"
+    },
+    {
+      "symptom": "فايرفوكس ما بيستجيب، ووwined3d بيجرب OpenGL باستمرار",
+      "how_found": "stack بـ gdb ورموز Mozilla: D3DVsyncSource::VBlankLoop ينادي EnsureFactoryLocked مع كل vblank",
+      "root_cause": "إنشاء DXGI factory بيفشل لأن OpenGL في Mesa software ناقص",
+      "fix": "wined3d بيرجع لـ adapter no-3D بدل ما يفشل"
+    },
+    {
+      "request": "المستخدم طلب كل التعديلات تكون في النظام نفسه، مش في كل برنامج لوحده",
+      "root_cause": "النظام بيختار أقل إصدار في supportedOS من الـ manifest (Vista)، والـ API sets كانت مقفولة لـ Vista",
+      "fix": "API sets بتتفعل لكل البرامج (ntdll/rtl/libsupp.c)، واتشالت سطور فايرفوكس من sysmain.xml وملفات policies.json وkush.js",
+      "status": "قيد التجربة"
+    }
+  ],
+  "principles": [
+    "ما بنصدق إن الحاجة اشتغلت لحد ما السجل أو الصورة يأكدوا",
+    "لما نلقى مشكلة، نفحص الصنف كله مش أول حالة بس",
+    "الإصلاح بيكون في النظام نفسه عشان يفيد أي برنامج",
+    "كل خطوة بتترفع لـ main بـ commit صغير، وبتتكتب في README بالعربي",
+    "البيانات الخاصة (رخصة SPSS، ملف rawia.sav) ما بتترفع"
+  ]
+}
