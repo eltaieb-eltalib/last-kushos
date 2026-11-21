@@ -738,3 +738,4 @@
 @ stdcall EventActivityIdControl(long ptr) ; Kush 1.1
 @ stdcall RegCreateKeyTransactedW(long wstr long ptr long long ptr ptr ptr long ptr) ; Kush 1.1
 @ stdcall RegOpenKeyTransactedW(long wstr long long ptr long ptr) ; Kush 1.1
+@ stdcall AddMandatoryAce(ptr long long long ptr) ; Kush 1.1 (kush_etw.c)

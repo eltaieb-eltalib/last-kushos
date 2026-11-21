@@ -46,3 +46,35 @@ LSTATUS WINAPI RegOpenKeyTransactedW(HKEY hKey, LPCWSTR lpSubKey, DWORD ulOption
     UNREFERENCED_PARAMETER(hTransaction); UNREFERENCED_PARAMETER(pExtendedParemeter);
     return RegOpenKeyExW(hKey, lpSubKey, ulOptions, samDesired, phkResult);
 }
+
+/* Kush 1.1: AddMandatoryAce (Vista) -- used by the Firefox sandbox to set
+ * integrity labels. Builds a SYSTEM_MANDATORY_LABEL_ACE and appends it. */
+BOOL WINAPI AddMandatoryAce(PACL pAcl, DWORD dwAceRevision, DWORD AceFlags,
+                            DWORD MandatoryPolicy, PSID pLabelSid)
+{
+    struct { BYTE AceType, AceFlags; WORD AceSize; DWORD Mask; } *Ace;
+    DWORD SidLen, Size;
+    BOOL Ret;
+
+    if (!pLabelSid || !IsValidSid(pLabelSid))
+    {
+        SetLastError(ERROR_INVALID_SID);
+        return FALSE;
+    }
+    SidLen = GetLengthSid(pLabelSid);
+    Size = sizeof(*Ace) + SidLen;
+    Ace = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, Size);
+    if (!Ace)
+    {
+        SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+        return FALSE;
+    }
+    Ace->AceType = 0x11; /* SYSTEM_MANDATORY_LABEL_ACE_TYPE */
+    Ace->AceFlags = (BYTE)AceFlags;
+    Ace->AceSize = (WORD)Size;
+    Ace->Mask = MandatoryPolicy;
+    CopySid(SidLen, (PBYTE)(Ace + 1), pLabelSid);
+    Ret = AddAce(pAcl, dwAceRevision < ACL_REVISION ? ACL_REVISION : dwAceRevision, MAXDWORD, Ace, Size);
+    HeapFree(GetProcessHeap(), 0, Ace);
+    return Ret;
+}
