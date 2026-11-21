@@ -112,6 +112,7 @@ InstallShield، 735 MB)، اتوصّل للنظام كـ CD (`D:`) واتشغّ�
 | 5 | `licenseinit.exe`: "MSVCR90.dll was not found" | مكتبة VC++ 2008 x64 ما متثبّتة، لأن `vcredist_x64.exe` غلاف 32-bit وفشل (Machine Type Mismatch) | `vc_red.msi` اتثبّت لكن ما سجّل في WinSxS، فاستخدمنا private assemblies (`tools/make_vc90_private.py`) | اتحلّت ✅ (CRT + MFC + ATL + OpenMP) |
 | 6 | الـ MSI بيتخطّى custom actions بنسخة 32-bit (`ISSELFREG.DLL`، `ISSetup.dll`، `IsChainPackages.dll`) | `msi.dll` في ReactOS amd64 ما بيقدر يشغّل DLLs بنسخة 32-bit (ما في WoW64) | تسجيل مكونات COM يدويًا بـ `regsvr32` (64-bit)، أو WoW64 على المدى الطويل | مفتوح ❌ |
 | 7 | **Fatal System Error 0x1E** أثناء تثبيت `vc_red.msi` من الـ CD | خطأ في الـ kernel (exception `0x80000016`) بعد `ole32` ما قدر يقفل الملف على الـ CD (error 158) | تشخيص: بيحصل بس لما الـ CD يتغيّر والنظام شغّال (`0x80000016` = `STATUS_VERIFY_REQUIRED` ما اتعالج في amd64). حل مؤقت: وصّل القرص قبل الإقلاع. الحل الدائم: تصليح معالجة verify في cdfs/kernel | اتشخّص ✅ / التصليح مفتوح |
+| 10 | SPSS بيقفل لما ملف `.sav` يتمرّر في سطر الأوامر | access violation في `MSVCR100.dll+0x36ADF` | مؤقتًا: File ← Open من جوّا SPSS | مفتوح ❌ |
 | 9 | SPSS بياخد 98% CPU وما بيفتح (سطح المكتب شكله متجمّد) | حلقة لا نهائية في thread بتاع Java JIT (`j9jit28.dll`) | `IBM_JAVA_OPTIONS=-Xint` في `hivesys.inf` | **اتحلّت ✅** |
 | 8 | سطح المكتب بيتجمّد بعد ما `stats.exe` يبدأ (نافذة SPSS ما بتترسم) | **deadlock في الـ kernel (Mm):** Java J9 بيعمل `VirtualProtect` على الـ shared classes cache (ملف memory-mapped)، و `MmProtectSectionView` بياخد page fault وهو ماسك الـ address space lock، وبقية الـ threads (منها thread الواجهة) بتقيف على نفس الـ lock | `IBM_JAVA_OPTIONS=-Xshareclasses:none` كمتغيّر نظام في `boot/bootdata/hivesys.inf` | **اتحلّت ✅** (الحل الجذري في الـ kernel في الخطة) |
 | 4 | **"Machine Type Mismatch"**: `The image file ...SPSS_Statistics_25_win64.exe is valid, but is for a machine type other than the current machine` | برنامج التثبيت (InstallShield bootstrapper) هو **32-bit (PE32 / i386)** رغم إن SPSS نفسه 64-bit، و ReactOS amd64 **ما فيه WoW64** فما بيشغّل أي برنامج 32-bit | اتجاوزناه: استخرجنا حزمة الـ MSI الـ 64-bit وثبّتناها بـ `msiexec` (المحاولة 2 تحت) | اتجاوزناه ✅ |
@@ -251,6 +252,16 @@ InstallShield، 735 MB)، اتوصّل للنظام كـ CD (`D:`) واتشغّ�
     - رسالة "An unknown file type is specified on the command line: ...stats.exe" سببها إني شغّلته بـ
       `start stats.exe` من `cmd` (المسار فيه مسافات)، وما بتأثّر على حاجة.
 
+14. **فتح ملف `.sav` حقيقي (استبيان بالعربي، 20 متغيّر، 19.5 KB):**
+    | الفحص | النتيجة |
+    |-------|---------|
+    | `stats.exe D:\rawia.sav` (الملف في سطر الأوامر) | ❌ SPSS قفل: `KdSendPacket: Got exception 0xc0000005 @ 0x79766ADF` (جوّا `MSVCR100.dll`، اللي بيبدأ من `0x79730000`) (`25-...png`) |
+    | `stats.exe` من غير ملف | ✅ شاشة "Welcome to IBM SPSS Statistics" فتحت بعد ~5 دقايق، وفيها "You have 3,327 days left" (`26-welcome-dialog.png`) |
+    | "Open another file..." ← Open dialog ← `D:\rawia.sav` | ✅ (`27-open-dialog.png`) **الملف فتح**: `rawia.sav [DataSet1]`، **Visible: 20 of 20 Variables**، النصوص العربية ظاهرة صاح في Data View، وأسماء المتغيرات وعناوين الأسئلة بالعربي ظاهرة في Variable View، و"IBM SPSS Statistics Processor is ready" |
+    - صور محتوى الملف ما اترفعت للمستودع لأنها بيانات استبيان خاصة والمستودع عام.
+    - **مشكلة جديدة:** فتح ملف من سطر الأوامر (أو بالضغط على ملف `.sav`) بيقفل SPSS. الحل المؤقت:
+      افتح SPSS وبعدها File ← Open. الخطوة الجاية: نعرف الدالة اللي في `MSVCR100.dll+0x36ADF`.
+
 **ملاحظة عن ملف الرخصة:** ملف التفعيل (`lservrc`) اتثبّت في الـ VM بس للتجربة، و**ما اترفع للمستودع**،
 لأن المستودع عام وأي زول يقدر ينسخ الرخصة.
 
@@ -270,6 +281,7 @@ InstallShield، 735 MB)، اتوصّل للنظام كـ CD (`D:`) واتشغّ�
 | `stats.exe` يبدأ | ✅ بدأ، والنافذة اتعملت |
 | واجهة SPSS تظهر وتشتغل | ✅ مع `-Xint`: Viewer + Data Editor + الرخصة شغّالين |
 | حلقة لا نهائية في Java JIT | ✅ اتجاوزناها بـ `-Xint` (الحل الجذري في الخطة) |
+| فتح ملف `.sav` حقيقي | ✅ من File ← Open (20 متغيّر، عربي سليم). ❌ من سطر الأوامر بيقفل |
 | deadlock في Mm (`region.c`) | ✅ اتصلّح، والـ debugger أكّد |
 | ساعة النظام بتموت | ✅ اتصلّحت (تقليل تتبعات KUSH-DBG) |
 
