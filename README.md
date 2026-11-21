@@ -104,7 +104,11 @@ This repo contains **only the files changed from ReactOS master commit
 
 **الخطوات:**
 - **أ.** بناء Kush بـ `DLL_EXPORT_VERSION=0x600` (Vista) في مجلد بناء منفصل، ونشوف كم دالة اتحلّت. ⏳ شغّال
-- **ب.** تصليح `apisets.table.c`: علامة `APISET_WIN10` للـ API sets الأساسية، وتصحيح المكتبات الهدف.
+- **ب.** ✅ تصليح `sdk/lib/apisets/apisets.table.c`: علامة `APISET_WIN10` اتضافت لـ **332** API set كانت
+  Win7/8/8.1 بس (ويندوز 10 بيدعمها)، و **9** اتحوّلت للمكتبة الصحيحة (registry و security و sddl ←
+  `advapi32`، و version ← `version.dll`، و winrt و winrt-string و winrt-error ← `combase.dll`، و psapi ←
+  `psapi.dll`)، واتضاف `api-ms-win-core-libraryloader-l1-2-1` و `api-ms-win-core-realtime-l1-1-1`.
+  الجدول لسه مرتّب (1111 مدخل، فحص الترتيب بيمر).
 - **ج.** كتابة الدوال الما موجودة (في `kernel32`/`kernelbase_ros`/`ntdll`).
 - **د.** تصنيف `firefox.exe` كويندوز 10 تلقائيًا (بدل `__COMPAT_LAYER`).
 - **هـ.** نفس الشي لـ `xul.dll` والمكتبات اللي فايرفوكس بيحمّلها بعدين، لحدي ما النافذة تفتح.
