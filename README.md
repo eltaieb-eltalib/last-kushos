@@ -69,6 +69,49 @@ This repo contains **only the files changed from ReactOS master commit
   boots to the Kush 1.1 desktop. Revert to `DefaultOS=LiveImg` once the
   bootvid race is fixed.
 
+## التعريفات (Drivers) في Kush 1.1
+
+الهدف: تعريفات قياسية جوّا النظام للماوس والكيبورد وكرت الشاشة والهاردسكات (HDD، SSD، NVMe)،
+وحل مشكلة رجفة الماوس. كل مرحلة بتترفع في `main` مع توثيقها هنا.
+
+### الوضع قبل الشغل (فحص المصدر والـ ISO)
+
+| النوع | التعريف | موجود في النظام؟ |
+|-------|---------|------------------|
+| كيبورد PS/2 + ماوس/تاتشباد PS/2 | `i8042prt` + `kbdclass` + `mouclass` | ✅ |
+| كيبورد وماوس USB | `usbxhci`/`usbehci`/`usbohci`/`usbuhci` + `hidusb` + `kbdhid` + `mouhid` | ✅ |
+| ماوس serial | `sermouse` | ✅ |
+| كرت الشاشة (قياسي) | `vgapnp.sys` (VBE + UEFI GOP، مع تصليح Kush) + `vga.sys` + `framebuf.dll` | ✅ |
+| HDD/SSD بنظام SATA (AHCI) | `storahci` (Kush فعّله) | ✅ |
+| HDD/SSD بنظام IDE | `pciide` + `uniata` + `atapi` | ✅ |
+| فلاشات وهاردسكات USB | `usbstor` | ✅ |
+| **SSD بنظام NVMe** | **ما في** | ❌ |
+| تاتشباد I2C (لابتوبات حديثة) | ما في (`hidi2c`) | ❌ |
+
+### المرحلة 1: رجفة الماوس (الماوس بيهتز في مكانه وبيقفز) ✅
+
+**الأعراض (من المستخدم):** الماوس بيعمل اهتزاز، وفي مكانه، وبيقفز من محل لمحل.
+
+**السبب (في `drivers/input/i8042prt`):** ماوس/تاتشباد PS/2 بيرسل كل حركة كـ packet من 3 أو 4 bytes.
+لو byte واحد ضاع، الـ driver بيقرا الـ bytes الجاية في غير مكانها (byte الـ X كأنه أزرار، والـ Y كأنه X)،
+فبتطلع حركات كبيرة غلط (قفز) وضغطات وهمية:
+1. **زمن إعادة المزامنة كان 2 ثانية** (`DefaultMouseSynchIn100ns = 20000000`)، يعني الـ stream بيفضل
+   غلط طول ما الماوس بيتحرك، وما بيتصلّح إلا لما يقيف ثانيتين.
+2. **فحص أول byte ضعيف:** بيفحص bit 3 بس، فأي byte فيه البت ده بيتقبل كبداية packet.
+
+**التصليح:**
+- `registry.c`: زمن إعادة المزامنة بقى **50 ms** (bytes الـ packet الواحد بتجي في أقل من كده).
+- `mouse.c`: لو أول byte فيه bits الـ overflow (6 و 7) مرفوعة، ده غالبًا byte في غير مكانه، فبنتجاهله
+  وبنزامن مع الجاي (زي `psmouse` في Linux).
+
+**الفحص:**
+| الفحص | النتيجة |
+|-------|---------|
+| بناء `i8042prt.sys` | ✅ بدون أخطاء |
+| تثبيته على Kush في QEMU والإقلاع | ✅ |
+| تحريك الماوس للركن ثم +200 يمين و +100 تحت | ✅ المؤشر وصل (200، 100) بالضبط، ما في قفز (`docs/drivers/01-mouse-after-fix-exact-position.png`) |
+| الرجفة نفسها | ⏳ ما بتظهر في QEMU (الماوس المحاكي ما بيضيّع bytes)، **التأكيد النهائي على جهاز الـ Acer** |
+
 ## Known notes
 
 - **Keep the KUSH-DBG serial traces** in `ntoskrnl/mm/ARM3/heap.c`,
