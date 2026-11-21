@@ -165,7 +165,17 @@ This repo contains **only the files changed from ReactOS master commit
   - **السبب الجذري في Kush:** `xul.dll` بيتحمّل **وقت التشغيل** بـ `LoadLibrary`. الـ loader في Kush
     (`dll/ntdll/ldr/ldrinit.c`) بيجهّز الـ TLS **مرة واحدة بس وقت بداية البرنامج** (`LdrpInitializeTls`)،
     فأي مكتبة فيها TLS بتتحمّل بعد كده ما بتاخد index ولا ذاكرة، والمؤشر بيطلع NULL. ويندوز من Vista بيدعم
-    ده (**dynamic TLS**). ⏳ الحل: إضافة dynamic TLS للـ loader.
+    ده (**dynamic TLS**).
+  - **التصليح (`dll/ntdll/ldr/ldrinit.c`):**
+    - `LdrpHandleDynamicTls` (جديد): لما مكتبة فيها `IMAGE_TLS_DIRECTORY` تتحمّل بعد بداية البرنامج، بتاخد
+      index جديد في `LdrpTlsList`، و **كل thread شغّال** في البرنامج (من `NtQuerySystemInformation`
+      ← `NtOpenThread` ← TEB) بيتكبّر جدول الـ TLS بتاعه وبتتعمل ليه نسخة من بيانات المكتبة. الـ threads
+      الجديدة بتاخدها تلقائيًا في `LdrpAllocateTls`.
+    - الـ TLS callbacks بتتنادى كمان للمكتبات اللي بتتحمّل وقت التشغيل.
+    - **باق تاني اتصلّح:** `LdrpAllocateTls` كان بيحجز حجم البيانات الأولية بس من غير `SizeOfZeroFill`،
+      يعني متغيرات `thread_local` اللي قيمتها الأولية صفر ما كانت بتاخد ذاكرة. هسي بيحجز الحجم الكامل
+      ومصفّر.
+    - ⏳ التجربة.
 
 **الاستنتاج:** Firefox 160 **ما بيشتغل على Kush 1.1 هسي**. هو مبني لويندوز 10 وما فوق (Mozilla وقّفت دعم
 ويندوز 7 و 8 بعد Firefox 115)، و Kush بيقلّد Windows Server 2003 مع جزء من دوال Vista و 7. المشكلة ما
