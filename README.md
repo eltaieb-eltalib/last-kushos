@@ -256,7 +256,18 @@ This repo contains **only the files changed from ReactOS master commit
       (`docs/firefox/12-system-wide-apiset-win7-subset.png`). **السبب:** الـ manifest بتاع Firefox 160 بيبدأ من
       **Win7** مش Vista، فالنظام فعّل جدول Win7 بس، والعقد `version-l1-1-1` خاص بـ Win8+.
     - ✅ **الحل:** `LdrpApisetVersion` بقت بترجع **جدول Win10 دايمًا لكل البرامج**، وده بيشمل كل عقود Win7/8/8.1.
-    - ⏳ التجربة التانية.
+    - ✅ **التجربة التانية: Firefox 160 فتح بتعديلات النظام بس**، من غير shim أو ملفات إعدادات خاصة بيه، وloop
+      الرسوميات اختفى (`docs/firefox/13-firefox160-system-wide-only.png`).
+  - **دورة 9: مكتبة C (ucrtbase) فيها دوال رياضية بترجع 0:** الضغط على "Continue" ما بيستجيب، والسجل فيه
+    `calling stub lround(100.000000)` و `cbrtf(...)` و `fegetround()`.
+    - فحص: **65 دالة** C99 (رياضيات و`<fenv.h>`) كانت `-stub` في `ucrtbase.spec`، يعني بترجع 0
+      (`lround(100.0) = 0`، `cbrtf(x) = 0`، `rint`، `fmax`، `copysign`، `log1p`، `erf`، `tgamma`…). ده بيأثر على
+      **أي برنامج حديث** مبني بـ Visual Studio 2015+.
+    - ✅ الحل: `dll/win32/ucrtbase/kush_math.c`: تنفيذ حقيقي للـ 65 دالة (rounding بيحترم وضع التقريب الحالي،
+      وerf بـ series وكسر متصل، وgamma بـ Lanczos، وfenv على MXCSR). اتبنت بـ `-fno-builtin` عشان GCC ما يحوّلها
+      لاستدعاء نفسها.
+    - ✅ اختبار الدقة ضد glibc libm (`tools/ucrt_math_test.c`): أسوأ خطأ نسبي **6e-14**، و`lround(100)=100`.
+    - ⏳ التجربة في فايرفوكس.
 
   #### ملخص مشاكل فايرفوكس اليوم وحلولها (كلها على مستوى النظام)
 
@@ -269,6 +280,7 @@ This repo contains **only the files changed from ReactOS master commit
   | 5 | رسالة "no 3D acceleration" بتتكرر | بتظهر مرة في كل process | مرة واحدة لكل مستخدم (`wined3d/adapter_gl.c`) |
   | 6 | `Failed to initialise output` آلاف المرات | جدول handles الـ D3DKMT (16 خانة) بيتملي | handles stateless (`gdi32_vista/d3dkmt.c`) |
   | 7 | فايرفوكس ما بيستجيب | DXGI factory بيفشل (OpenGL ناقص)، والـ vsync بيعيده مع كل vblank | wined3d بيرجع لـ adapter no-3D (`wined3d/directx.c`) |
+  | 9 | `lround(100)=0`، `cbrtf=0` وغيرها | 65 دالة رياضية في ucrtbase كانت `-stub` | تنفيذ حقيقي (`ucrtbase/kush_math.c`)، ودقة 6e-14 |
   | 8 | فايرفوكس محتاج shim خاص بيه | النظام بيصنّف البرنامج بأقل إصدار في الـ manifest، وجدول الـ API sets بيتبع التصنيف | جدول API sets كامل لكل البرامج (`ntdll/rtl/libsupp.c`)، وشيل سطور فايرفوكس من `sysmain.xml` |
 
   **أدوات التشخيص اللي اتضافت للنظام وبتنفع أي برنامج:**
