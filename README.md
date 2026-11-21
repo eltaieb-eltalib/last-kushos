@@ -69,6 +69,27 @@ This repo contains **only the files changed from ReactOS master commit
   boots to the Kush 1.1 desktop. Revert to `DefaultOS=LiveImg` once the
   bootvid race is fixed.
 
+## ملخص الحالة (للمتابعة)
+
+| الموضوع | الحالة | المكان في الكود |
+|---------|--------|-----------------|
+| SPSS 25 على Kush | ✅ بيثبت ويفتح ملفات `.sav` ويعمل تحليل (QEMU) | `ntoskrnl/mm/region.c`، `section.c`، `ARM3/virtual.c`، `vadnode.c`، `boot/bootdata/hivesys.inf` (`IBM_JAVA_OPTIONS=-Xint`) |
+| رجفة الماوس | ✅ اتصلّحت في الكود، ⏳ محتاجة تأكيد على جهاز الـ Acer | `drivers/input/i8042prt/mouse.c`، `registry.c` |
+| تعريف NVMe | ✅ القرص بيتعرّف وبيتكتب عليه في برنامج التثبيت (QEMU)، ⏳ الإقلاع من NVMe لسه | `drivers/storage/port/nvme/`، `drivers/storage/port/storport/storport.c`، `fdo.c`، `txtsetup.sif`، `hivesys.inf` |
+| الكيبورد والماوس PS/2 و USB، وكرت الشاشة (VBE/GOP)، و SATA/IDE/USB | ✅ موجودين في النظام من قبل | (ReactOS) |
+| تاتشباد I2C | ❌ ما في تعريف (`hidi2c`) | — |
+
+**الخطوات الجاية بالترتيب:**
+1. نكمّل تثبيت Kush على قرص NVMe في QEMU ونقلع منه (`-device nvme` مع `bootindex`).
+2. نجرب على جهاز الـ Acer: رجفة الماوس، والـ SSD (SATA أو NVMe).
+3. نرجّع الـ JIT بتاع Java (نشيل `-Xint`) بعد ما نعرف سبب الحلقة في `j9jit28.dll`.
+4. نصلّح فتح ملف `.sav` من سطر الأوامر (crash في `MSVCR100.dll`).
+5. تعريف تاتشباد I2C (لو التاتشباد في الـ Acer من النوع ده).
+
+**بيئة البناء والتجربة:** ReactOS `344ebfe5` + ملفات المستودع ده فوقه، `cmake -G Ninja -DARCH=amd64`
+بـ mingw-w64 (نسخة posix)، و `ninja bootcd`. التجربة في QEMU (TCG) بخيار الإقلاع Debug، وأدوات
+التشخيص في `tools/kdbg/`.
+
 ## التعريفات (Drivers) في Kush 1.1
 
 الهدف: تعريفات قياسية جوّا النظام للماوس والكيبورد وكرت الشاشة والهاردسكات (HDD، SSD، NVMe)،
