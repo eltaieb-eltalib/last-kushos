@@ -237,9 +237,22 @@ This repo contains **only the files changed from ReactOS master commit
     في QEMU، فبتظهر رسالة تحذير. الرسالة بتظهر مرة في كل process، ففايرفوكس (بالـ GPU process بتاعه) كان بيطلّعها كل مرة.
     - ✅ `dll/directx/wine/wined3d/adapter_gl.c`: الرسالة بقت بتظهر **مرة واحدة لكل مستخدم**
       (`HKCU\Software\Kush\No3DWarningShown`).
-    - ✅ `tools/firefox/distribution/policies.json`: بيتنسخ لـ `C:\Firefox\distribution\`، وبيقفل تسريع الرسوميات
-      (`HardwareAcceleration: false`) عشان فايرفوكس يرسم بالـ software (WebRender software)، وبيقفل التحديث التلقائي.
-    - ⏳ التجربة.
+    - الرسالة اختفت، لكن فايرفوكس بقى بطيء جدًا وما بيستجيب للضغط.
+  - **دورة 7: loop في الرسوميات (على مستوى النظام):**
+    | # | الفحص | النتيجة والحل |
+    |---|---|---|
+    | 1 | السجل | `Failed to initialise output \\.\DISPLAY1` بيتكرر ~32 مرة في الثانية |
+    | 2 | `gdi32_vista/d3dkmt.c` | ✅ handles الـ D3DKMT المحاكية كانت في جدول 16 خانة بيتملي (handles ما بتتقفل)، وبعدها كل فتح بيفشل. بقت **stateless** (رقم الشاشة جوه الـ handle)، فما بتخلص أبدًا |
+    | 3 | بعدها | `Required extension ARB_fragment_shader is not supported` بيتكرر (Mesa software ما فيه OpenGL كافي) |
+    | 4 | stack بـ gdb و رموز Mozilla | `D3DVsyncSource::VBlankLoop → DeviceManagerDx::GetOutputFromMonitor → EnsureFactoryLocked`: إنشاء DXGI factory بيفشل، ففايرفوكس بيعيده مع **كل vblank** |
+    | 5 | `wined3d/directx.c` | ✅ لو OpenGL ما صالح، wined3d بيرجع لـ adapter **no-3D** بدل ما يفشل، فالـ DXGI factory بينجح ويتحفظ. ده بيفيد أي برنامج DXGI/Direct3D على جهاز من غير تسريع 3D |
+  - **دورة 8: كل التعديلات بقت على مستوى النظام (طلب المستخدم):** شلنا كل الحاجات الخاصة بفايرفوكس:
+    - ❌ اتشال سطر `firefox.exe`/`plugin-container.exe`/`crashreporter.exe` من `sysmain.xml` (طبقة WIN10RTM).
+    - ❌ اتشالت ملفات `policies.json` و `defaults/pref/kush.js`.
+    - ✅ **السبب الحقيقي:** النظام بيختار **أقل** إصدار في `supportedOS` من الـ manifest، وفايرفوكس بيكتب من Vista لحد
+      Win10، فاتصنّف Vista، والـ API sets كانت مقفولة لـ Vista. الحل في `ntdll/rtl/libsupp.c`: **API sets بتتفعل لكل
+      البرامج**. ده آمن، لأن أسماء `api-ms-*` بتتطبق بس على البرامج اللي بتطلبها.
+    - ⏳ التجربة: فايرفوكس من غير أي تعديل خاص بيه.
 
 **الاستنتاج:** Firefox 160 **ما بيشتغل على Kush 1.1 هسي**. هو مبني لويندوز 10 وما فوق (Mozilla وقّفت دعم
 ويندوز 7 و 8 بعد Firefox 115)، و Kush بيقلّد Windows Server 2003 مع جزء من دوال Vista و 7. المشكلة ما
