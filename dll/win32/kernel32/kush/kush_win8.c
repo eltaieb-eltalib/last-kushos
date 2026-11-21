@@ -238,3 +238,50 @@ HRESULT WINAPI WerRegisterRuntimeExceptionModule(PCWSTR pwszOutOfProcessCallback
 { UNREFERENCED_PARAMETER(pwszOutOfProcessCallbackDll); UNREFERENCED_PARAMETER(pContext); return S_OK; }
 HRESULT WINAPI WerUnregisterRuntimeExceptionModule(PCWSTR pwszOutOfProcessCallbackDll, PVOID pContext)
 { UNREFERENCED_PARAMETER(pwszOutOfProcessCallbackDll); UNREFERENCED_PARAMETER(pContext); return S_OK; }
+
+/* ---- Kush 1.1, round 2 (needed by xul.dll) ---- */
+BOOL WINAPI GetOverlappedResultEx(HANDLE hFile, LPOVERLAPPED lpOverlapped, LPDWORD lpNumberOfBytesTransferred,
+                                  DWORD dwMilliseconds, BOOL bAlertable)
+{
+    if (lpOverlapped->Internal == STATUS_PENDING && dwMilliseconds != 0)
+    {
+        HANDLE Wait = lpOverlapped->hEvent ? lpOverlapped->hEvent : hFile;
+        DWORD r = WaitForSingleObjectEx(Wait, dwMilliseconds, bAlertable);
+        if (r == WAIT_TIMEOUT) { SetLastError(WAIT_TIMEOUT); return FALSE; }
+        if (r == WAIT_IO_COMPLETION) { SetLastError(WAIT_IO_COMPLETION); return FALSE; }
+    }
+    return GetOverlappedResult(hFile, lpOverlapped, lpNumberOfBytesTransferred, FALSE);
+}
+
+/* Power requests: Kush has no power manager policy; keep a dummy handle. */
+HANDLE WINAPI PowerCreateRequest(PVOID Context)
+{
+    UNREFERENCED_PARAMETER(Context);
+    return CreateEventW(NULL, TRUE, FALSE, NULL);
+}
+BOOL WINAPI PowerSetRequest(HANDLE PowerRequest, DWORD RequestType)
+{ UNREFERENCED_PARAMETER(RequestType); return PowerRequest != NULL && PowerRequest != INVALID_HANDLE_VALUE; }
+BOOL WINAPI PowerClearRequest(HANDLE PowerRequest, DWORD RequestType)
+{ UNREFERENCED_PARAMETER(RequestType); return PowerRequest != NULL && PowerRequest != INVALID_HANDLE_VALUE; }
+
+int WINAPI ResolveLocaleName(LPCWSTR lpNameToResolve, LPWSTR lpLocaleName, int cchLocaleName)
+{
+    LCID Lcid;
+    if (!lpNameToResolve) lpNameToResolve = L"en-US";
+    Lcid = LocaleNameToLCID(lpNameToResolve, 0);
+    if (!Lcid) Lcid = MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), SORT_DEFAULT);
+    return LCIDToLocaleName(Lcid, lpLocaleName, cchLocaleName, 0);
+}
+
+#define APPMODEL_ERROR_NO_APPLICATION 15703
+LONG WINAPI GetCurrentApplicationUserModelId(UINT32 *applicationUserModelIdLength, PWSTR applicationUserModelId)
+{ UNREFERENCED_PARAMETER(applicationUserModelIdLength); UNREFERENCED_PARAMETER(applicationUserModelId); return APPMODEL_ERROR_NO_APPLICATION; }
+
+BOOL WINAPI GetSystemCpuSetInformation(PVOID Information, ULONG BufferLength, PULONG ReturnedLength, HANDLE Process, ULONG Flags)
+{
+    UNREFERENCED_PARAMETER(Information); UNREFERENCED_PARAMETER(BufferLength);
+    UNREFERENCED_PARAMETER(Process); UNREFERENCED_PARAMETER(Flags);
+    if (ReturnedLength) *ReturnedLength = 0;
+    SetLastError(ERROR_NOT_SUPPORTED);
+    return FALSE;
+}

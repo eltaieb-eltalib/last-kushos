@@ -134,7 +134,24 @@ This repo contains **only the files changed from ReactOS master commit
     و `apphelp` بيحلّه بالاسم في `SdbpAddExeLayers`).
   - `media/sdb/sysmain.xml`: `firefox.exe` و `plugin-container.exe` و `crashreporter.exe` ← طبقة
     `WIN10RTM` (بتبلّغ عن NT 10.0 وبتفعّل API sets بتاعة ويندوز 10 في الـ loader).
-- **هـ.** نفس الشي لـ `xul.dll` والمكتبات اللي فايرفوكس بيحمّلها بعدين، لحدي ما النافذة تفتح.
+- **هـ.** ✅ نفس الشي لـ `xul.dll` (المحرك). الفحص على البناء الجديد لقى 32 دالة ناقصة، واتكتبت كلها:
+  - `apisets.table.c`: بعض الأسماء في الجدول بحروف مختلطة (`api-MS-Win-Security-Base-L1-1-0`)، فاتصلّحت
+    المقارنة: security-base ← `advapi32`، و psapi ← `kernel32` (فيها `K32*`)، و path ← `kernelbase_ros`
+    (فيها `PathCch*`)، و shcore-scaling ← `shcore.dll`.
+  - `kush_win8.c` (دورة 2): `GetOverlappedResultEx`، `PowerCreate/Set/ClearRequest`، `ResolveLocaleName`،
+    `GetCurrentApplicationUserModelId`، `GetSystemCpuSetInformation`، و forwarders في `kernel32.spec`:
+    `OpenProcessToken`/`OpenThreadToken`/`SetThreadToken` ← `advapi32`.
+  - `dll/win32/advapi32/kush/kush_etw.c` (جديد): ETW (`EventRegister`، `EventWrite`، `EventWriteTransfer`،
+    `EventWriteEx`، `EventSetInformation`، `EventUnregister`، `EventEnabled`، `EventProviderEnabled`،
+    `EventActivityIdControl`)، و `RegCreateKeyTransactedW`/`RegOpenKeyTransactedW` (من غير transaction).
+  - `sdk/lib/rtl/amd64/dynfntbl.c`: `RtlAddGrowableFunctionTable` و `RtlGrowFunctionTable` و
+    `RtlDeleteGrowableFunctionTable` (محتاجها JIT بتاع JavaScript لتسجيل unwind data)، ومتصدّرة من `ntdll`.
+  - `dll/win32/cfgmgr32/kush_cm.c`: `CM_Register_Notification`/`CM_Unregister_Notification`.
+  - `dll/win32/ktmw32/` **(مكتبة جديدة)**: `CreateTransaction`، `CommitTransaction`، `RollbackTransaction`.
+  - ✅ **البناء نجح، والفحص (`tools/firefox_load_chain_audit.py`) ما لقى أي دالة ناقصة** في سلسلة
+    تحميل `firefox.exe` ولا `xul.dll`.
+- **و.** ⏳ التجربة الفعلية في Kush (الدوال اللي بتتحمّل وقت التشغيل بـ `GetProcAddress` والـ delay-load
+  ممكن تطلّع مشاكل تانية).
 
 **الاستنتاج:** Firefox 160 **ما بيشتغل على Kush 1.1 هسي**. هو مبني لويندوز 10 وما فوق (Mozilla وقّفت دعم
 ويندوز 7 و 8 بعد Firefox 115)، و Kush بيقلّد Windows Server 2003 مع جزء من دوال Vista و 7. المشكلة ما

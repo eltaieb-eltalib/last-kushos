@@ -1936,3 +1936,6 @@
 
 @ stdcall RtlQueryPerformanceCounter(ptr) ; Kush 1.1
 @ stdcall RtlQueryPerformanceFrequency(ptr) ; Kush 1.1
+@ stdcall -arch=x86_64 RtlAddGrowableFunctionTable(ptr ptr long long ptr ptr) ; Kush 1.1
+@ stdcall -arch=x86_64 RtlGrowFunctionTable(ptr long) ; Kush 1.1
+@ stdcall -arch=x86_64 RtlDeleteGrowableFunctionTable(ptr) ; Kush 1.1

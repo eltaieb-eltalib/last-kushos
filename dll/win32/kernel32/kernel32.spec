@@ -1333,3 +1333,14 @@
 @ stdcall WakeByAddressSingle(ptr) ; Kush 1.1
 @ stdcall WerRegisterRuntimeExceptionModule(wstr ptr) ; Kush 1.1
 @ stdcall WerUnregisterRuntimeExceptionModule(wstr ptr) ; Kush 1.1
+
+@ stdcall GetOverlappedResultEx(long ptr ptr long long) ; Kush 1.1
+@ stdcall PowerCreateRequest(ptr) ; Kush 1.1
+@ stdcall PowerSetRequest(long long) ; Kush 1.1
+@ stdcall PowerClearRequest(long long) ; Kush 1.1
+@ stdcall ResolveLocaleName(wstr ptr long) ; Kush 1.1
+@ stdcall GetCurrentApplicationUserModelId(ptr ptr) ; Kush 1.1
+@ stdcall GetSystemCpuSetInformation(ptr long ptr long long) ; Kush 1.1
+@ stdcall OpenProcessToken(long long ptr) advapi32.OpenProcessToken ; Kush 1.1 (api-ms-win-core-processthreads)
+@ stdcall OpenThreadToken(long long long ptr) advapi32.OpenThreadToken ; Kush 1.1
+@ stdcall SetThreadToken(ptr ptr) advapi32.SetThreadToken ; Kush 1.1
