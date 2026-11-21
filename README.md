@@ -155,8 +155,17 @@ This repo contains **only the files changed from ReactOS master commit
   - ✅ **فايرفوكس اتحمّل بكل مكتباته**: ما في "DLL not found" ولا "Entry Point Not Found"، وطبقة ويندوز 10
     اتطبّقت تلقائيًا من قاعدة التوافق (`ShimInfo(Exe(firefox.exe))`)، والبرنامج بدأ يشتغل (نادى
     `SetProcessDpiAwareness(2)`، ودي لسه stub في Kush).
-  - ❌ بعدها **access violation** (`0xC0000005`) في العنوان `0x0E22EF77` والبرنامج قفل. ⏳ بنحدّد المكتبة
-    والدالة.
+  - ❌ بعدها **access violation** (`0xC0000005`) في العنوان `0x0E22EF77` والبرنامج قفل.
+  - **التشخيص:** breakpoint بـ gdb على `ntdll!KiUserExceptionDispatcher`، وقريت قائمة المكتبات من الـ PEB
+    (عن طريق `GS` = TEB بتاع فايرفوكس): الخطأ في **`xul.dll` (المحرك)، RVA `0x19EF77`**، تعليمة
+    `incl 0xa8(%rsi)` و `rsi` فاضي. نزّلت رموز Mozilla الرسمية لنفس النسخة (`symbols.mozilla.org`،
+    `xul.pdb/FD70672AC9C2F0394C4C44205044422E1/xul.sym`): الدالة هي
+    **`mozilla::profiler::ThreadRegistration::RegisterThread`** (`ProfilerThreadRegistration.cpp`، سطر 128)،
+    وبتستعمل متغيرات **`thread_local` (TLS)**.
+  - **السبب الجذري في Kush:** `xul.dll` بيتحمّل **وقت التشغيل** بـ `LoadLibrary`. الـ loader في Kush
+    (`dll/ntdll/ldr/ldrinit.c`) بيجهّز الـ TLS **مرة واحدة بس وقت بداية البرنامج** (`LdrpInitializeTls`)،
+    فأي مكتبة فيها TLS بتتحمّل بعد كده ما بتاخد index ولا ذاكرة، والمؤشر بيطلع NULL. ويندوز من Vista بيدعم
+    ده (**dynamic TLS**). ⏳ الحل: إضافة dynamic TLS للـ loader.
 
 **الاستنتاج:** Firefox 160 **ما بيشتغل على Kush 1.1 هسي**. هو مبني لويندوز 10 وما فوق (Mozilla وقّفت دعم
 ويندوز 7 و 8 بعد Firefox 115)، و Kush بيقلّد Windows Server 2003 مع جزء من دوال Vista و 7. المشكلة ما
