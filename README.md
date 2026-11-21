@@ -333,6 +333,15 @@ Build (Linux, mingw-w64 **posix** toolchain, cmake, ninja, bison, flex, libgmp-d
 بـ mingw-w64 (نسخة posix)، و `ninja bootcd`. التجربة في QEMU (TCG) بخيار الإقلاع Debug، وأدوات
 التشخيص في `tools/kdbg/`.
 
+**بيئة تجربة Fluent (من 2026-11-22):** المحاكي برام **4096MB** (`tools/qemu/run_vm.sh`،
+كانت 3072MB واترفعت بأمر المستخدم — الرام القليلة كانت بتخنق النظام تحت TCG)،
+والقرص `~/workspace/kush-vm/k.raw` بحجم **8GB** (ملف sparse، الحجم المنطقي
+8,589,934,592 بايت؛ الهوست فيه 128GB فاضية وقت الإنشاء). التثبيت من
+`bootcd.iso` باختيار Setup، والإقلاع بـ `tools/qemu/run_vm.sh <workdir> k.raw`.
+**سياسة الصور:** screenshot بعد كل خطوة مهمة (بناء، تثبيت، إقلاع، سطح مكتب،
+فتح Start، كل مرحلة) باسم واضح ومؤرخ في `docs/design/`، ولا تُجمع الصور
+لنهاية العمل.
+
 ## التعريفات (Drivers) في Kush 1.1
 
 الهدف: تعريفات قياسية جوّا النظام للماوس والكيبورد وكرت الشاشة والهاردسكات (HDD، SSD، NVMe)،
