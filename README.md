@@ -91,3 +91,22 @@ This repo contains **only the files changed from ReactOS master commit
   decisive.
 - If the Acer still gives 0x7B on USB boot: try a USB 2.0 port (xHCI issue)
   and report the Acer model and SSD type (SATA vs NVMe).
+
+## تقرير تجربة SPSS 25 (64-bit) على Kush 1.1 — قيد التنفيذ
+
+بيئة التجربة: Kush 1.1 مبني من `main` (ReactOS `344ebfe5` + تعديلات Kush)،
+amd64 Release، مثبّت على قرص 20 GB (FAT32) في QEMU (بدون KVM، 3 GB RAM).
+
+### المشاكل اللي ظهرت لحدي هسي وطرق حلها
+
+| # | المشكلة | السبب | الحل | الحالة |
+|---|---------|-------|------|--------|
+| 1 | الـ Live CD بخيار "Live Environment" بيعطي شاشة زرقاء STOP 0x7E في `bootvid.dll` | بدون `/DEBUG` تتبعات KUSH-DBG ما بتشتغل فالـ race في bootvid بيظهر | الخيار الافتراضي في `boot/bootdata/bootcd.ini` بقى `LiveImg_Debug` | اتصلّح ✅ (اتأكدنا في QEMU) |
+| 2 | النظام بعد التثبيت على الهارد بيقيف في شاشة سودا (الـ kernel عالق في bootvid، 640x480) | نفس سبب #1 — `freeldr.ini` اللي بيكتبه الـ Setup بيختار `ReactOS` (بدون debug) | `base/setup/lib/bootsup.c`: الـ Setup بقى يخلّي `ReactOS_Debug` الافتراضي دايمًا | اتصلّح في الكود ✅ (التجربة اتعملت بتعديل `freeldr.ini` يدويًا وفتح سطح المكتب) |
+| 3 | النظام بيبلّغ عن "NT 5.2" (Windows Server 2003) | ReactOS بيقلّد Windows 2003 | `media/sdb/sysmain.xml`: برامج SPSS بتاخد version lie لويندوز 7 SP1 | مضاف — لسه ما اتجرب مع SPSS |
+| 4 | ملف SPSS 25 ما اتنزّل للتجربة | شبكة بيئة البناء ما بتسمح بـ `drive.google.com` | لازم تتضاف للـ Allowed domains في إعدادات البيئة | منتظرين ⏳ |
+
+### الخطوات الجاية
+1. تنزيل `DMR64.rar` (SPSS 25 64-bit) وفكّه.
+2. تشغيل برنامج التثبيت على Kush في QEMU وتسجيل كل خطأ بالصور.
+3. تحديث الجدول ده بكل مشكلة وحلها.
