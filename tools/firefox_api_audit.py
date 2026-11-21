@@ -1,5 +1,8 @@
+"""Compare every function Firefox imports with what Kush/ReactOS exports.
+Usage: python3 firefox_api_audit.py <workdir>
+"""
 import subprocess,re,os,glob,collections,sys
-SP='/tmp/claude-0/-home-user-last-kushos/566e914f-110e-5fac-8c4e-cadfc6298dcb/scratchpad'
+SP=sys.argv[1] if len(sys.argv)>1 else '.'  # dir containing ff/x/core (extracted Firefox), ros/ (source) and build/
 core=SP+'/ff/x/core'
 # imports per dll
 imp=collections.defaultdict(set)
