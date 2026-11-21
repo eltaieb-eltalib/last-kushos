@@ -150,8 +150,13 @@ This repo contains **only the files changed from ReactOS master commit
   - `dll/win32/ktmw32/` **(مكتبة جديدة)**: `CreateTransaction`، `CommitTransaction`، `RollbackTransaction`.
   - ✅ **البناء نجح، والفحص (`tools/firefox_load_chain_audit.py`) ما لقى أي دالة ناقصة** في سلسلة
     تحميل `firefox.exe` ولا `xul.dll`.
-- **و.** ⏳ التجربة الفعلية في Kush (الدوال اللي بتتحمّل وقت التشغيل بـ `GetProcAddress` والـ delay-load
-  ممكن تطلّع مشاكل تانية).
+- **و.** ⏳ التجربة الفعلية في Kush: نقلت مكتبات البناء الجديد (653 ملف `.dll`/`.exe` في `system32`) و
+  `AppPatch/sysmain.sdb` لنظام التجربة، وشغّلت `C:\Firefox\firefox.exe` **من غير أي `set`**:
+  - ✅ **فايرفوكس اتحمّل بكل مكتباته**: ما في "DLL not found" ولا "Entry Point Not Found"، وطبقة ويندوز 10
+    اتطبّقت تلقائيًا من قاعدة التوافق (`ShimInfo(Exe(firefox.exe))`)، والبرنامج بدأ يشتغل (نادى
+    `SetProcessDpiAwareness(2)`، ودي لسه stub في Kush).
+  - ❌ بعدها **access violation** (`0xC0000005`) في العنوان `0x0E22EF77` والبرنامج قفل. ⏳ بنحدّد المكتبة
+    والدالة.
 
 **الاستنتاج:** Firefox 160 **ما بيشتغل على Kush 1.1 هسي**. هو مبني لويندوز 10 وما فوق (Mozilla وقّفت دعم
 ويندوز 7 و 8 بعد Firefox 115)، و Kush بيقلّد Windows Server 2003 مع جزء من دوال Vista و 7. المشكلة ما
