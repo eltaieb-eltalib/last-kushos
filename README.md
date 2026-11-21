@@ -192,7 +192,31 @@ This repo contains **only the files changed from ReactOS master commit
       نفس المشكلة كانت في `CreateWaitableTimerExA` و `SetFileInformationByHandle` و `FlushProcessWriteBuffers`.
     - ✅ **الحل:** سكربت بيلقى كل اسم مكرر في الـ spec ويشيل سطر الـ `@ stub` (4 أسطر)، و
       `FlushProcessWriteBuffers` طلعت ما متعرّفة أصلًا (كانت شغالة بالـ stub بس)، فاتضافت في `kush_win8.c`.
-    - ⏳ التجربة التانية.
+    - ✅ التجربة التانية: الـ stub اختفى، وفايرفوكس مشى لقدام: شغّل `crashhelper.exe`، ووصل لـ COM
+      (`NetworkListManager`) و WinRT (`Windows.UI.ViewManagement.UISettings`)، يعني محرك XPCOM اشتغل.
+      لكنه لسه بيقفل، و`start /wait` بيرجّع **كود الخروج 128**.
+  - **تحقيق كود 128:**
+    | # | الفحص | النتيجة |
+    |---|---|---|
+    | 1 | gdb على `KiUserExceptionDispatcher` | ولا exception في فايرفوكس، فالشكل كأنه بيقفل براهو |
+    | 2 | gdb على `NtTerminateProcess` و `RtlExitUserProcess` | فايرفوكس ما نادى أي واحدة منهم. اللي نادى **`csrss.exe`**: `NtTerminateProcess(handle, 0x80)` |
+    | 3 | قراءة `subsystems/csr/csrsrv/api.c` | `0x80` = `STATUS_ABANDONED`. csrss بيقتل العملية لما تجيه رسالة `LPC_EXCEPTION`، يعني **exception ما اتعالج وصل للفرصة التانية** |
+    | 4 | طباعة تشخيصية في الكيرنل (`ntoskrnl/ke/amd64/except.c`: `KUSH-EXC`) لكل exception في user mode يوصل للفرصة التانية | `firefox.exe ... second-chance code c06d007f at kernel32!RaiseException` |
+    | 5 | `0xC06D007F` = فشل **delay-load** (دالة بتتحمّل وقت أول استدعاء). الكيرنل بقى يطبع الاسم من `DelayLoadInfo` | **`iphlpapi.dll!NotifyIpInterfaceChange` not found** (خدمة مراقبة الشبكة في فايرفوكس) |
+    | 6 | أداة جديدة `tools/firefox_delayload_audit.py`: بتقرأ جداول الـ delay-import في كل ملفات فايرفوكس وتقارنها بـ Kush | 26 دالة ناقصة في 8 مكتبات |
+  - ✅ **الحل (كل الـ 26):**
+    - `iphlpapi/kush_iphlp.c`: `NotifyIpInterfaceChange`، `NotifyUnicastIpAddressChange`، `NotifyRouteChange2`،
+      `CancelMibChangeNotify2`، `GetIpInterfaceTable`، `FreeMibTable` (التسجيل بينجح، والإشعار الأولي بيتبعت من thread).
+    - `user32`: 9 دوال لمس كان كودها موجود في `user32_vista` لكن مقفولة بـ `-version` اتفتحت، و
+      `kush/kush_touch.c` فيه `GetAutoRotationState` و `GetPointerFrameTouchInfo` و `InjectSyntheticPointerInput`.
+    - `uxtheme/kush_panning.c`: `Begin/Update/EndPanningFeedback`.
+    - `shell32`: فتح `SHGetKnownFolderItem` و `Get/SetCurrentProcessExplicitAppUserModelID`، و `SHGetPropertyStoreForWindow` جديدة.
+    - `userenv/kush_appcontainer.c`: `DeriveAppContainerSidFromAppContainerName` (بيرجّع `E_NOTIMPL`، والـ sandbox بيكمّل من غير AppContainer).
+    - `advapi32`: `AddMandatoryAce` حقيقية (بتبني `SYSTEM_MANDATORY_LABEL_ACE`).
+    - `shlwapi`: `IsOS` بقت بتتصدّر بالاسم، مش بالرقم بس.
+    - النتيجة: الأداة ما بتلقى أي دالة ناقصة في `xul.dll` و `firefox.exe`. الباقي في مكتبات Windows App SDK
+      (`Microsoft.UI.*`) بس، وفايرفوكس ما بيحتاجها في التشغيل العادي.
+    - ⏳ التجربة.
 
 **الاستنتاج:** Firefox 160 **ما بيشتغل على Kush 1.1 هسي**. هو مبني لويندوز 10 وما فوق (Mozilla وقّفت دعم
 ويندوز 7 و 8 بعد Firefox 115)، و Kush بيقلّد Windows Server 2003 مع جزء من دوال Vista و 7. المشكلة ما
