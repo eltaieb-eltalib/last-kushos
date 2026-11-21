@@ -675,3 +675,23 @@ InstallShield، 735 MB)، اتوصّل للنظام كـ CD (`D:`) واتشغّ�
 
 ### معيار النجاح
 SPSS 25 يتثبّت، و `stats.exe` يفتح، ويقرأ ملف `.sav`، ويطلع جدول Frequencies.
+
+## خطة تصميم Kush Fluent (شكل حديث زي Windows 11)
+
+الخطة الكاملة في [`docs/design/kush-fluent-plan.md`](docs/design/kush-fluent-plan.md). تصميم أصلي على نفس مبادئ
+Fluent Design، بمصادر مفتوحة (أيقونات Fluent UI System Icons برخصة MIT، وخطوط Selawik و Noto Sans Arabic برخصة OFL)،
+و**كل التعديلات على مستوى النظام**.
+
+| المرحلة | المحتوى | محتاجة compositor؟ |
+|---|---|---|
+| 0 | Design tokens: ألوان فاتح/غامق، accent، زوايا، مسافات (في الـ registry) | لا |
+| 1 | الخطوط: Selawik + Noto Sans Arabic، anti-aliasing | لا |
+| 2 | ثيم `KushFluent.msstyles`: أدوات بزوايا 4px، scrollbars رفيعة، شريط عنوان مسطح | لا |
+| 3 | زوايا دائرية 8px لكل النوافذ والقوائم من win32k، و `DWMWA_WINDOW_CORNER_PREFERENCE` | لا |
+| 4 | **Mica**: صورة الخلفية بعد blur وtint، بتترسم تحت النافذة حسب مكانها | لا |
+| 5أ | **Acrylic ثابت** لشريط المهام وStart والـ flyouts (blur للخلفية + noise + tint) | لا |
+| 5ب | **compositor** حقيقي: Acrylic حي، و `DwmEnableBlurBehindWindow` | **نعم** |
+| 6 | أيقونات Fluent بكل المقاسات، مع الحفاظ على أرقام الأيقونات | لا |
+| 7 | الواجهة: شريط مهام في النص، Start جديد، flyouts | لا |
+| 8 | الوضع الغامق على مستوى النظام (uxtheme ordinals 132–135) | لا |
+| 9 | الحركة: بسيطة من غير compositor، وكاملة بعد 5ب | جزئيًا |
