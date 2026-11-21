@@ -52,11 +52,8 @@
 @ stdcall BuildCommDCBW(wstr ptr)
 @ stdcall CallNamedPipeA(str ptr long ptr long ptr long)
 @ stdcall CallNamedPipeW(wstr ptr long ptr long ptr long)
-@ stdcall -stub -version=0x600+ CallbackMayRunLong(ptr)
 @ stdcall CancelDeviceWakeupRequest(long)
 @ stdcall CancelIo(long)
-@ stdcall -stub -version=0x600+ CancelIoEx(ptr ptr)
-@ stdcall -stub -version=0x600+ CancelSynchronousIo(ptr)
 @ stdcall -version=0x600+ CancelThreadpoolIo(ptr) ntdll.TpCancelAsyncIoOperation
 @ stdcall CancelTimerQueueTimer(long long)
 @ stdcall CancelWaitableTimer(long)
@@ -145,7 +142,6 @@
 @ stdcall CreateMemoryResourceNotification(long)
 @ stdcall CreateMutexA(ptr long str)
 @ stdcall -stub -version=0x600+ CreateMutexExA(ptr str long long)
-@ stdcall -stub -version=0x600+ CreateMutexExW(ptr wstr long long)
 @ stdcall CreateMutexW(ptr long wstr)
 @ stdcall CreateNamedPipeA(str long long long long long long ptr)
 @ stdcall CreateNamedPipeW(wstr long long long long long long ptr)
@@ -457,7 +453,6 @@
 @ stdcall GetDriveTypeW(wstr)
 @ stub -version=0x600+ GetDurationFormat
 @ stub -version=0x600+ GetDurationFormatEx
-@ stdcall -stub -version=0x600+ GetDynamicTimeZoneInformation(ptr)
 @ stdcall GetEnvironmentStrings()
 @ stdcall GetEnvironmentStringsA() GetEnvironmentStrings
 @ stdcall GetEnvironmentStringsW()
@@ -589,7 +584,6 @@
 @ stdcall GetProfileStringA(str str str ptr long)
 @ stdcall GetProfileStringW(wstr wstr wstr ptr long)
 @ stdcall GetQueuedCompletionStatus(long ptr ptr ptr long)
-@ stdcall -stub -version=0x600+ GetQueuedCompletionStatusEx(ptr ptr long ptr long long)
 @ stdcall GetShortPathNameA(str ptr long)
 @ stdcall GetShortPathNameW(wstr ptr long)
 @ stdcall GetStartupInfoA(ptr)
@@ -647,7 +641,6 @@
 @ stdcall GetTimeFormatEx(wstr long ptr wstr wstr long) ; Kush 1.1 ungated
 @ stdcall GetTimeFormatW(long long ptr wstr ptr long)
 @ stdcall GetTimeZoneInformation(ptr)
-@ stdcall -stub -version=0x600+ GetTimeZoneInformationForYear(long ptr ptr)
 @ stdcall -version=0x600+ GetUILanguageInfo(long wstr wstr ptr ptr)
 @ stdcall GetUserDefaultLCID()
 @ stdcall GetUserDefaultLangID()
@@ -921,7 +914,6 @@
 @ stdcall QueueUserAPC(ptr long long)
 @ stdcall QueueUserWorkItem(ptr ptr long)
 @ stdcall -norelay RaiseException(long long long ptr)
-@ stdcall -stub -version=0x603+ RaiseFailFastException(ptr ptr long)
 @ stdcall ReOpenFile(ptr long long long)
 @ stdcall ReadConsoleA(long ptr long ptr ptr)
 @ stdcall ReadConsoleInputA(long ptr long ptr)
@@ -1115,7 +1107,6 @@
 @ stdcall SetThreadAffinityMask(long long)
 @ stdcall SetThreadContext(long ptr)
 @ stdcall -version=0xA00+ SetThreadDescription(ptr wstr)
-@ stdcall -stub -version=0x600+ SetThreadErrorMode(long ptr)
 @ stdcall SetThreadExecutionState(long)
 @ stdcall SetThreadGroupAffinity(ptr ptr ptr) ; Kush 1.1 ungated
 @ stdcall SetThreadIdealProcessor(long long)
@@ -1313,8 +1304,6 @@
 @ stdcall AddDllDirectory(wstr) ; Kush 1.1
 @ stdcall CopyFile2(wstr wstr ptr) ; Kush 1.1
 @ stdcall CreateFile2(wstr long long long ptr) ; Kush 1.1
-@ stdcall CreateWaitableTimerExA(ptr str long long) ; Kush 1.1
-@ stdcall CreateWaitableTimerExW(ptr wstr long long) ; Kush 1.1
 @ stdcall FlushProcessWriteBuffers() ; Kush 1.1
 @ stdcall GetCurrentPackageFullName(ptr ptr) ; Kush 1.1
 @ stdcall GetProcessMitigationPolicy(long long ptr long) ; Kush 1.1
@@ -1344,3 +1333,14 @@
 @ stdcall OpenProcessToken(long long ptr) advapi32.OpenProcessToken ; Kush 1.1 (api-ms-win-core-processthreads)
 @ stdcall OpenThreadToken(long long long ptr) advapi32.OpenThreadToken ; Kush 1.1
 @ stdcall SetThreadToken(ptr ptr) advapi32.SetThreadToken ; Kush 1.1
+@ stdcall CreateWaitableTimerExW(ptr wstr long long) KushCreateWaitableTimerExW ; Kush 1.1 (was a stub)
+@ stdcall CreateWaitableTimerExA(ptr str long long) KushCreateWaitableTimerExA ; Kush 1.1 (was a stub)
+@ stdcall CreateMutexExW(ptr wstr long long) KushCreateMutexExW ; Kush 1.1 (was a stub)
+@ stdcall CancelIoEx(long ptr) KushCancelIoEx ; Kush 1.1 (was a stub)
+@ stdcall CancelSynchronousIo(long) KushCancelSynchronousIo ; Kush 1.1 (was a stub)
+@ stdcall CallbackMayRunLong(ptr) KushCallbackMayRunLong ; Kush 1.1 (was a stub)
+@ stdcall GetQueuedCompletionStatusEx(ptr ptr long ptr long long) KushGetQueuedCompletionStatusEx ; Kush 1.1 (was a stub)
+@ stdcall GetDynamicTimeZoneInformation(ptr) KushGetDynamicTimeZoneInformation ; Kush 1.1 (was a stub)
+@ stdcall GetTimeZoneInformationForYear(long ptr ptr) KushGetTimeZoneInformationForYear ; Kush 1.1 (was a stub)
+@ stdcall RaiseFailFastException(ptr ptr long) KushRaiseFailFastException ; Kush 1.1 (was a stub)
+@ stdcall SetThreadErrorMode(long ptr) KushSetThreadErrorMode ; Kush 1.1 (was a stub)

@@ -175,6 +175,17 @@ This repo contains **only the files changed from ReactOS master commit
     - **باق تاني اتصلّح:** `LdrpAllocateTls` كان بيحجز حجم البيانات الأولية بس من غير `SizeOfZeroFill`،
       يعني متغيرات `thread_local` اللي قيمتها الأولية صفر ما كانت بتاخد ذاكرة. هسي بيحجز الحجم الكامل
       ومصفّر.
+    - ✅ التجربة: **ما في access violation تاني**، فايرفوكس عدّى `RegisterThread` وكمّل لقدام، ووصل لدوال
+      لسه **stubs** في Kush (`CreateWaitableTimerExW`، `CancelIoEx`)، وبعدها قفل براهو (`tasklist` ما فيه).
+  - **دورة الـ stubs:** فحص كل الدوال المعلّمة stub في Kush وفايرفوكس بيستعملها: 9 في `kernel32`،
+    و 11 في `ntdll` (ALPC للـ sandbox، `NtCancelIoFileEx`، `NtRemoveIoCompletionEx`)، و `RegRenameKey`،
+    و `GetDpiForMonitor`/`SetProcessDpiAwareness` في `shcore` (الـ stub بيرجع نجاح من غير ما يملأ الـ DPI).
+    - `kush_win8.c` (دورة 3): نسخ حقيقية لـ `CreateWaitableTimerExW/A` (القديمة طلعت stub)، `CreateMutexExW`،
+      `CancelIoEx` (بـ `NtCancelIoFile`)، `CancelSynchronousIo`، `CallbackMayRunLong`،
+      `GetQueuedCompletionStatusEx`، `GetDynamicTimeZoneInformation`، `GetTimeZoneInformationForYear`،
+      `RaiseFailFastException`، `SetThreadErrorMode`.
+    - `dll/win32/shcore/kush_dpi.c` (جديد): `GetDpiForMonitor` (96 DPI)، `SetProcessDpiAwareness`،
+      `GetProcessDpiAwareness`، `GetScaleFactorForMonitor` (100%).
     - ⏳ التجربة.
 
 **الاستنتاج:** Firefox 160 **ما بيشتغل على Kush 1.1 هسي**. هو مبني لويندوز 10 وما فوق (Mozilla وقّفت دعم

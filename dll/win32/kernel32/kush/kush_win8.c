@@ -285,3 +285,82 @@ BOOL WINAPI GetSystemCpuSetInformation(PVOID Information, ULONG BufferLength, PU
     SetLastError(ERROR_NOT_SUPPORTED);
     return FALSE;
 }
+
+/* ---- Kush 1.1, round 3: replace kernel32 stubs that Firefox calls ---- */
+HANDLE WINAPI KushCreateWaitableTimerExW(LPSECURITY_ATTRIBUTES lpTimerAttributes, LPCWSTR lpTimerName, DWORD dwFlags, DWORD dwDesiredAccess)
+{
+    UNREFERENCED_PARAMETER(dwDesiredAccess);
+    return CreateWaitableTimerW(lpTimerAttributes, (dwFlags & 0x1 /* CREATE_WAITABLE_TIMER_MANUAL_RESET */) != 0, lpTimerName);
+}
+HANDLE WINAPI KushCreateWaitableTimerExA(LPSECURITY_ATTRIBUTES lpTimerAttributes, LPCSTR lpTimerName, DWORD dwFlags, DWORD dwDesiredAccess)
+{
+    UNREFERENCED_PARAMETER(dwDesiredAccess);
+    return CreateWaitableTimerA(lpTimerAttributes, (dwFlags & 0x1) != 0, lpTimerName);
+}
+
+HANDLE WINAPI KushCreateMutexExW(LPSECURITY_ATTRIBUTES lpMutexAttributes, LPCWSTR lpName, DWORD dwFlags, DWORD dwDesiredAccess)
+{
+    UNREFERENCED_PARAMETER(dwDesiredAccess);
+    return CreateMutexW(lpMutexAttributes, (dwFlags & 0x1 /* CREATE_MUTEX_INITIAL_OWNER */) != 0, lpName);
+}
+
+/* Kush has NtCancelIoFile (cancels the calling thread's I/O on the handle) */
+BOOL WINAPI KushCancelIoEx(HANDLE hFile, LPOVERLAPPED lpOverlapped)
+{
+    IO_STATUS_BLOCK Iosb;
+    NTSTATUS Status;
+    UNREFERENCED_PARAMETER(lpOverlapped);
+    Status = NtCancelIoFile(hFile, &Iosb);
+    if (!NT_SUCCESS(Status)) { SetLastError(RtlNtStatusToDosError(Status)); return FALSE; }
+    return TRUE;
+}
+BOOL WINAPI KushCancelSynchronousIo(HANDLE hThread)
+{ UNREFERENCED_PARAMETER(hThread); SetLastError(ERROR_NOT_FOUND); return FALSE; }
+
+BOOL WINAPI KushCallbackMayRunLong(PVOID pci) { UNREFERENCED_PARAMETER(pci); return FALSE; }
+
+typedef struct _KUSH_OVERLAPPED_ENTRY { ULONG_PTR lpCompletionKey; LPOVERLAPPED lpOverlapped; ULONG_PTR Internal; DWORD dwNumberOfBytesTransferred; } KUSH_OVERLAPPED_ENTRY;
+BOOL WINAPI KushGetQueuedCompletionStatusEx(HANDLE CompletionPort, KUSH_OVERLAPPED_ENTRY *lpCompletionPortEntries, ULONG ulCount,
+                                            PULONG ulNumEntriesRemoved, DWORD dwMilliseconds, BOOL fAlertable)
+{
+    DWORD Bytes; ULONG_PTR Key; LPOVERLAPPED Ov;
+    UNREFERENCED_PARAMETER(fAlertable);
+    if (!lpCompletionPortEntries || !ulCount || !ulNumEntriesRemoved) { SetLastError(ERROR_INVALID_PARAMETER); return FALSE; }
+    *ulNumEntriesRemoved = 0;
+    if (!GetQueuedCompletionStatus(CompletionPort, &Bytes, &Key, &Ov, dwMilliseconds) && !Ov) return FALSE;
+    lpCompletionPortEntries[0].lpCompletionKey = Key;
+    lpCompletionPortEntries[0].lpOverlapped = Ov;
+    lpCompletionPortEntries[0].Internal = Ov ? Ov->Internal : 0;
+    lpCompletionPortEntries[0].dwNumberOfBytesTransferred = Bytes;
+    *ulNumEntriesRemoved = 1;
+    return TRUE;
+}
+
+typedef struct _KUSH_DYNAMIC_TZI { TIME_ZONE_INFORMATION Tzi; WCHAR TimeZoneKeyName[128]; BOOLEAN DynamicDaylightTimeDisabled; } KUSH_DYNAMIC_TZI;
+DWORD WINAPI KushGetDynamicTimeZoneInformation(KUSH_DYNAMIC_TZI *pTimeZoneInformation)
+{
+    DWORD r;
+    if (!pTimeZoneInformation) { SetLastError(ERROR_INVALID_PARAMETER); return TIME_ZONE_ID_INVALID; }
+    RtlZeroMemory(pTimeZoneInformation, sizeof(*pTimeZoneInformation));
+    r = GetTimeZoneInformation(&pTimeZoneInformation->Tzi);
+    wcsncpy(pTimeZoneInformation->TimeZoneKeyName, pTimeZoneInformation->Tzi.StandardName, 31);
+    return r;
+}
+BOOL WINAPI KushGetTimeZoneInformationForYear(USHORT wYear, PVOID pdtzi, LPTIME_ZONE_INFORMATION ptzi)
+{
+    UNREFERENCED_PARAMETER(wYear); UNREFERENCED_PARAMETER(pdtzi);
+    return GetTimeZoneInformation(ptzi) != TIME_ZONE_ID_INVALID;
+}
+
+VOID WINAPI KushRaiseFailFastException(PEXCEPTION_RECORD pExceptionRecord, PCONTEXT pContextRecord, DWORD dwFlags)
+{
+    UNREFERENCED_PARAMETER(pContextRecord); UNREFERENCED_PARAMETER(dwFlags);
+    TerminateProcess(GetCurrentProcess(), pExceptionRecord ? pExceptionRecord->ExceptionCode : 0xC0000409);
+}
+
+BOOL WINAPI KushSetThreadErrorMode(DWORD dwNewMode, LPDWORD lpOldMode)
+{
+    UINT Old = SetErrorMode(dwNewMode);
+    if (lpOldMode) *lpOldMode = Old;
+    return TRUE;
+}
