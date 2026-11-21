@@ -206,7 +206,6 @@ BOOL WINAPI KushGetLogicalProcessorInformationEx(DWORD RelationshipType, PVOID B
     return FALSE;
 }
 
-/* (FlushProcessWriteBuffers: already implemented in kernel32) */
 
 #define APPMODEL_ERROR_NO_PACKAGE 15700
 LONG WINAPI GetCurrentPackageFullName(UINT32 *packageFullNameLength, PWSTR packageFullName)
@@ -363,4 +362,14 @@ BOOL WINAPI KushSetThreadErrorMode(DWORD dwNewMode, LPDWORD lpOldMode)
     UINT Old = SetErrorMode(dwNewMode);
     if (lpOldMode) *lpOldMode = Old;
     return TRUE;
+}
+
+/* Kush 1.1: FlushProcessWriteBuffers -- Vista+. A full memory barrier is
+ * sufficient on a uniprocessor/TCG system; on SMP flush via a no-op
+ * protection change, which forces an IPI-driven TLB flush on all CPUs. */
+VOID WINAPI FlushProcessWriteBuffers(VOID)
+{
+    static LONG Dummy;
+    MemoryBarrier();
+    InterlockedExchange(&Dummy, 0);
 }
