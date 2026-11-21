@@ -125,7 +125,11 @@ This repo contains **only the files changed from ReactOS master commit
   - `ntdll.spec` + `rtl/libsupp.c`: `RtlTryAcquireSRWLockExclusive` اتصدّرت، واتكتبت
     `RtlQueryPerformanceCounter` و `RtlQueryPerformanceFrequency`.
   - البناء بـ `DLL_EXPORT_VERSION=0x600` (Vista) عشان دوال `-version=0x600+` تتصدّر.
-- **د.** تصنيف `firefox.exe` كويندوز 10 تلقائيًا (بدل `__COMPAT_LAYER`).
+- **د.** ✅ تصنيف فايرفوكس كويندوز 10 تلقائيًا:
+  - `sdk/tools/xml2sdb`: دعم `<LAYER_REF NAME="..."/>` جوّا `<EXE>` (بيكتب `TAG_LAYER` + `TAG_NAME`،
+    و `apphelp` بيحلّه بالاسم في `SdbpAddExeLayers`).
+  - `media/sdb/sysmain.xml`: `firefox.exe` و `plugin-container.exe` و `crashreporter.exe` ← طبقة
+    `WIN10RTM` (بتبلّغ عن NT 10.0 وبتفعّل API sets بتاعة ويندوز 10 في الـ loader).
 - **هـ.** نفس الشي لـ `xul.dll` والمكتبات اللي فايرفوكس بيحمّلها بعدين، لحدي ما النافذة تفتح.
 
 **الاستنتاج:** Firefox 160 **ما بيشتغل على Kush 1.1 هسي**. هو مبني لويندوز 10 وما فوق (Mozilla وقّفت دعم

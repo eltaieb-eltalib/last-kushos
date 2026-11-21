@@ -540,6 +540,21 @@
             <SHIM_REF NAME="GlobalMemoryStatus2GB" />
         </EXE>
 
+        <!-- Kush 1.1: Mozilla Firefox (current versions need Windows 10: the Win10
+             layer reports NT 10.0 and enables the Windows 10 API sets in the loader) -->
+        <EXE NAME="firefox.exe" APP_NAME="Mozilla Firefox" VENDOR="Mozilla">
+            <MATCHING_FILE NAME="*" />
+            <LAYER_REF NAME="WIN10RTM" />
+        </EXE>
+        <EXE NAME="plugin-container.exe" APP_NAME="Mozilla Firefox (content process)" VENDOR="Mozilla">
+            <MATCHING_FILE NAME="*" />
+            <LAYER_REF NAME="WIN10RTM" />
+        </EXE>
+        <EXE NAME="crashreporter.exe" APP_NAME="Mozilla Crash Reporter" VENDOR="Mozilla">
+            <MATCHING_FILE NAME="*" />
+            <LAYER_REF NAME="WIN10RTM" />
+        </EXE>
+
         <!-- ReactOS shim used to test the shim engine -->
         <EXE NAME="shimtest_ros.exe" APP_NAME="Shim test application" VENDOR="ReactOS">
             <MATCHING_FILE NAME="*">
