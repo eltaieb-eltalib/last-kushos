@@ -396,6 +396,26 @@ KiDispatchException(IN PEXCEPTION_RECORD ExceptionRecord,
                      (PVOID)ExceptionRecord->ExceptionInformation[0],
                      (PVOID)ExceptionRecord->ExceptionInformation[1]);
 
+            /* Name the module that contains the faulting address (PEB loader list). */
+            _SEH2_TRY
+            {
+                PPEB Peb = PsGetCurrentProcess()->Peb;
+                PLIST_ENTRY Head = &Peb->Ldr->InLoadOrderModuleList, Entry;
+                ULONG Count = 0;
+                for (Entry = Head->Flink; Entry != Head && Count < 512; Entry = Entry->Flink, Count++)
+                {
+                    PLDR_DATA_TABLE_ENTRY Mod = CONTAINING_RECORD(Entry, LDR_DATA_TABLE_ENTRY, InLoadOrderLinks);
+                    ULONG_PTR Base = (ULONG_PTR)Mod->DllBase;
+                    ULONG_PTR Addr = (ULONG_PTR)ExceptionRecord->ExceptionAddress;
+                    if (Addr >= Base && Addr < Base + Mod->SizeOfImage)
+                    {
+                        DbgPrint("KUSH-EXC: in %wZ +0x%Ix (base %p)\n", &Mod->BaseDllName, Addr - Base, (PVOID)Base);
+                        break;
+                    }
+                }
+            }
+            _SEH2_EXCEPT(EXCEPTION_EXECUTE_HANDLER) {} _SEH2_END;
+
             /* Delay-load failure (VcppException ERROR_MOD/PROC_NOT_FOUND):
              * parameter 0 is a DelayLoadInfo; print the DLL and function. */
             if ((ExceptionRecord->ExceptionCode == 0xC06D007E ||
