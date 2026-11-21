@@ -109,9 +109,10 @@ InstallShield، 735 MB)، اتوصّل للنظام كـ CD (`D:`) واتشغّ�
 | 1 | الـ Live CD بخيار "Live Environment" بيعطي شاشة زرقاء STOP 0x7E في `bootvid.dll` | بدون `/DEBUG` تتبعات KUSH-DBG ما بتشتغل، فالـ race في bootvid بيظهر | الخيار الافتراضي في `boot/bootdata/bootcd.ini` بقى `LiveImg_Debug` | اتصلّح ✅ (اتأكدنا في QEMU) |
 | 2 | النظام بعد التثبيت على الهارد بيقيف في شاشة سودا (الـ kernel عالق في bootvid، 640x480) | نفس سبب #1: `freeldr.ini` اللي بيكتبه الـ Setup بيختار `ReactOS` (بدون debug) | `base/setup/lib/bootsup.c`: الـ Setup بقى يخلّي `ReactOS_Debug` الافتراضي دايمًا | اتصلّح في الكود ✅ (التجربة اتعملت بتعديل `freeldr.ini` يدويًا وفتح سطح المكتب) |
 | 3 | النظام بيبلّغ عن "NT 5.2" (Windows Server 2003) | ReactOS بيقلّد Windows 2003 | `media/sdb/sysmain.xml`: برامج SPSS بتاخد version lie لويندوز 7 SP1 | مضاف، لكن ما وصلنا لمرحلة نجربه فيها |
+| 5 | `licenseinit.exe`: "MSVCR90.dll was not found" | مكتبة VC++ 2008 x64 ما متثبّتة، لأن `vcredist_x64.exe` غلاف 32-bit وفشل (Machine Type Mismatch) | نستخرج `vc_red.msi` من `vcredist_x64.exe` ونثبّته بـ `msiexec` | جاري ⏳ |
 | 4 | **"Machine Type Mismatch"**: `The image file ...SPSS_Statistics_25_win64.exe is valid, but is for a machine type other than the current machine` | برنامج التثبيت (InstallShield bootstrapper) هو **32-bit (PE32 / i386)** رغم إن SPSS نفسه 64-bit، و ReactOS amd64 **ما فيه WoW64** فما بيشغّل أي برنامج 32-bit | اتجاوزناه: استخرجنا حزمة الـ MSI الـ 64-bit وثبّتناها بـ `msiexec` (المحاولة 2 تحت) | اتجاوزناه ✅ |
 
-### المحاولة 2: تثبيت حزمة الـ MSI الـ 64-bit مباشرة (تجاوز مشكلة #4) — جارية ⏳
+### المحاولة 2: تثبيت حزمة الـ MSI الـ 64-bit مباشرة (تجاوز مشكلة #4) — SPSS اتثبّت ✅، التشغيل جاري ⏳
 
 1. استخرجت حزمة الـ MSI من برنامج التثبيت بأداة `tools/isx_extract.py`
    (نسخة Python من ISx لصيغة InstallShield "ISSetupStream"):
@@ -123,7 +124,15 @@ InstallShield، 735 MB)، اتوصّل للنظام كـ CD (`D:`) واتشغّ�
    - ✅ واجهة InstallShield Wizard فتحت (`02-msi-wizard-welcome.png`).
    - ✅ صفحة الترخيص، اختيار Python (اخترنا No)، مجلد التثبيت
      `C:\Program Files\IBM\SPSS\Statistics\25\`، و "Ready to Install" (`03-...png`).
-   - ⏳ التثبيت شغّال، شريط التقدم بيتحرك (`04-msi-installing.png`).
+   - ✅ التثبيت اشتغل (`04-msi-installing.png`).
+   - ⚠️ أثناء التثبيت: `licenseinit.exe` (أداة الترخيص) فشلت:
+     **"MSVCR90.dll was not found"** (`05-licenseinit-msvcr90-missing.png`).
+     السبب: مكتبة Visual C++ 2008 x64 ما متثبّتة.
+   - ⚠️ الـ MSI حاول يثبّت `vcredist_x64.exe` (VC++ 2008 x64)، وده كمان **غلاف 32-bit**،
+     فطلع "Machine Type Mismatch" (`06-vcredist-x64-32bit-mismatch.png`).
+   - ✅ **"InstallShield Wizard Completed": SPSS 25 اتثبّت** في
+     `C:\Program Files\IBM\SPSS\Statistics\25\` (`07-msi-install-completed.png`).
+   - ⏳ الخطوة الجاية: تثبيت VC++ 2008 x64 بطريقة 64-bit، وبعدها تشغيل Java و `stats.exe`.
 
 ## الخطة المستقبلية لتشغيل SPSS 25 على Kush
 
