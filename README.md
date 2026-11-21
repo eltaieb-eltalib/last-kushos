@@ -103,13 +103,28 @@ This repo contains **only the files changed from ReactOS master commit
    `QueryUnbiasedInterruptTime(Precise)`، `RtlQueryPerformanceCounter`، `Wer*RuntimeExceptionModule`…
 
 **الخطوات:**
-- **أ.** بناء Kush بـ `DLL_EXPORT_VERSION=0x600` (Vista) في مجلد بناء منفصل، ونشوف كم دالة اتحلّت. ⏳ شغّال
+- **أ.** ⏳ بناء Kush بـ `DLL_EXPORT_VERSION=0x600` (Vista) في مجلد بناء منفصل (شغّال).
 - **ب.** ✅ تصليح `sdk/lib/apisets/apisets.table.c`: علامة `APISET_WIN10` اتضافت لـ **332** API set كانت
   Win7/8/8.1 بس (ويندوز 10 بيدعمها)، و **9** اتحوّلت للمكتبة الصحيحة (registry و security و sddl ←
   `advapi32`، و version ← `version.dll`، و winrt و winrt-string و winrt-error ← `combase.dll`، و psapi ←
   `psapi.dll`)، واتضاف `api-ms-win-core-libraryloader-l1-2-1` و `api-ms-win-core-realtime-l1-1-1`.
   الجدول لسه مرتّب (1111 مدخل، فحص الترتيب بيمر).
-- **ج.** كتابة الدوال الما موجودة (في `kernel32`/`kernelbase_ros`/`ntdll`).
+- **ج.** ⏳ كتابة الدوال الما موجودة (الكود اترفع، البناء والتجربة جاريين):
+  - `dll/win32/kernel32/kush/kush_win8.c` (جديد): **31 دالة** ويندوز 7/8/10 مبنية على دوال Kush الموجودة:
+    `CreateFile2`، `CopyFile2`، `CreateEventExW/A`، `CreateWaitableTimerExW/A`، `SetWaitableTimerEx`،
+    `WaitOnAddress`، `WakeByAddressSingle/All`، `TryAcquireSRWLockShared`، `SetDefaultDllDirectories`،
+    `AddDllDirectory`، `RemoveDllDirectory`، `Initialize/Update/DeleteProcThreadAttributeList`،
+    `Get/SetProcessMitigationPolicy`، `Get/SetThreadInformation`، `SetFileInformationByHandle`،
+    `GetLogicalProcessorInformationEx`، `FlushProcessWriteBuffers`، `GetCurrentPackageFullName/Id`،
+    `QueryUnbiasedInterruptTime(Precise)`، `QueryInterruptTimePrecise`، `Wer(Un)RegisterRuntimeExceptionModule`.
+    الحاجات الما موجودة في Kush أصلًا (packages، mitigation policies، WER) بترجع نفس نتيجة ويندوز لما
+    الخاصية مقفولة.
+  - `kernel32.spec`: الدوال الجديدة بتتصدّر، و **68 دالة** فايرفوكس محتاجها والكود بتاعها موجود اتشال منها
+    شرط الإصدار (SRW locks، thread pool، `InitOnce*`، `CompareStringEx`، `GetTickCount64`،
+    `GetSystemTimePreciseAsFileTime`، `K32EnumProcessModules`…).
+  - `ntdll.spec` + `rtl/libsupp.c`: `RtlTryAcquireSRWLockExclusive` اتصدّرت، واتكتبت
+    `RtlQueryPerformanceCounter` و `RtlQueryPerformanceFrequency`.
+  - البناء بـ `DLL_EXPORT_VERSION=0x600` (Vista) عشان دوال `-version=0x600+` تتصدّر.
 - **د.** تصنيف `firefox.exe` كويندوز 10 تلقائيًا (بدل `__COMPAT_LAYER`).
 - **هـ.** نفس الشي لـ `xul.dll` والمكتبات اللي فايرفوكس بيحمّلها بعدين، لحدي ما النافذة تفتح.
 
