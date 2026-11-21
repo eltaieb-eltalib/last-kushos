@@ -94,7 +94,7 @@ This repo contains **only the files changed from ReactOS master commit
 
 ## تقرير تجربة SPSS 25 (64-bit) على Kush 1.1
 
-**النتيجة الحالية: SPSS 25 اتثبّت، وفتح مرة واحدة بواجهته كاملة** (شاشة البداية + SPSS Statistics Viewer، `15-spss25-viewer-opened-no-license.png`)، **لكن التجمّد بيرجع في معظم المرات.** لقينا وصلّحنا سببين حقيقيين في الـ kernel (تحت، الخطوة 9 و 10)، ولسه في سبب تالت ما اتعرف (الخطوة 11).
+**النتيجة: SPSS 25 بيشتغل على Kush 1.1 ✅** بالرخصة: شاشة البداية، وSPSS Statistics Viewer، و**Data Editor** بكل القوائم (Analyze، Graphs…)، و"IBM SPSS Statistics Processor is ready" (`24-spss25-data-editor-works.png`). المطلوب: تصليحات الـ kernel (الخطوات 9 و 10) + `IBM_JAVA_OPTIONS=-Xint` (الخطوة 13).
 
 بيئة التجربة: Kush 1.1 مبني من `main` (ReactOS `344ebfe5` + تعديلات Kush)،
 amd64 Release، مثبّت على قرص 20 GB (FAT32) في QEMU (بدون KVM، 3 GB RAM).
@@ -112,10 +112,11 @@ InstallShield، 735 MB)، اتوصّل للنظام كـ CD (`D:`) واتشغّ�
 | 5 | `licenseinit.exe`: "MSVCR90.dll was not found" | مكتبة VC++ 2008 x64 ما متثبّتة، لأن `vcredist_x64.exe` غلاف 32-bit وفشل (Machine Type Mismatch) | `vc_red.msi` اتثبّت لكن ما سجّل في WinSxS، فاستخدمنا private assemblies (`tools/make_vc90_private.py`) | اتحلّت ✅ (CRT + MFC + ATL + OpenMP) |
 | 6 | الـ MSI بيتخطّى custom actions بنسخة 32-bit (`ISSELFREG.DLL`، `ISSetup.dll`، `IsChainPackages.dll`) | `msi.dll` في ReactOS amd64 ما بيقدر يشغّل DLLs بنسخة 32-bit (ما في WoW64) | تسجيل مكونات COM يدويًا بـ `regsvr32` (64-bit)، أو WoW64 على المدى الطويل | مفتوح ❌ |
 | 7 | **Fatal System Error 0x1E** أثناء تثبيت `vc_red.msi` من الـ CD | خطأ في الـ kernel (exception `0x80000016`) بعد `ole32` ما قدر يقفل الملف على الـ CD (error 158) | تشخيص: بيحصل بس لما الـ CD يتغيّر والنظام شغّال (`0x80000016` = `STATUS_VERIFY_REQUIRED` ما اتعالج في amd64). حل مؤقت: وصّل القرص قبل الإقلاع. الحل الدائم: تصليح معالجة verify في cdfs/kernel | اتشخّص ✅ / التصليح مفتوح |
+| 9 | SPSS بياخد 98% CPU وما بيفتح (سطح المكتب شكله متجمّد) | حلقة لا نهائية في thread بتاع Java JIT (`j9jit28.dll`) | `IBM_JAVA_OPTIONS=-Xint` في `hivesys.inf` | **اتحلّت ✅** |
 | 8 | سطح المكتب بيتجمّد بعد ما `stats.exe` يبدأ (نافذة SPSS ما بتترسم) | **deadlock في الـ kernel (Mm):** Java J9 بيعمل `VirtualProtect` على الـ shared classes cache (ملف memory-mapped)، و `MmProtectSectionView` بياخد page fault وهو ماسك الـ address space lock، وبقية الـ threads (منها thread الواجهة) بتقيف على نفس الـ lock | `IBM_JAVA_OPTIONS=-Xshareclasses:none` كمتغيّر نظام في `boot/bootdata/hivesys.inf` | **اتحلّت ✅** (الحل الجذري في الـ kernel في الخطة) |
 | 4 | **"Machine Type Mismatch"**: `The image file ...SPSS_Statistics_25_win64.exe is valid, but is for a machine type other than the current machine` | برنامج التثبيت (InstallShield bootstrapper) هو **32-bit (PE32 / i386)** رغم إن SPSS نفسه 64-bit، و ReactOS amd64 **ما فيه WoW64** فما بيشغّل أي برنامج 32-bit | اتجاوزناه: استخرجنا حزمة الـ MSI الـ 64-bit وثبّتناها بـ `msiexec` (المحاولة 2 تحت) | اتجاوزناه ✅ |
 
-### المحاولة 2: تثبيت حزمة الـ MSI الـ 64-bit مباشرة: SPSS اتثبّت ✅، الواجهة فتحت مرة ⚠️
+### المحاولة 2: تثبيت حزمة الـ MSI الـ 64-bit مباشرة: SPSS 25 اتثبّت واشتغل ✅
 
 1. استخرجت حزمة الـ MSI من برنامج التثبيت بأداة `tools/isx_extract.py`
    (نسخة Python من ISx لصيغة InstallShield "ISSetupStream"):
@@ -237,6 +238,19 @@ InstallShield، 735 MB)، اتوصّل للنظام كـ CD (`D:`) واتشغّ�
       المكتب ما بيترسم. ده بطيء جدًا هنا لأن QEMU بيحاكي المعالج بالـ software (TCG، بدون KVM)،
       وعلى جهاز حقيقي المفروض يكون أسرع بكتير. لسه محتاج نتأكد إن الواجهة بتفتح في النهاية.
 
+13. **الحل النهائي للتجمّد: إيقاف الـ JIT بتاع Java (`-Xint`).**
+    | الفحص | النتيجة |
+    |-------|---------|
+    | عينات RIP + حالة الـ threads (gdb) | thread 880 حالته **Running** ووقته في user mode **73,693 tick (~19 دقيقة)**، والـ RIP جوّا `j9jit28.dll` (0x20e0000–0x2b50000)، وبقية الـ threads منتظرة عادي. والذاكرة ثابتة 29 MB، يعني **حلقة لا نهائية في الـ JIT** مش تقدّم |
+    | إنهاء `stats.exe` من Task Manager | CPU نزل لـ 2% وسطح المكتب رجع طبيعي (`20-...png`) |
+    | `set IBM_JAVA_OPTIONS=-Xint` وتشغيل SPSS تاني | شاشة البداية بعد ~3 دقايق (`21-xint-splash.png`)، وبعدها **Viewer فتح بكل القوائم و"Processor is ready"** و CPU 1-2% (`22-...png`) |
+    | الرخصة (`lservrc`) | ✅ "Your temporary usage period for IBM SPSS Statistics will expire in 3327 days" (`23-license-active-3327-days.png`) |
+    | Data Editor | ✅ Untitled1 [DataSet0] فتح بـ Data View و Variable View (`24-spss25-data-editor-works.png`) |
+    - **التطبيق الدائم:** `boot/bootdata/hivesys.inf` بقى بيضيف `IBM_JAVA_OPTIONS=-Xint` كمتغيّر نظام
+      (بدل `-Xshareclasses:none` اللي ما كفى). `-Xint` بيخلّي Java أبطأ، لكنه شغّال.
+    - رسالة "An unknown file type is specified on the command line: ...stats.exe" سببها إني شغّلته بـ
+      `start stats.exe` من `cmd` (المسار فيه مسافات)، وما بتأثّر على حاجة.
+
 **ملاحظة عن ملف الرخصة:** ملف التفعيل (`lservrc`) اتثبّت في الـ VM بس للتجربة، و**ما اترفع للمستودع**،
 لأن المستودع عام وأي زول يقدر ينسخ الرخصة.
 
@@ -254,7 +268,8 @@ InstallShield، 735 MB)، اتوصّل للنظام كـ CD (`D:`) واتشغّ�
 | تثبيت حزمة الـ MSI (x64) | ✅ اتثبّت (مع تخطّي custom actions بنسخة 32-bit) |
 | مكتبات VC++ 2008 x64 | ✅ اتحلّت بـ private assemblies |
 | `stats.exe` يبدأ | ✅ بدأ، والنافذة اتعملت |
-| واجهة SPSS تظهر وتشتغل | ⚠️ فتحت مرة واحدة كاملة. بعد تصليح Mm والساعة، لسه الشاشة بتقيف (الخطوة 11) |
+| واجهة SPSS تظهر وتشتغل | ✅ مع `-Xint`: Viewer + Data Editor + الرخصة شغّالين |
+| حلقة لا نهائية في Java JIT | ✅ اتجاوزناها بـ `-Xint` (الحل الجذري في الخطة) |
 | deadlock في Mm (`region.c`) | ✅ اتصلّح، والـ debugger أكّد |
 | ساعة النظام بتموت | ✅ اتصلّحت (تقليل تتبعات KUSH-DBG) |
 
@@ -263,13 +278,13 @@ InstallShield، 735 MB)، اتوصّل للنظام كـ CD (`D:`) واتشغّ�
 المراحل القديمة **اتنفّذت**: استخراج الـ MSI وتثبيته، وحل مكتبات VC++ 2008، وحل تجمّد الشاشة. SPSS 25 بيفتح.
 الخطوات الجاية مرتّبة حسب الأولوية:
 
-### المرحلة 1: الحل الجذري للـ deadlock في Mm (مشكلة #8)
-- الحل الحالي (`-Xshareclasses:none`) بيتجاوز المشكلة. الحل الجذري في
-  `ntoskrnl/mm/section.c` (`MmProtectSectionView` / `MmAlterViewAttributes`) و
-  `ntoskrnl/mm/mmfault.c` (`MmNotPresentFault`): ما ناخد page fault على عنوان user وإحنا
-  ماسكين `AddressCreationLock`، أو نخلّي `MmNotPresentFault` يعرف إن الـ thread ماسك الـ lock
-  أصلًا (زي ما `FromMdl` بيعمل). بعدها نشيل `IBM_JAVA_OPTIONS` من `hivesys.inf`.
-- بعد ما ترخيص SPSS يتثبّت: نجرب فتح ملف `.sav` وتحليل Frequencies (معيار النجاح).
+### المرحلة 1: إرجاع الـ JIT (عشان SPSS يبقى أسرع)
+- `-Xint` بيشغّل Java بالـ interpreter بس، وده أبطأ. الخطوة الجاية نحدّد ليه الـ JIT بيلف:
+  نطلّع `j9jit28.dll` ونعمل disassemble للعنوان `j9jit28.dll+0x67764f` اللي الـ thread واقف فيه،
+  ونشوف بينتظر في شنو (غالبًا API في ReactOS بترجع قيمة غلط، زي معلومات المعالج أو الذاكرة).
+- نجرب خيارات أخف من `-Xint`: `-Xjit:disableAsyncCompilation` أو `-Xnoaot` أو `-Xjit:count=0`.
+- `-Xshareclasses:none` ما بقى محتاج، لأن `region.c` اتصلّح.
+- بعد كده: نفتح ملف `.sav` ونعمل Frequencies (معيار النجاح الكامل).
 
 ### المرحلة 2: مكونات COM اللي ما اتسجّلت (مشكلة #6)
 - نطلع قائمة الملفات اللي كان `ISSELFREG.DLL` المفروض يسجّلها (جدول `ISSelfReg` في
