@@ -1508,10 +1508,15 @@ VOID NVMeSetFeaturesCompletion(
     if (pAE->DriverState.InterruptCoalescingSet == FALSE &&
         pNVMeCmd->CDW0.OPC == ADMIN_SET_FEATURES        &&
         pSetFeaturesCDW10->FID == INTERRUPT_COALESCING ) {
+        /*
+         * Kush 1.1: Interrupt Coalescing is optional (NVMe spec); many SSDs and
+         * QEMU reject it with Invalid Field. Do not fail the adapter for that,
+         * just continue without coalescing.
+         */
         if (pCplEntry->DW3.SF.SC != 0) {
-            NVMeDriverFatalError(pAE,
-                                (1 << START_STATE_INT_COALESCING_FAILURE));
-        } else {
+            StorPortDebugPrint(INFO, "NVMe: interrupt coalescing not supported (SC 0x%x), continuing\n", pCplEntry->DW3.SF.SC);
+        }
+        {
             pAE->DriverState.InterruptCoalescingSet = TRUE;
 
             /* Reset the counter and keep tihs state to set more features */
@@ -1521,6 +1526,8 @@ VOID NVMeSetFeaturesCompletion(
     } else if (pNVMeCmd->CDW0.OPC == ADMIN_SET_FEATURES &&
                pSetFeaturesCDW10->FID == NUMBER_OF_QUEUES) {
         if (pCplEntry->DW3.SF.SC != 0) {
+            StorPortDebugPrint(INFO, "NVMe: Set Features(Number of Queues) failed SCT 0x%x SC 0x%x CDW11 0x%08x\n",
+                               pCplEntry->DW3.SF.SCT, pCplEntry->DW3.SF.SC, *(PULONG)&pNVMeCmd->CDW11);
             NVMeDriverFatalError(pAE,
                                 (1 << START_STATE_QUEUE_ALLOC_FAILURE));
         } else {
@@ -2379,10 +2386,19 @@ BOOLEAN NVMeAllocQueueFromAdapter(
          * supported by the controller are the variables to determine how
          * many queues to create.
          */
-        pSetFeaturesCDW11->NCQR = min(pAE->ResMapTbl.NumActiveCores,
-                                      pAE->ResMapTbl.NumMsiMsgGranted) - 1;
-        pSetFeaturesCDW11->NSQR = min(pAE->ResMapTbl.NumActiveCores,
-                                      pAE->ResMapTbl.NumMsiMsgGranted) - 1;    }
+        /*
+         * Kush 1.1: without MSI (INTx line interrupt, NumMsiMsgGranted == 0) this
+         * computed 0 - 1 = 0xFFFF queues and the controller rejected the command
+         * (Invalid Field). There is always at least one interrupt to use.
+         */
+        {
+            ULONG NumQueues = min(pAE->ResMapTbl.NumActiveCores,
+                                  max(pAE->ResMapTbl.NumMsiMsgGranted, 1));
+            if (NumQueues == 0)
+                NumQueues = 1;
+            pSetFeaturesCDW11->NCQR = (USHORT)(NumQueues - 1);
+            pSetFeaturesCDW11->NSQR = (USHORT)(NumQueues - 1);
+        }    }
 
     /* Now issue the command via Admin Doorbell register */
     return ProcessIo(pAE, pNVMeSrbExt, NVME_QUEUE_TYPE_ADMIN, FALSE);

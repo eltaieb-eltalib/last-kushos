@@ -85,7 +85,7 @@ This repo contains **only the files changed from ReactOS master commit
 | HDD/SSD بنظام SATA (AHCI) | `storahci` (Kush فعّله) | ✅ |
 | HDD/SSD بنظام IDE | `pciide` + `uniata` + `atapi` | ✅ |
 | فلاشات وهاردسكات USB | `usbstor` | ✅ |
-| **SSD بنظام NVMe** | **ما في** | ❌ |
+| **SSD بنظام NVMe** | **ما في** ← اتضاف `nvme.sys` (المرحلة 2) | ❌ ← ✅ |
 | تاتشباد I2C (لابتوبات حديثة) | ما في (`hidi2c`) | ❌ |
 
 ### المرحلة 1: رجفة الماوس (الماوس بيهتز في مكانه وبيقفز) ✅
@@ -112,7 +112,7 @@ This repo contains **only the files changed from ReactOS master commit
 | تحريك الماوس للركن ثم +200 يمين و +100 تحت | ✅ المؤشر وصل (200، 100) بالضبط، ما في قفز (`docs/drivers/01-mouse-after-fix-exact-position.png`) |
 | الرجفة نفسها | ⏳ ما بتظهر في QEMU (الماوس المحاكي ما بيضيّع bytes)، **التأكيد النهائي على جهاز الـ Acer** |
 
-### المرحلة 2: تعريف NVMe (للـ SSD من نوع NVMe M.2) ⏳
+### المرحلة 2: تعريف NVMe (للـ SSD من نوع NVMe M.2): القرص بيتعرّف ✅
 
 **المصدر:** تعريف **OpenFabrics Alliance NVMe for Windows** (OFA nvmewin، رخصة BSD من Intel و IDT و LSI)
 من `github.com/gigaherz/nvmewin`. ده StorPort miniport (نفس نوع `storahci`)، وحطيناه في
@@ -131,12 +131,22 @@ This repo contains **only the files changed from ReactOS master commit
 | `nvme.rc` بيضمّن ملف MOF مترجم (`.bmf`) | `nvme.rc` جديد بنمط ReactOS (الأصلي محفوظ في `nvme_ofa_original.rc.txt`) |
 | `StorPortQuerySystemTime` و `memcpy_s` و `ScsiPortWmi*` ما بتتربط | `kush_compat.c` (WMI بيرجع "غير مدعوم"، والتخزين ما محتاجه) |
 
-**الفحص:**
-| الفحص | النتيجة |
-|-------|---------|
-| بناء `nvme.sys` | ✅ اتبنى (168 KB) |
-| تسجيله في النظام (`hivesys.inf`، `txtsetup.sif`) | ⏳ الخطوة الجاية |
-| تجربته على قرص NVMe في QEMU (`-device nvme`) | ⏳ |
+**التسجيل في النظام:**
+- `txtsetup.sif`: نسخ `nvme.sys`، و `PCI\CC_010802 = nvme` (فئة NVMe: class 01، subclass 08، prog-if 02)، و `nvme = nvme.sys` في `[SCSI.Load]`.
+- `hivesys.inf`: `CriticalDeviceDatabase\PCI#CC_010802` → `nvme`، و service `nvme` (Start=0، Group "SCSI Miniport").
+
+**التجربة: برنامج تثبيت Kush في QEMU مع قرص NVMe بس (`-device nvme`، 8 GB)، وكل مشكلة وحلها:**
+| # | النتيجة / سجل الـ serial | السبب | التصليح |
+|---|--------------------------|-------|---------|
+| 1 | ❌ "Setup could not find a harddisk" (`docs/drivers/02-nvme-setup-no-disk-before.png`)، والسجل وقف عند `NVMeEnumNumaCores: Failed to retrieve number of group` | StorPort بتاع Kush ما بيطبّق `StorPortExtendedFunction` لمجموعات المعالجات و NUMA وغيرها | `storport.c`: أضفت `GetCurrentProcessorNumber` و `GetActiveGroupCount` و `GetGroupAffinity` و `GetActiveNodeCount` و `GetNodeAffinity` و `GetHighestNodeNumber` و `AllocateContiguousMemorySpecifyCacheNode` و `FreeContiguousMemorySpecifyCache` و `FreeTimer` و `Acquire/ReleaseMSISpinLock` |
+| 2 | ❌ STOP 0x7E في `storport.sys!PortFdoPnp+0x331` | `IoConnectInterruptEx` في الـ kernel بيرجع نجاح لـ MSI **من غير ما يعمل حاجة** ("UNIMPLEMENTED")، و StorPort بيقرا جدول MSI وهو NULL. **(الباق ده كان ممكن يضرب `storahci` كمان)** | `fdo.c`: لو الجدول NULL ده "ما في MSI"، وبنرجع لـ line interrupt عادي |
+| 3 | ❌ `NVMeDriverFatalError` error 0x2 في state 37 (Set Features) | الـ controller رفض **Interrupt Coalescing** (اختياري في مواصفات NVMe)، والتعريف بيعتبره خطأ قاتل | `nvmeInit.c`: بقى تحذير والتشغيل بيكمّل |
+| 4 | ❌ error 0x4 (`QUEUE_ALLOC_FAILURE`)، و `CDW11 = 0xFFFFFFFF` | بدون MSI (`Msg granted=0`)، عدد الـ queues = `min(cores, 0) - 1` = **65535**، فالـ controller رفض | `nvmeInit.c`: أقل عدد 1 (interrupt واحد) |
+| 5 | ✅ الـ controller اشتغل: admin queues، RDY، Identify للـ controller والـ namespace، و I/O queue، و `NVMeStartComplete`، و `StorPortReady`. بعدها ❌ النظام وقف في DPC جوّا `StorPortExtendedFunction` ← `KeSetTimerEx` | `ExtFunctionRequestTimer` بيدّي `KeSetTimer` وقت **موجب**، وده تاريخ **مطلق** (1601)، فالـ timer بيضرب فورًا كل مرة، والتعريف بيعيد تشغيله كل ثانية من جوّا الـ callback: حلقة DPC بلا نهاية | `storport.c`: الوقت بقى سالب (نسبي) |
+| 6 | ❌ STOP 0x7E في `storport.sys!PortPdoIssueRequest` عند أول قراءة من القرص | `DmaAdapter` = NULL: StorPort بيعمله بس جوّا `StorPortGetUncachedExtension`، وتعريف NVMe ما بيناديها | `fdo.c`: إنشاء الـ DMA adapter بعد `HwFindAdapter` (PASSIVE_LEVEL) من `PortConfig` |
+| 7 | ✅ **REPORT LUNS و INQUIRY و READ CAPACITY اشتغلوا** (`LastLBA=0xffffff`، 512 byte = 8 GB)، و**برنامج التثبيت شاف القرص**: "8189 MB Harddisk 0 [RAW]"، "Unpartitioned space 8188 MB" (`docs/drivers/03-nvme-setup-disk-found.png`) | | |
+
+**الحالة:** ✅ تعريف NVMe بيتعرّف على القرص في برنامج التثبيت. ⏳ الخطوة الجاية: تهيئة القرص وتثبيت Kush عليه وتشغيله منه (تجربة الكتابة والقراءة الكاملة)، وبعدها التجربة على جهاز حقيقي.
 
 ## Known notes
 

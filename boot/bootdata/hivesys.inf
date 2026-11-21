@@ -83,6 +83,10 @@ HKLM,"SYSTEM\CurrentControlSet\Control\CriticalDeviceDatabase\PCI#CC_0104","Clas
 HKLM,"SYSTEM\CurrentControlSet\Control\CriticalDeviceDatabase\PCI#CC_0106","Service",0x00000000,"storahci"
 HKLM,"SYSTEM\CurrentControlSet\Control\CriticalDeviceDatabase\PCI#CC_0106","ClassGUID",0x00000000,"{4D36E96A-E325-11CE-BFC1-08002BE10318}"
 
+; Kush 1.1: NVMe SSDs (OpenFabrics NVMe StorPort miniport)
+HKLM,"SYSTEM\CurrentControlSet\Control\CriticalDeviceDatabase\PCI#CC_010802","Service",0x00000000,"nvme"
+HKLM,"SYSTEM\CurrentControlSet\Control\CriticalDeviceDatabase\PCI#CC_010802","ClassGUID",0x00000000,"{4D36E97B-E325-11CE-BFC1-08002BE10318}"
+
 ; Some HighPoint PATA controllers report PCI class as a "Mass storage controller [0180]" in native mode
 HKLM,"SYSTEM\CurrentControlSet\Control\CriticalDeviceDatabase\PCI#VEN_1103&DEV_0004","Service",0x00000000,"pciide"
 HKLM,"SYSTEM\CurrentControlSet\Control\CriticalDeviceDatabase\PCI#VEN_1103&DEV_0004","ClassGUID",0x00000000,"{4D36E96A-E325-11CE-BFC1-08002BE10318}"
@@ -2061,6 +2065,12 @@ HKLM,"SYSTEM\CurrentControlSet\Services\storahci","Group",0x00000000,"Primary Di
 HKLM,"SYSTEM\CurrentControlSet\Services\storahci","ImagePath",0x00020000,"system32\drivers\storahci.sys"
 HKLM,"SYSTEM\CurrentControlSet\Services\storahci","Start",0x00010001,0x00000000
 HKLM,"SYSTEM\CurrentControlSet\Services\storahci","Type",0x00010001,0x00000001
+; Kush 1.1: NVMe StorPort miniport
+HKLM,"SYSTEM\CurrentControlSet\Services\nvme","ErrorControl",0x00010001,0x00000001
+HKLM,"SYSTEM\CurrentControlSet\Services\nvme","Group",0x00000000,"SCSI Miniport"
+HKLM,"SYSTEM\CurrentControlSet\Services\nvme","ImagePath",0x00020000,"system32\drivers\nvme.sys"
+HKLM,"SYSTEM\CurrentControlSet\Services\nvme","Start",0x00010001,0x00000000
+HKLM,"SYSTEM\CurrentControlSet\Services\nvme","Type",0x00010001,0x00000001
 
 ; USB composite generic parent
 HKLM,"SYSTEM\CurrentControlSet\Services\usbccgp","ErrorControl",0x00010001,0x00000001
