@@ -75,12 +75,12 @@ This repo contains **only the files changed from ReactOS master commit
 |---------|--------|-----------------|
 | SPSS 25 على Kush | ✅ بيثبت ويفتح ملفات `.sav` ويعمل تحليل (QEMU) | `ntoskrnl/mm/region.c`، `section.c`، `ARM3/virtual.c`، `vadnode.c`، `boot/bootdata/hivesys.inf` (`IBM_JAVA_OPTIONS=-Xint`) |
 | رجفة الماوس | ✅ اتصلّحت في الكود، ⏳ محتاجة تأكيد على جهاز الـ Acer | `drivers/input/i8042prt/mouse.c`، `registry.c` |
-| تعريف NVMe | ✅ القرص بيتعرّف وبيتكتب عليه في برنامج التثبيت (QEMU)، ⏳ الإقلاع من NVMe لسه | `drivers/storage/port/nvme/`، `drivers/storage/port/storport/storport.c`، `fdo.c`، `txtsetup.sif`، `hivesys.inf` |
+| تعريف NVMe | ✅ القرص بيتعرّف، والتثبيت عليه والإقلاع منه شغّالين (QEMU)، ⏳ التجربة على جهاز حقيقي | `drivers/storage/port/nvme/`، `drivers/storage/port/storport/storport.c`، `fdo.c`، `txtsetup.sif`، `hivesys.inf` |
 | الكيبورد والماوس PS/2 و USB، وكرت الشاشة (VBE/GOP)، و SATA/IDE/USB | ✅ موجودين في النظام من قبل | (ReactOS) |
 | تاتشباد I2C | ❌ ما في تعريف (`hidi2c`) | — |
 
 **الخطوات الجاية بالترتيب:**
-1. نكمّل تثبيت Kush على قرص NVMe في QEMU ونقلع منه (`-device nvme` مع `bootindex`).
+1. ✅ ~~نكمّل تثبيت Kush على قرص NVMe في QEMU ونقلع منه~~ (اتعمل).
 2. نجرب على جهاز الـ Acer: رجفة الماوس، والـ SSD (SATA أو NVMe).
 3. نرجّع الـ JIT بتاع Java (نشيل `-Xint`) بعد ما نعرف سبب الحلقة في `j9jit28.dll`.
 4. نصلّح فتح ملف `.sav` من سطر الأوامر (crash في `MSVCR100.dll`).
@@ -133,7 +133,7 @@ This repo contains **only the files changed from ReactOS master commit
 | تحريك الماوس للركن ثم +200 يمين و +100 تحت | ✅ المؤشر وصل (200، 100) بالضبط، ما في قفز (`docs/drivers/01-mouse-after-fix-exact-position.png`) |
 | الرجفة نفسها | ⏳ ما بتظهر في QEMU (الماوس المحاكي ما بيضيّع bytes)، **التأكيد النهائي على جهاز الـ Acer** |
 
-### المرحلة 2: تعريف NVMe (للـ SSD من نوع NVMe M.2): القرص بيتعرّف ✅
+### المرحلة 2: تعريف NVMe (للـ SSD من نوع NVMe M.2): شغّال، والنظام بيقلع من NVMe ✅
 
 **المصدر:** تعريف **OpenFabrics Alliance NVMe for Windows** (OFA nvmewin، رخصة BSD من Intel و IDT و LSI)
 من `github.com/gigaherz/nvmewin`. ده StorPort miniport (نفس نوع `storahci`)، وحطيناه في
@@ -169,7 +169,9 @@ This repo contains **only the files changed from ReactOS master commit
 
 | 8 | ✅ **الكتابة على NVMe شغّالة:** برنامج التثبيت عمل partition (MBR، FAT32، 8188 MB) وهيّأه، وبدأ ينسخ ملفات النظام (27% بعد 5 دقايق في QEMU) (`docs/drivers/04-nvme-setup-copying-files.png`) | | |
 
-**الحالة:** ✅ تعريف NVMe بيتعرّف على القرص، وبيقرا ويكتب عليه. ⏳ الخطوة الجاية: انتهاء النسخ، والإقلاع من قرص NVMe، وبعدها التجربة على جهاز حقيقي.
+| 9 | ✅ **النسخ خلص، والنظام أعاد التشغيل و قلع من قرص NVMe:** وصل للمرحلة التانية من التثبيت ("Welcome to the ReactOS Setup Wizard")، والشاشة مكتوب فيها `C:\ReactOS` (`docs/drivers/05-nvme-booted-installed-system.png`). السجل فيه `NVMeRunning: StorPortReady` **مرتين** (برنامج التثبيت + النظام المثبّت)، والنظام بيقرا ملفاته من `C:\ReactOS` وبيرسل أوامر FLUSH للقرص | | |
+
+**الحالة:** ✅ **تعريف NVMe شغّال بالكامل في QEMU:** بيتعرّف على القرص، وبيكتب ويقرا، وKush بيتثبّت على قرص NVMe و**بيقلع منه**. ⏳ الخطوة الجاية: التجربة على جهاز حقيقي فيه SSD من نوع NVMe.
 
 ## Known notes
 
