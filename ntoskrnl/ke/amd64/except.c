@@ -395,6 +395,26 @@ KiDispatchException(IN PEXCEPTION_RECORD ExceptionRecord,
                      (PVOID)StackLimit, (PVOID)StackBase,
                      (PVOID)ExceptionRecord->ExceptionInformation[0],
                      (PVOID)ExceptionRecord->ExceptionInformation[1]);
+
+            /* Delay-load failure (VcppException ERROR_MOD/PROC_NOT_FOUND):
+             * parameter 0 is a DelayLoadInfo; print the DLL and function. */
+            if ((ExceptionRecord->ExceptionCode == 0xC06D007E ||
+                 ExceptionRecord->ExceptionCode == 0xC06D007F) &&
+                ExceptionRecord->NumberParameters >= 1)
+            {
+                _SEH2_TRY
+                {
+                    PUCHAR Dli = (PUCHAR)ExceptionRecord->ExceptionInformation[0];
+                    PCSTR Dll = *(PCSTR*)(Dli + 0x18);
+                    ULONG ByName = *(PULONG)(Dli + 0x20);
+                    ULONG_PTR Proc = *(PULONG_PTR)(Dli + 0x28);
+                    if (ByName)
+                        DbgPrint("KUSH-EXC: delay-load %s!%s not found\n", Dll, (PCSTR)Proc);
+                    else
+                        DbgPrint("KUSH-EXC: delay-load %s!#%lu not found\n", Dll, (ULONG)Proc);
+                }
+                _SEH2_EXCEPT(EXCEPTION_EXECUTE_HANDLER) {} _SEH2_END;
+            }
         }
 
         /* Try second chance */
