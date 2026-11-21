@@ -69,6 +69,15 @@ This repo contains **only the files changed from ReactOS master commit
   boots to the Kush 1.1 desktop. Revert to `DefaultOS=LiveImg` once the
   bootvid race is fixed.
 
+## تجربة Firefox 160.0.1 (64-bit) على Kush 1.1 ⏳
+
+المصدر: `https://ftp.mozilla.org/pub/firefox/releases/160.0.1/win64/en-US/Firefox Setup 160.0.1.exe` (مجاني، 95.8 MB).
+
+| # | الفحص | النتيجة | الحل |
+|---|-------|---------|------|
+| 1 | نوع ملف التثبيت | `Firefox Setup 160.0.1.exe` هو **PE32 (32-bit، i386)، مضغوط بـ UPX** (غلاف NSIS)، يعني Kush الـ 64-bit (ما فيه WoW64) غالبًا حيرفضه زي SPSS | نفك الملف بدل ما نشغّله |
+| 2 | فك الملف بـ `7z x` | ✅ 76 ملف (362 MB)، ومنهم **`core/firefox.exe` بنسخة 64-bit (PE32+ x86-64)**، و `setup.exe` | ننسخ مجلد `core` لـ Kush ونشغّل `firefox.exe` مباشرة |
+
 ## ملخص الحالة (للمتابعة)
 
 | الموضوع | الحالة | المكان في الكود |
