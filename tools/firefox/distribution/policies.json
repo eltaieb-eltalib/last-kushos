@@ -1,6 +1,0 @@
-{
-  "policies": {
-    "HardwareAcceleration": false,
-    "DisableAppUpdate": true
-  }
-}

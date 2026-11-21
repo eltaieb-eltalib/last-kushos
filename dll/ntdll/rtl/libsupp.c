@@ -1020,13 +1020,18 @@ LdrpApisetVersion(VOID)
     {
         DWORD CompatVersion = RosGetProcessCompatVersion();
 
+        /* Kush 1.1: API sets are enabled for every process, system-wide. API set
+         * names (api-ms-*, ext-ms-*) are only resolved for programs that import
+         * them, so this cannot affect older programs. Before, only programs
+         * classified as Win7+ got them; modern apps whose manifest also lists
+         * Vista (e.g. Firefox) were classified as Vista (the lowest supportedOS)
+         * and failed to load without a per-program shim. The Win10 table is a
+         * superset of the Win7/8/8.1 contracts. */
         switch (CompatVersion)
         {
             case 0:
-                break;
             case _WIN32_WINNT_VISTA:
-                /* No apisets in vista yet*/
-                CachedApisetVersion = 0;
+                CachedApisetVersion = APISET_WIN10;
                 break;
             case _WIN32_WINNT_WIN7:
                 CachedApisetVersion = APISET_WIN7;
@@ -1045,8 +1050,7 @@ LdrpApisetVersion(VOID)
                 DPRINT1("Activating apisets for Win10\n");
                 break;
             default:
-                DPRINT1("Unknown version 0x%x\n", CompatVersion);
-                CachedApisetVersion = 0;
+                CachedApisetVersion = APISET_WIN10;
                 break;
         }
     }
