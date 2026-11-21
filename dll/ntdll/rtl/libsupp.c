@@ -1014,48 +1014,15 @@ RtlDosApplyFileIsolationRedirection_Ustr(IN ULONG Flags,
 static DWORD
 LdrpApisetVersion(VOID)
 {
-    static DWORD CachedApisetVersion = ~0u;
-
-    if (CachedApisetVersion == ~0u)
-    {
-        DWORD CompatVersion = RosGetProcessCompatVersion();
-
-        /* Kush 1.1: API sets are enabled for every process, system-wide. API set
-         * names (api-ms-*, ext-ms-*) are only resolved for programs that import
-         * them, so this cannot affect older programs. Before, only programs
-         * classified as Win7+ got them; modern apps whose manifest also lists
-         * Vista (e.g. Firefox) were classified as Vista (the lowest supportedOS)
-         * and failed to load without a per-program shim. The Win10 table is a
-         * superset of the Win7/8/8.1 contracts. */
-        switch (CompatVersion)
-        {
-            case 0:
-            case _WIN32_WINNT_VISTA:
-                CachedApisetVersion = APISET_WIN10;
-                break;
-            case _WIN32_WINNT_WIN7:
-                CachedApisetVersion = APISET_WIN7;
-                DPRINT1("Activating apisets for Win7\n");
-                break;
-            case _WIN32_WINNT_WIN8:
-                CachedApisetVersion = APISET_WIN8;
-                DPRINT1("Activating apisets for Win8\n");
-                break;
-            case _WIN32_WINNT_WINBLUE:
-                CachedApisetVersion = APISET_WIN81;
-                DPRINT1("Activating apisets for Win8.1\n");
-                break;
-            case _WIN32_WINNT_WIN10:
-                CachedApisetVersion = APISET_WIN10;
-                DPRINT1("Activating apisets for Win10\n");
-                break;
-            default:
-                CachedApisetVersion = APISET_WIN10;
-                break;
-        }
-    }
-
-    return CachedApisetVersion;
+    /* Kush 1.1: the API set table is enabled for every process, system-wide,
+     * and always at the newest (Win10) level, which is a superset of the
+     * Win7/8/8.1 contracts. API set names (api-ms-*, ext-ms-*) are only resolved
+     * for programs that import them, so older programs are unaffected.
+     * Previously the level followed the process compat version, which comes
+     * from the LOWEST supportedOS in the manifest: Firefox lists Win7..Win10,
+     * got the Win7 subset, and failed on api-ms-win-core-version-l1-1-1 unless a
+     * per-program shim was added. */
+    return APISET_WIN10;
 }
 
 NTSYSAPI
