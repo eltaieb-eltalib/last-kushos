@@ -164,7 +164,35 @@ D3DKMTOpenAdapterFromGdiDisplayName(_Inout_ D3DKMT_OPENADAPTERFROMGDIDISPLAYNAME
     }
 
     if (!DisplayDevice.DeviceName[0] || VidPnSourceId != Index)
-        return STATUS_INVALID_PARAMETER;
+    {
+        /* Kush 1.1: no exact match (seen with wined3d asking for \\.\DISPLAY1).
+         * Accept the canonical \\.\DISPLAYn form when display n exists. */
+        static LONG Logged;
+        const WCHAR *Name = unnamedParam1->DeviceName;
+        ULONG Number = 0;
+        if (!InterlockedExchange(&Logged, 1))
+        {
+            DisplayDevice.cb = sizeof(DisplayDevice);
+            for (Index = 0; EnumDisplayDevicesW(NULL, Index, &DisplayDevice, 0); Index++)
+            {
+                DbgPrint("KUSH-D3DKMT: display %lu = '%S' (asked '%S')\n", Index, DisplayDevice.DeviceName, Name);
+                DisplayDevice.cb = sizeof(DisplayDevice);
+            }
+        }
+        if (_wcsnicmp(Name, L"\\\\.\\DISPLAY", 11) != 0)
+            return STATUS_INVALID_PARAMETER;
+        for (Name += 11; *Name >= L'0' && *Name <= L'9'; Name++)
+            Number = Number * 10 + (*Name - L'0');
+        if (Number == 0 || *Name)
+            return STATUS_INVALID_PARAMETER;
+        VidPnSourceId = Number - 1;
+        if (VidPnSourceId != 0)
+        {
+            DisplayDevice.cb = sizeof(DisplayDevice);
+            if (!EnumDisplayDevicesW(NULL, VidPnSourceId, &DisplayDevice, 0))
+                return STATUS_INVALID_PARAMETER;
+        }
+    }
 
     D3DKMTEmuMakeLuid(VidPnSourceId, &AdapterLuid);
 
