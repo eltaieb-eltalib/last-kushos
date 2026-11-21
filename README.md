@@ -146,7 +146,9 @@ This repo contains **only the files changed from ReactOS master commit
 | 6 | ❌ STOP 0x7E في `storport.sys!PortPdoIssueRequest` عند أول قراءة من القرص | `DmaAdapter` = NULL: StorPort بيعمله بس جوّا `StorPortGetUncachedExtension`، وتعريف NVMe ما بيناديها | `fdo.c`: إنشاء الـ DMA adapter بعد `HwFindAdapter` (PASSIVE_LEVEL) من `PortConfig` |
 | 7 | ✅ **REPORT LUNS و INQUIRY و READ CAPACITY اشتغلوا** (`LastLBA=0xffffff`، 512 byte = 8 GB)، و**برنامج التثبيت شاف القرص**: "8189 MB Harddisk 0 [RAW]"، "Unpartitioned space 8188 MB" (`docs/drivers/03-nvme-setup-disk-found.png`) | | |
 
-**الحالة:** ✅ تعريف NVMe بيتعرّف على القرص في برنامج التثبيت. ⏳ الخطوة الجاية: تهيئة القرص وتثبيت Kush عليه وتشغيله منه (تجربة الكتابة والقراءة الكاملة)، وبعدها التجربة على جهاز حقيقي.
+| 8 | ✅ **الكتابة على NVMe شغّالة:** برنامج التثبيت عمل partition (MBR، FAT32، 8188 MB) وهيّأه، وبدأ ينسخ ملفات النظام (27% بعد 5 دقايق في QEMU) (`docs/drivers/04-nvme-setup-copying-files.png`) | | |
+
+**الحالة:** ✅ تعريف NVMe بيتعرّف على القرص، وبيقرا ويكتب عليه. ⏳ الخطوة الجاية: انتهاء النسخ، والإقلاع من قرص NVMe، وبعدها التجربة على جهاز حقيقي.
 
 ## Known notes
 
