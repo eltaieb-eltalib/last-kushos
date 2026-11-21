@@ -77,6 +77,9 @@ This repo contains **only the files changed from ReactOS master commit
 |---|-------|---------|------|
 | 1 | نوع ملف التثبيت | `Firefox Setup 160.0.1.exe` هو **PE32 (32-bit، i386)، مضغوط بـ UPX** (غلاف NSIS)، يعني Kush الـ 64-bit (ما فيه WoW64) غالبًا حيرفضه زي SPSS | نفك الملف بدل ما نشغّله |
 | 2 | فك الملف بـ `7z x` | ✅ 76 ملف (362 MB)، ومنهم **`core/firefox.exe` بنسخة 64-bit (PE32+ x86-64)**، و `setup.exe` | ننسخ مجلد `core` لـ Kush ونشغّل `firefox.exe` مباشرة |
+| 3 | تشغيل `Firefox Setup 160.0.1.exe` على Kush | ❌ **"Machine Type Mismatch"** (`docs/firefox/01-installer-machine-type-mismatch.png`)، زي ما توقعنا | الفك بـ 7z (الخطوة 2) |
+| 4 | `xcopy /E /I D:\core C:\Firefox` | ✅ 75 ملف اتنسخت | |
+| 5 | تشغيل `C:\Firefox\firefox.exe` | ❌ **"api-ms-win-core-version-l1-1-1.dll was not found"** (`docs/firefox/02-api-ms-win-core-version-missing.png`) | Firefox 160 محتاج ويندوز 10 أو أحدث، وبيستعمل مكتبات "API set" (`api-ms-win-*`) ناقصة في Kush. ⏳ الحل: نضيف الـ API sets الناقصة (forwarders لـ `version.dll` و `kernel32`/`kernelbase`) |
 
 ## ملخص الحالة (للمتابعة)
 
