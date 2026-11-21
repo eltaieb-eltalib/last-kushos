@@ -1760,6 +1760,10 @@ HKLM,"SYSTEM\CurrentControlSet\Control\Session Manager\Environment","Path",0x000
 HKLM,"SYSTEM\CurrentControlSet\Control\Session Manager\Environment","PATHEXT",0x00000002,".COM;.EXE;.BAT;.CMD"
 HKLM,"SYSTEM\CurrentControlSet\Control\Session Manager\Environment","TEMP",0x00020002,"%SystemRoot%\TEMP"
 HKLM,"SYSTEM\CurrentControlSet\Control\Session Manager\Environment","TMP",0x00020002,"%SystemRoot%\TEMP"
+; Kush 1.1: IBM J9 Java (SPSS Statistics 20+) - disable the shared classes cache.
+; J9 VirtualProtect()s its memory-mapped class cache, which deadlocks the amd64 Mm
+; (MmProtectSectionView/page fault on the address space lock) and freezes the whole desktop.
+HKLM,"SYSTEM\CurrentControlSet\Control\Session Manager\Environment","IBM_JAVA_OPTIONS",0x00000000,"-Xshareclasses:none"
 HKLM,"SYSTEM\CurrentControlSet\Control\Session Manager\Environment","windir",0x00020002,"%SystemRoot%"
 ;HKLM,"SYSTEM\CurrentControlSet\Control\Session Manager\Environment","SHIMENG_DEBUG_LEVEL",0x00000000,"4"
 ;HKLM,"SYSTEM\CurrentControlSet\Control\Session Manager\Environment","SHIM_DEBUG_LEVEL",0x00000000,"4"
