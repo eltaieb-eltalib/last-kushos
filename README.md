@@ -252,7 +252,31 @@ This repo contains **only the files changed from ReactOS master commit
     - ✅ **السبب الحقيقي:** النظام بيختار **أقل** إصدار في `supportedOS` من الـ manifest، وفايرفوكس بيكتب من Vista لحد
       Win10، فاتصنّف Vista، والـ API sets كانت مقفولة لـ Vista. الحل في `ntdll/rtl/libsupp.c`: **API sets بتتفعل لكل
       البرامج**. ده آمن، لأن أسماء `api-ms-*` بتتطبق بس على البرامج اللي بتطلبها.
-    - ⏳ التجربة: فايرفوكس من غير أي تعديل خاص بيه.
+    - ❌ التجربة الأولى: `api-ms-win-core-version-l1-1-1.dll was not found`
+      (`docs/firefox/12-system-wide-apiset-win7-subset.png`). **السبب:** الـ manifest بتاع Firefox 160 بيبدأ من
+      **Win7** مش Vista، فالنظام فعّل جدول Win7 بس، والعقد `version-l1-1-1` خاص بـ Win8+.
+    - ✅ **الحل:** `LdrpApisetVersion` بقت بترجع **جدول Win10 دايمًا لكل البرامج**، وده بيشمل كل عقود Win7/8/8.1.
+    - ⏳ التجربة التانية.
+
+  #### ملخص مشاكل فايرفوكس اليوم وحلولها (كلها على مستوى النظام)
+
+  | # | المشكلة | السبب الجذري | الحل (الملف) |
+  |---|---|---|---|
+  | 1 | `calling stub CreateWaitableTimerExW` رغم إنها اتكتبت | سطر `@ stub` قديم وسطر جديد لنفس الاسم في الـ spec | شيل 4 stubs مكررة، وإضافة `FlushProcessWriteBuffers` (`kernel32.spec`، `kush_win8.c`) |
+  | 2 | فايرفوكس بيقفل بكود 128 | csrss بيقتله بـ `STATUS_ABANDONED` بسبب exception `0xC06D007F` (فشل delay-load لـ `iphlpapi!NotifyIpInterfaceChange`) | 26 دالة ناقصة في 8 مكتبات (`iphlpapi/kush_iphlp.c`، `user32/kush/kush_touch.c`، `uxtheme/kush_panning.c`، `shell32/kush_shell.c`، `userenv/kush_appcontainer.c`، `advapi32`، `shlwapi`) |
+  | 3 | exception `0x80000100` | `@ stub` العادية بترمي exception ما بيتلغى | 6 دوال في `kernel32` (`GetApplicationRestartSettings`، cycle time…) |
+  | 4 | Rust panic: `system time before Unix epoch` | `GetSystemTimePreciseAsFileTime` كانت `STUB;` بس | كتابتها، ومعاها `ReOpenFile` و `RegisterApplicationRestart` (`kernel32/client`) |
+  | 5 | رسالة "no 3D acceleration" بتتكرر | بتظهر مرة في كل process | مرة واحدة لكل مستخدم (`wined3d/adapter_gl.c`) |
+  | 6 | `Failed to initialise output` آلاف المرات | جدول handles الـ D3DKMT (16 خانة) بيتملي | handles stateless (`gdi32_vista/d3dkmt.c`) |
+  | 7 | فايرفوكس ما بيستجيب | DXGI factory بيفشل (OpenGL ناقص)، والـ vsync بيعيده مع كل vblank | wined3d بيرجع لـ adapter no-3D (`wined3d/directx.c`) |
+  | 8 | فايرفوكس محتاج shim خاص بيه | النظام بيصنّف البرنامج بأقل إصدار في الـ manifest، وجدول الـ API sets بيتبع التصنيف | جدول API sets كامل لكل البرامج (`ntdll/rtl/libsupp.c`)، وشيل سطور فايرفوكس من `sysmain.xml` |
+
+  **أدوات التشخيص اللي اتضافت للنظام وبتنفع أي برنامج:**
+  - `KUSH-EXC` في `ntoskrnl/ke/amd64/except.c`: بيطبع أي exception يوصل للفرصة التانية، والموديول والـ RVA،
+    واسم الـ DLL والدالة لو فشل delay-load، وسبب `MOZ_CRASH` من `r8`.
+  - `tools/firefox_delayload_audit.py`: فحص جداول الـ delay-import لأي برنامج.
+  - `tools/breakpad_sym.py`: تحويل عنوان لاسم دالة بملفات رموز breakpad.
+  - طريقة الشغل مفصلة في `docs/firefox/autonomous-method-2026-11-21.json`.
 
 **الاستنتاج:** Firefox 160 **ما بيشتغل على Kush 1.1 هسي**. هو مبني لويندوز 10 وما فوق (Mozilla وقّفت دعم
 ويندوز 7 و 8 بعد Firefox 115)، و Kush بيقلّد Windows Server 2003 مع جزء من دوال Vista و 7. المشكلة ما
