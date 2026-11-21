@@ -267,7 +267,9 @@ This repo contains **only the files changed from ReactOS master commit
       وerf بـ series وكسر متصل، وgamma بـ Lanczos، وfenv على MXCSR). اتبنت بـ `-fno-builtin` عشان GCC ما يحوّلها
       لاستدعاء نفسها.
     - ✅ اختبار الدقة ضد glibc libm (`tools/ucrt_math_test.c`): أسوأ خطأ نسبي **6e-14**، و`lround(100)=100`.
-    - ⏳ التجربة في فايرفوكس.
+    - ✅ التجربة في فايرفوكس: كل تحذيرات الدوال الرياضية (`lround`، `cbrtf`، `fe*`) اختفت من السجل، وما فاضل غير
+      `WSCGetProviderInfo` (معلومات Winsock، مش ضرورية). فايرفوكس فتح عادي (`docs/firefox/14-firefox160-after-ucrt-math.png`).
+    - ⏳ الخطوة الجاية: زر "Continue" لسه بطيء في الاستجابة تحت المحاكاة، فمحتاج نقيس لو ده بطء بس ولا الضغطة ما بتوصل.
 
   #### ملخص مشاكل فايرفوكس اليوم وحلولها (كلها على مستوى النظام)
 
