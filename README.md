@@ -109,9 +109,9 @@ InstallShield، 735 MB)، اتوصّل للنظام كـ CD (`D:`) واتشغّ�
 | 1 | الـ Live CD بخيار "Live Environment" بيعطي شاشة زرقاء STOP 0x7E في `bootvid.dll` | بدون `/DEBUG` تتبعات KUSH-DBG ما بتشتغل، فالـ race في bootvid بيظهر | الخيار الافتراضي في `boot/bootdata/bootcd.ini` بقى `LiveImg_Debug` | اتصلّح ✅ (اتأكدنا في QEMU) |
 | 2 | النظام بعد التثبيت على الهارد بيقيف في شاشة سودا (الـ kernel عالق في bootvid، 640x480) | نفس سبب #1: `freeldr.ini` اللي بيكتبه الـ Setup بيختار `ReactOS` (بدون debug) | `base/setup/lib/bootsup.c`: الـ Setup بقى يخلّي `ReactOS_Debug` الافتراضي دايمًا | اتصلّح في الكود ✅ (التجربة اتعملت بتعديل `freeldr.ini` يدويًا وفتح سطح المكتب) |
 | 3 | النظام بيبلّغ عن "NT 5.2" (Windows Server 2003) | ReactOS بيقلّد Windows 2003 | `media/sdb/sysmain.xml`: برامج SPSS بتاخد version lie لويندوز 7 SP1 | مضاف، لكن ما وصلنا لمرحلة نجربه فيها |
-| 5 | `licenseinit.exe`: "MSVCR90.dll was not found" | مكتبة VC++ 2008 x64 ما متثبّتة، لأن `vcredist_x64.exe` غلاف 32-bit وفشل (Machine Type Mismatch) | نستخرج `vc_red.msi` من `vcredist_x64.exe` ونثبّته بـ `msiexec` | جاري ⏳ |
+| 5 | `licenseinit.exe`: "MSVCR90.dll was not found" | مكتبة VC++ 2008 x64 ما متثبّتة، لأن `vcredist_x64.exe` غلاف 32-bit وفشل (Machine Type Mismatch) | `vc_red.msi` اتثبّت لكن ما سجّل في WinSxS، فاستخدمنا private assemblies (`tools/make_vc90_private.py`) | CRT اتحلّت ✅، MFC جاري ⏳ |
 | 6 | الـ MSI بيتخطّى custom actions بنسخة 32-bit (`ISSELFREG.DLL`، `ISSetup.dll`، `IsChainPackages.dll`) | `msi.dll` في ReactOS amd64 ما بيقدر يشغّل DLLs بنسخة 32-bit (ما في WoW64) | تسجيل مكونات COM يدويًا بـ `regsvr32` (64-bit)، أو WoW64 على المدى الطويل | مفتوح ❌ |
-| 7 | **Fatal System Error 0x1E** أثناء تثبيت `vc_red.msi` من الـ CD | خطأ في الـ kernel (exception `0x80000016`) بعد `ole32` ما قدر يقفل الملف على الـ CD (error 158) | نجرب من `C:`. لو اتكرر، محتاج تحليل الـ stack في الـ kernel | جاري ⏳ |
+| 7 | **Fatal System Error 0x1E** أثناء تثبيت `vc_red.msi` من الـ CD | خطأ في الـ kernel (exception `0x80000016`) بعد `ole32` ما قدر يقفل الملف على الـ CD (error 158) | تشخيص: بيحصل بس لما الـ CD يتغيّر والنظام شغّال (`0x80000016` = `STATUS_VERIFY_REQUIRED` ما اتعالج في amd64). حل مؤقت: وصّل القرص قبل الإقلاع. الحل الدائم: تصليح معالجة verify في cdfs/kernel | اتشخّص ✅ / التصليح مفتوح |
 | 4 | **"Machine Type Mismatch"**: `The image file ...SPSS_Statistics_25_win64.exe is valid, but is for a machine type other than the current machine` | برنامج التثبيت (InstallShield bootstrapper) هو **32-bit (PE32 / i386)** رغم إن SPSS نفسه 64-bit، و ReactOS amd64 **ما فيه WoW64** فما بيشغّل أي برنامج 32-bit | اتجاوزناه: استخرجنا حزمة الـ MSI الـ 64-bit وثبّتناها بـ `msiexec` (المحاولة 2 تحت) | اتجاوزناه ✅ |
 
 ### المحاولة 2: تثبيت حزمة الـ MSI الـ 64-bit مباشرة (تجاوز مشكلة #4) — SPSS اتثبّت ✅، التشغيل جاري ⏳
@@ -143,7 +143,20 @@ InstallShield، 735 MB)، اتوصّل للنظام كـ CD (`D:`) واتشغّ�
    - ❌ **النظام وقع: `Fatal System Error 0x0000001E`** (KMODE_EXCEPTION_NOT_HANDLED)،
      exception `0x80000016` @ `0xFFFFF880759E2B9F`، بعد
      `ole32/filelockbytes.c: no mapping for error 158` (قراءة الـ MSI من الـ CD).
-   - ⏳ الخطوة الجاية: إعادة التشغيل وتثبيت `vc_red.msi` بعد نسخه لـ `C:`.
+   - من `C:` الـ MSI اشتغل من غير ما يقع، لكن **ما ثبّت VC90 في WinSxS**
+     (`C:\ReactOS\WinSxS` ما فيه `*vc90*`)، فـ `stats.exe` لسه بيقول
+     "MSVCR90.dll was not found" (`08-stats-exe-msvcr90.png`).
+5. **تشخيص الكراش 0x1E:** حصل مرتين في **نفس العنوان** `0xFFFFF880759E2B9F`،
+   والمرتين بعد ما **غيّرت الـ CD والنظام شغّال**. `0x80000016` = `STATUS_VERIFY_REQUIRED`
+   (الإشارة اللي بيرفعها درايفر الـ CD لما القرص يتغيّر)، والـ kernel في amd64 ما
+   بيعالجها. يعني **باق في Kush/ReactOS لتغيير الـ CD**، ما ليه علاقة بـ SPSS.
+   الحل المؤقت: وصّل القرص قبل الإقلاع.
+6. **حل MSVCR90 (private assembly):** `tools/make_vc90_private.py` بيبني مجلدات
+   `Microsoft.VC90.CRT/MFC/ATL/OpenMP/MFCLOC` من `vc_red.cab` بـ manifest نسخته
+   `9.0.21022.8` (النسخة اللي SPSS طالبها)، وبتتنسخ جوّا مجلد SPSS (`09-...png`).
+   - ✅ بعد CRT: الخطأ اتغيّر لـ `Could not find dependent assembly Microsoft.VC90.MFC`،
+     يعني CRT اتحلّت.
+   - ⏳ إضافة MFC/ATL/OpenMP وتشغيل `stats.exe` تاني.
 
 ## الخطة المستقبلية لتشغيل SPSS 25 على Kush
 
