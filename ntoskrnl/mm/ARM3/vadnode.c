@@ -300,7 +300,11 @@ MiInsertVadEx(
 
         /* Get the ending address, which is the last piece we need for the VAD */
         EndingAddress = StartingAddress + ViewSize - 1;
-        DbgPrint("KUSH-DBG MiInsertVadEx: search Result %d, StartingAddress %p, ViewSize %lu, EndingAddress %p\n", Result, (PVOID)StartingAddress, ViewSize, (PVOID)EndingAddress);
+        /* Kush 1.1: KUSH-DBG traces only while bootvid owns the display (the boot
+         * window where they hide the bootvid race). Afterwards they flood the serial
+         * debugger from every allocation and starve the RTC clock interrupt. */
+        if (InbvCheckDisplayOwnership())
+            DbgPrint("KUSH-DBG MiInsertVadEx: search Result %d, StartingAddress %p, ViewSize %lu, EndingAddress %p\n", Result, (PVOID)StartingAddress, ViewSize, (PVOID)EndingAddress);
 
 
 

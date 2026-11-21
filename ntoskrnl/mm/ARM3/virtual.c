@@ -4589,7 +4589,11 @@ NtAllocateVirtualMemory(IN HANDLE ProcessHandle,
         _SEH2_YIELD(return _SEH2_GetExceptionCode());
     }
     _SEH2_END;
-    DbgPrint("KUSH-DBG NtAllocateVirtualMemory entry: PrevMode %d, UBaseAddress %p, PBaseAddress %p, PRegionSize %lu, AllocType 0x%x\n", PreviousMode, UBaseAddress, PBaseAddress, PRegionSize, AllocationType);
+    /* Kush 1.1: KUSH-DBG traces only while bootvid owns the display (the boot
+     * window where they hide the bootvid race). Afterwards they flood the serial
+     * debugger from every allocation and starve the RTC clock interrupt. */
+    if (InbvCheckDisplayOwnership())
+        DbgPrint("KUSH-DBG NtAllocateVirtualMemory entry: PrevMode %d, UBaseAddress %p, PBaseAddress %p, PRegionSize %lu, AllocType 0x%x\n", PreviousMode, UBaseAddress, PBaseAddress, PRegionSize, AllocationType);
 
 
 
@@ -4794,7 +4798,11 @@ NtAllocateVirtualMemory(IN HANDLE ProcessHandle,
         // or do some other similar trick to actually find out where its memory
         // allocation ended up
         //
-        DbgPrint("KUSH-DBG NtAllocateVirtualMemory reserve: StartingAddress %p, PRegionSize %lu, UBaseAddress %p, URegionSize %p\n", (PVOID)StartingAddress, PRegionSize, UBaseAddress, URegionSize);
+        /* Kush 1.1: KUSH-DBG traces only while bootvid owns the display (the boot
+         * window where they hide the bootvid race). Afterwards they flood the serial
+         * debugger from every allocation and starve the RTC clock interrupt. */
+        if (InbvCheckDisplayOwnership())
+            DbgPrint("KUSH-DBG NtAllocateVirtualMemory reserve: StartingAddress %p, PRegionSize %lu, UBaseAddress %p, URegionSize %p\n", (PVOID)StartingAddress, PRegionSize, UBaseAddress, URegionSize);
         _SEH2_TRY
         {
             *URegionSize = PRegionSize;

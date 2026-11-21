@@ -94,7 +94,7 @@ This repo contains **only the files changed from ReactOS master commit
 
 ## تقرير تجربة SPSS 25 (64-bit) على Kush 1.1
 
-**النتيجة: SPSS 25 بيشتغل على Kush 1.1.** اتثبّت، وشاشة البداية وواجهة SPSS Statistics Viewer فتحت، وسطح المكتب ما بيتجمّد (`15-spss25-viewer-opened-no-license.png`). الرسالة الوحيدة "There is no license"، وده طبيعي لأن ما في رخصة متثبّتة.
+**النتيجة الحالية: SPSS 25 اتثبّت، وفتح مرة واحدة بواجهته كاملة** (شاشة البداية + SPSS Statistics Viewer، `15-spss25-viewer-opened-no-license.png`)، **لكن التجمّد بيرجع في معظم المرات.** لقينا وصلّحنا سببين حقيقيين في الـ kernel (تحت، الخطوة 9 و 10)، ولسه في سبب تالت ما اتعرف (الخطوة 11).
 
 بيئة التجربة: Kush 1.1 مبني من `main` (ReactOS `344ebfe5` + تعديلات Kush)،
 amd64 Release، مثبّت على قرص 20 GB (FAT32) في QEMU (بدون KVM، 3 GB RAM).
@@ -115,7 +115,7 @@ InstallShield، 735 MB)، اتوصّل للنظام كـ CD (`D:`) واتشغّ�
 | 8 | سطح المكتب بيتجمّد بعد ما `stats.exe` يبدأ (نافذة SPSS ما بتترسم) | **deadlock في الـ kernel (Mm):** Java J9 بيعمل `VirtualProtect` على الـ shared classes cache (ملف memory-mapped)، و `MmProtectSectionView` بياخد page fault وهو ماسك الـ address space lock، وبقية الـ threads (منها thread الواجهة) بتقيف على نفس الـ lock | `IBM_JAVA_OPTIONS=-Xshareclasses:none` كمتغيّر نظام في `boot/bootdata/hivesys.inf` | **اتحلّت ✅** (الحل الجذري في الـ kernel في الخطة) |
 | 4 | **"Machine Type Mismatch"**: `The image file ...SPSS_Statistics_25_win64.exe is valid, but is for a machine type other than the current machine` | برنامج التثبيت (InstallShield bootstrapper) هو **32-bit (PE32 / i386)** رغم إن SPSS نفسه 64-bit، و ReactOS amd64 **ما فيه WoW64** فما بيشغّل أي برنامج 32-bit | اتجاوزناه: استخرجنا حزمة الـ MSI الـ 64-bit وثبّتناها بـ `msiexec` (المحاولة 2 تحت) | اتجاوزناه ✅ |
 
-### المحاولة 2: تثبيت حزمة الـ MSI الـ 64-bit مباشرة: SPSS اتثبّت واشتغل ✅
+### المحاولة 2: تثبيت حزمة الـ MSI الـ 64-bit مباشرة: SPSS اتثبّت ✅، الواجهة فتحت مرة ⚠️
 
 1. استخرجت حزمة الـ MSI من برنامج التثبيت بأداة `tools/isx_extract.py`
    (نسخة Python من ISx لصيغة InstallShield "ISSetupStream"):
@@ -206,6 +206,33 @@ InstallShield، 735 MB)، اتوصّل للنظام كـ CD (`D:`) واتشغّ�
    - ⏳ لسه في تجمّد تاني منفصل في الشاشة: thread الواجهة في Explorer حالته **Ready** والمعالج
      idle (`HLT`)، يعني غالبًا **باق في الجدولة على أكتر من معالج (SMP)**. قيد التجربة بمعالج واحد.
 
+10. **سبب تاني: ساعة النظام بتموت (`KeTickCount` واقف).** في التجمّد بعد تصليح Mm، قريت
+    `KeTickCount` مرتين بفرق 15 ثانية: **ثابت (21516)**، يعني interrupt الساعة (RTC) وقف تمامًا،
+    والـ threads بتفضل في حالة Ready والمعالج idle. ده حصل كمان بمعالج واحد (`-smp 1`)،
+    يعني مش باق SMP. متغيّرات الـ HAL (`HalpSetClockRate`، `HalpNextClockRate`،
+    `HalpCurrentClockRate=10`) بتوضّح إن **ما في تغيير لسرعة الساعة** (ما في `timeBeginPeriod`).
+    - **السبب المرجّح:** تتبعات KUSH-DBG في `NtAllocateVirtualMemory` و `MiInsertVadEx` بتطبع
+      سطر على الـ serial debugger **لكل عملية حجز ذاكرة**، و Java بتحجز ذاكرة باستمرار من
+      threads كتيرة، فالـ interrupts بتكون مقفولة معظم الوقت.
+    - **التصليح:** التتبعات بقت تطبع بس وقت `InbvCheckDisplayOwnership()` (يعني وقت ما
+      bootvid ماسك الشاشة في الإقلاع، وده الوقت الوحيد اللي محتاجينها فيه حسب الـ README).
+    - ✅ النظام لسه بيقلع عادي (ما رجع باق bootvid)، و ✅ **الساعة ما بتموت**: `KeTickCount` بيزيد
+      (37605 → 38250 في 10 ثواني) والـ SPSS شغّال.
+11. ⏳ **المشكلة الباقية:** الشاشة ما بتتحدّث (ساعة شريط المهام واقفة والكتابة ما بتظهر) رغم إن
+    الساعة شغّالة وكل threads الواجهة (explorer و csrss و stats.exe) في `GetMessage` عادي ومافي
+    thread واقف في lock. يعني المشكلة غالبًا في رسم الشاشة أو توصيل الـ input في win32k
+    (مثلًا window شفافة لـ SPSS "StatsTransparent" فوق الشاشة، أو الـ desktop ما بيترسم).
+    الخطوة الجاية: نقرا قائمة النوافذ وحالة الـ foreground/capture في win32k من الذاكرة.
+
+**ملاحظة عن ملف الرخصة:** ملف التفعيل (`lservrc`) اتثبّت في الـ VM بس للتجربة، و**ما اترفع للمستودع**،
+لأن المستودع عام وأي زول يقدر ينسخ الرخصة.
+
+### أدوات التشخيص (في `tools/kdbg/`)
+- `walk_threads.py`: سكربت gdb (مع `qemu -s`) بيقرا الـ processes والـ threads من ذاكرة الـ kernel
+  ويطبع حالة كل thread، والـ kernel stack والـ user stack بأسماء الدوال، والـ trap frames.
+- `offsets.c`: بيحسب offsets الهياكل (`EPROCESS`، `ETHREAD`، `KTRAP_FRAME`...) من headers بتاعة Kush.
+- `ticks.py`: بيقرا `KeTickCount` عشان نعرف إن ساعة النظام شغّالة.
+
 ### ملخص الوصلنا ليه
 
 | المرحلة | النتيجة |
@@ -214,7 +241,9 @@ InstallShield، 735 MB)، اتوصّل للنظام كـ CD (`D:`) واتشغّ�
 | تثبيت حزمة الـ MSI (x64) | ✅ اتثبّت (مع تخطّي custom actions بنسخة 32-bit) |
 | مكتبات VC++ 2008 x64 | ✅ اتحلّت بـ private assemblies |
 | `stats.exe` يبدأ | ✅ بدأ، والنافذة اتعملت |
-| واجهة SPSS تظهر وتشتغل | ✅ بعد حل التجمّد (`-Xshareclasses:none`). محتاجة رخصة عشان التحليل |
+| واجهة SPSS تظهر وتشتغل | ⚠️ فتحت مرة واحدة كاملة. بعد تصليح Mm والساعة، لسه الشاشة بتقيف (الخطوة 11) |
+| deadlock في Mm (`region.c`) | ✅ اتصلّح، والـ debugger أكّد |
+| ساعة النظام بتموت | ✅ اتصلّحت (تقليل تتبعات KUSH-DBG) |
 
 ## الخطة المستقبلية لتشغيل SPSS 25 على Kush
 
