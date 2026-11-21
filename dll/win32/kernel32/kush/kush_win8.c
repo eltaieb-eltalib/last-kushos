@@ -373,3 +373,64 @@ VOID WINAPI FlushProcessWriteBuffers(VOID)
     MemoryBarrier();
     InterlockedExchange(&Dummy, 0);
 }
+
+/* ---- Kush 1.1 round 4: plain "@ stub" exports Firefox 160 calls. A plain stub
+ * raises EXCEPTION_WINE_STUB (0x80000100, non-continuable), which killed Firefox
+ * right after startup (in GetApplicationRestartSettings). ---- */
+
+/* Restart registration: Kush has no Restart Manager; report "not registered". */
+HRESULT WINAPI KushGetApplicationRestartSettings(HANDLE hProcess, PWSTR pwzCommandline,
+                                                 PDWORD pcchSize, PDWORD pdwFlags)
+{
+    UNREFERENCED_PARAMETER(hProcess); UNREFERENCED_PARAMETER(pwzCommandline);
+    UNREFERENCED_PARAMETER(pcchSize); UNREFERENCED_PARAMETER(pdwFlags);
+    return HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
+}
+
+HRESULT WINAPI KushUnregisterApplicationRestart(VOID)
+{
+    return S_OK;
+}
+
+/* Thread-pool helper: the module must stay loaded until the callback returns.
+ * Keeping the reference (never unloading) is always safe. */
+VOID WINAPI KushFreeLibraryWhenCallbackReturns(PVOID Instance, HMODULE Module)
+{
+    UNREFERENCED_PARAMETER(Instance); UNREFERENCED_PARAMETER(Module);
+}
+
+/* NPFS in Kush does not expose the pipe server process attribute. */
+BOOL WINAPI KushGetNamedPipeServerProcessId(HANDLE Pipe, PULONG ServerProcessId)
+{
+    UNREFERENCED_PARAMETER(Pipe);
+    if (ServerProcessId) *ServerProcessId = 0;
+    SetLastError(ERROR_NOT_SUPPORTED);
+    return FALSE;
+}
+
+/* Cycle times: approximate with CPU time in 100ns units scaled to ~1 GHz. */
+static ULONG64 KushFileTimeToCycles(const FILETIME *K, const FILETIME *U)
+{
+    ULARGE_INTEGER a, b;
+    a.LowPart = K->dwLowDateTime; a.HighPart = K->dwHighDateTime;
+    b.LowPart = U->dwLowDateTime; b.HighPart = U->dwHighDateTime;
+    return (a.QuadPart + b.QuadPart) * 100;
+}
+
+BOOL WINAPI KushQueryProcessCycleTime(HANDLE Process, PULONG64 CycleTime)
+{
+    FILETIME c, e, k, u;
+    if (!CycleTime) { SetLastError(ERROR_INVALID_PARAMETER); return FALSE; }
+    if (!GetProcessTimes(Process, &c, &e, &k, &u)) return FALSE;
+    *CycleTime = KushFileTimeToCycles(&k, &u);
+    return TRUE;
+}
+
+BOOL WINAPI KushQueryThreadCycleTime(HANDLE Thread, PULONG64 CycleTime)
+{
+    FILETIME c, e, k, u;
+    if (!CycleTime) { SetLastError(ERROR_INVALID_PARAMETER); return FALSE; }
+    if (!GetThreadTimes(Thread, &c, &e, &k, &u)) return FALSE;
+    *CycleTime = KushFileTimeToCycles(&k, &u);
+    return TRUE;
+}
