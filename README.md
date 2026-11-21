@@ -84,6 +84,31 @@ This repo contains **only the files changed from ReactOS master commit
 | 7 | `set __COMPAT_LAYER=WIN10RTM` وتشغيل فايرفوكس | ⚠️ تقدّم: الـ API set اتفعّل واتحوّل، لكن لـ `kernel32.dll`، فطلع **"Entry Point Not Found: GetFileVersionInfoSizeW in api-ms-win-core-version-l1-1-1.dll"** (`docs/firefox/03-win10-layer-entry-point-not-found.png`) | في ويندوز 10 الدوال دي في `kernelbase.dll`، وفي Kush مكانها `version.dll`. ⏳ الحل: نحوّل `api-ms-win-core-version-*` لـ `version.dll` في جدول الـ API sets |
 | 8 | فحص كامل لكل الدوال اللي فايرفوكس بيستوردها ومقارنتها بـ Kush (`tools/firefox_api_audit.py`، النتيجة في `docs/firefox/api-audit-firefox160.txt`) | ❌ **الفجوة كبيرة:** 126 دالة ناقصة في `kernel32.dll` (SRW locks، `AddDllDirectory`، thread pool…)، و 32 في `ntdll.dll` (ALPC بتاع الـ sandbox)، و 12 في `advapi32.dll` (ETW، `RegDeleteTreeW`…)، و 8 في `user32.dll` (DPI)، و ~40 API set ما ليها مدخل Win10 في الجدول، و ~13 API set بتتحوّل لمكتبة ما فيها الدالة، و 9 مكتبات ما موجودة أصلًا (`dxgi`، `dcomp`، `mf`، `mfplat`، `coremessaging`، `bcp47langs`، `profapi`، `ktmw32`، `rometadata`) | شوف الاستنتاج تحت |
 
+### خطة تشغيل Firefox 160 نفسه (قيد التنفيذ)
+
+الفحص الذكي (`tools/firefox_api_audit.py`) لأول سلسلة تحميل (`firefox.exe` + `mozglue.dll` + `msvcp140` +
+`vcruntime140`) لقى **97 دالة ناقصة**، من 3 أنواع:
+
+1. **API sets ما معلّمة لويندوز 10** في `apisets.table.c` (synch، file، memory، processthreads، registry،
+   security، sysinfo، version، winrt-string…)، فما بتتفعّل حتى بطبقة `WIN10RTM`.
+2. **API sets بتتحوّل للمكتبة الغلط:** registry و security لازم يمشوا لـ `advapi32.dll`، و version لـ
+   `version.dll`، و winrt و winrt-string لـ `combase.dll`.
+3. **دوال `kernel32`/`ntdll` الحديثة:** اكتشاف مهم: **معظمها موجود في الكود ومخفي.** `kernel32.spec`
+   و `ntdll.spec` معلّمين `AcquireSRWLockExclusive` و `CompareStringEx` و `CreateThreadpoolWork`
+   و `GetTickCount64` و `RtlAcquireSRWLockExclusive`… بـ `-version=0x600+`، و Kush اتبنى بـ
+   `DLL_EXPORT_VERSION=0x502` (ويندوز 2003). ReactOS عنده "وضع NT6" بيصدّر الدوال دي مباشرة.
+   الدوال اللي ما موجودة في أي مكان لسه: `CreateFile2`، `CopyFile2`، `CreateEventExW`،
+   `CreateSemaphoreExW`، `WaitOnAddress`/`WakeByAddress*`، `SetDefaultDllDirectories`،
+   `*ProcThreadAttributeList`، `Get/SetProcessMitigationPolicy`، `SetThreadInformation`،
+   `QueryUnbiasedInterruptTime(Precise)`، `RtlQueryPerformanceCounter`، `Wer*RuntimeExceptionModule`…
+
+**الخطوات:**
+- **أ.** بناء Kush بـ `DLL_EXPORT_VERSION=0x600` (Vista) في مجلد بناء منفصل، ونشوف كم دالة اتحلّت. ⏳ شغّال
+- **ب.** تصليح `apisets.table.c`: علامة `APISET_WIN10` للـ API sets الأساسية، وتصحيح المكتبات الهدف.
+- **ج.** كتابة الدوال الما موجودة (في `kernel32`/`kernelbase_ros`/`ntdll`).
+- **د.** تصنيف `firefox.exe` كويندوز 10 تلقائيًا (بدل `__COMPAT_LAYER`).
+- **هـ.** نفس الشي لـ `xul.dll` والمكتبات اللي فايرفوكس بيحمّلها بعدين، لحدي ما النافذة تفتح.
+
 **الاستنتاج:** Firefox 160 **ما بيشتغل على Kush 1.1 هسي**. هو مبني لويندوز 10 وما فوق (Mozilla وقّفت دعم
 ويندوز 7 و 8 بعد Firefox 115)، و Kush بيقلّد Windows Server 2003 مع جزء من دوال Vista و 7. المشكلة ما
 في مكتبة واحدة، الفجوة **مئات الدوال**.
