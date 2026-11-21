@@ -6,16 +6,18 @@ this repo.**
 
 ## What's in this repo
 
-This repo contains **only the files changed from ReactOS master commit
-`344ebfe5`** — the Kush 1.1 modifications. To build the full system:
+**This repo is the complete Kush 1.1 source tree**: ReactOS master commit `344ebfe5`
+plus every Kush 1.1 modification, so it builds on its own (no separate ReactOS clone).
+(The `.github` CI workflows of ReactOS are intentionally not included.)
 
-1. Clone ReactOS and check out the base commit:
-   `git clone https://github.com/reactos/reactos.git`
-   `git checkout 344ebfe5`
-2. Copy every file from this repo over the checkout, preserving paths.
-3. Build the 64-bit (amd64) system with RosBE x86_64:
-   `configure.sh` then `ninja bootcd` (Release build with the KUSH-DBG
-   serial traces kept — see below).
+**المستودع ده فيه النظام كامل:** كود ReactOS (commit `344ebfe5`) ومعاه كل تعديلات Kush 1.1. بتعمل clone
+للمستودع ده بس وبتبني على طول.
+
+Build (Linux, mingw-w64 **posix** toolchain, cmake, ninja, bison, flex, libgmp-dev):
+
+1. `git clone https://github.com/eltaieb-eltalib/last-kushos.git && mkdir build && cd build`
+2. `cmake -G Ninja -DARCH=amd64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=../last-kushos/toolchain-gcc.cmake -DENABLE_CCACHE=0 -DDLL_EXPORT_VERSION=0x600 ../last-kushos`
+3. `ninja bootcd` → `bootcd.iso` (or use RosBE x86_64: `configure.sh` then `ninja bootcd`).
 4. Make a GPT USB image (1.5 GB, one EFI System partition, FAT32) and copy
    `uefildr.efi` to `EFI/BOOT/BOOTX64.EFI`, `freeldr.ini` to the root, and the
    `reactos` tree. Write it with Rufus in DD mode, UEFI only, Secure Boot off.

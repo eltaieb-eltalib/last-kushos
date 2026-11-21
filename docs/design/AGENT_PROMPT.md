@@ -4,8 +4,8 @@
 
 ---
 
-إنت شغال على Kush 1.1، نظام تشغيل مبني على ReactOS (amd64). المستودع فيه **بس الملفات المعدّلة** فوق ReactOS commit
-`344ebfe5`. مهمتك تنفذ **خطة التصميم** في `docs/design/kush-fluent-plan.md` لحد ما تخلص، مرحلة بمرحلة، عشان
+إنت شغال على Kush 1.1، نظام تشغيل مبني على ReactOS (amd64). المستودع `eltaieb-eltalib/last-kushos` فيه **النظام
+كامل** (كل الكود وكل تعديلات Kush)، فبتبني منه مباشرة من غير أي مستودع تاني. مهمتك تنفذ **خطة التصميم** في `docs/design/kush-fluent-plan.md` لحد ما تخلص، مرحلة بمرحلة، عشان
 النظام يبقى شكله حديث وجميل بروح Fluent Design بتاعة Windows 11 (Start في النص، شريط مهام شفاف بأيقونات في النص،
 زوايا دائرية، Mica و Acrylic، أيقونات وخطوط حديثة)، لكن **تصميم أصلي، مش نسخة من Windows**.
 
@@ -25,12 +25,11 @@
 ## طريقة الشغل (حلقة مغلقة، كل حاجة بتتقاس بالصور)
 
 1. **جهّز البيئة مرة واحدة:**
-   - `git clone https://github.com/reactos/reactos.git ros && cd ros && git checkout 344ebfe5`، وانسخ ملفات المستودع فوقه
-     بنفس المسارات.
+   - المستودع نفسه هو الكود الكامل: ابني منه مباشرة (البناء في مجلد برا المستودع، مثلًا `../build`).
    - ثبّت mingw-w64 (نسخة **posix**: `x86_64-w64-mingw32-gcc-posix`)، و cmake، و ninja، و bison، و flex، و
      libgmp-dev، و qemu-system-x86، و mtools، و python3-pil.
-   - ابني: `cmake -G Ninja -DARCH=amd64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=<ros>/toolchain-gcc.cmake
-     -DENABLE_CCACHE=0 -DDLL_EXPORT_VERSION=0x600 <ros>`، وبعدها `ninja bootcd`. اقرأ قسم "بيئة البناء" في README،
+   - ابني: `cmake -G Ninja -DARCH=amd64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=<repo>/toolchain-gcc.cmake
+     -DENABLE_CCACHE=0 -DDLL_EXPORT_VERSION=0x600 <repo>`، وبعدها `ninja bootcd`. اقرأ قسم "بيئة البناء" في README،
      فيه مشاكل البناء المعروفة وحلولها (مثلًا libwinpthread و GetTickCount64).
    - اعمل قرص `k.raw` (مثلًا 16GB)، وثبّت Kush عليه من `bootcd.iso` (اختيار Setup في قائمة الإقلاع). سوق برنامج
      التثبيت بالكيبورد عن طريق `tools/qemu/vm.py`، **وصوّر الشاشة بعد كل خطوة عشان تعرف إنت وين**.
