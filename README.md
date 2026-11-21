@@ -112,6 +112,32 @@ This repo contains **only the files changed from ReactOS master commit
 | تحريك الماوس للركن ثم +200 يمين و +100 تحت | ✅ المؤشر وصل (200، 100) بالضبط، ما في قفز (`docs/drivers/01-mouse-after-fix-exact-position.png`) |
 | الرجفة نفسها | ⏳ ما بتظهر في QEMU (الماوس المحاكي ما بيضيّع bytes)، **التأكيد النهائي على جهاز الـ Acer** |
 
+### المرحلة 2: تعريف NVMe (للـ SSD من نوع NVMe M.2) ⏳
+
+**المصدر:** تعريف **OpenFabrics Alliance NVMe for Windows** (OFA nvmewin، رخصة BSD من Intel و IDT و LSI)
+من `github.com/gigaherz/nvmewin`. ده StorPort miniport (نفس نوع `storahci`)، وحطيناه في
+`drivers/storage/port/nvme/` (~21,000 سطر).
+
+**التعديلات عشان يتبني بأدوات Kush/ReactOS:**
+| المشكلة | التصليح |
+|---------|---------|
+| WPP tracing (`*.tmh`، `DoTraceMessage`) ما موجود | `nvme_tracing.h` بقى stubs، وملفات `.tmh` فاضية |
+| `nvmeMofData.h` بيتولّد من MOF بأداة `wmimofck` | كتبته يدوي من `nvmeMofData.mof` (GUIDs وهياكل WMI) |
+| تعارض `srb.h` مع `storport.h` | `precomp.h` بيعرّف `_NTSRB_` قبل `scsiwmi.h` |
+| أنواع SAL (`HW_STARTIO`، `HW_TIMER_EX`…) ما موجودة | معرّفة في `precomp.h` |
+| التعريف بيستهدف StorPort بتاع Windows 8 | `precomp.h` بيعرّف `NTDDI_VERSION = Win8` |
+| `__try/__finally` بتاع MSVC | اتحوّلت لـ PSEH (`_SEH2_TRY/_SEH2_FINALLY/_SEH2_END`) |
+| أنواع الإرجاع (`SNTI_STATUS`) و `DriverEntry` ما متطابقة مع GCC | اتصلّحت |
+| `nvme.rc` بيضمّن ملف MOF مترجم (`.bmf`) | `nvme.rc` جديد بنمط ReactOS (الأصلي محفوظ في `nvme_ofa_original.rc.txt`) |
+| `StorPortQuerySystemTime` و `memcpy_s` و `ScsiPortWmi*` ما بتتربط | `kush_compat.c` (WMI بيرجع "غير مدعوم"، والتخزين ما محتاجه) |
+
+**الفحص:**
+| الفحص | النتيجة |
+|-------|---------|
+| بناء `nvme.sys` | ✅ اتبنى (168 KB) |
+| تسجيله في النظام (`hivesys.inf`، `txtsetup.sif`) | ⏳ الخطوة الجاية |
+| تجربته على قرص NVMe في QEMU (`-device nvme`) | ⏳ |
+
 ## Known notes
 
 - **Keep the KUSH-DBG serial traces** in `ntoskrnl/mm/ARM3/heap.c`,
