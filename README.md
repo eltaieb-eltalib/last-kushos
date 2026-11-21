@@ -62,6 +62,12 @@ This repo contains **only the files changed from ReactOS master commit
   Limits (not verified on real SPSS yet): Kush 1.1 is amd64 and ReactOS has
   no WoW64, so only the **64-bit** SPSS builds can run; whether a given SPSS
   version then works depends on ReactOS API coverage.
+- **Default boot entry = "Live (Debug)"** (`boot/bootdata/bootcd.ini`) —
+  verified in QEMU (amd64, TCG): the plain "Live Environment" entry still hits
+  STOP 0x7E in `bootvid.dll` (no `/DEBUG`, so the KUSH-DBG `DbgPrint` traces
+  don't slow the race down), while "Live (Debug)" (`/DEBUG /DEBUGPORT=COM1`)
+  boots to the Kush 1.1 desktop. Revert to `DefaultOS=LiveImg` once the
+  bootvid race is fixed.
 
 ## Known notes
 
