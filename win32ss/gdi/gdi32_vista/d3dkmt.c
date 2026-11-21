@@ -60,6 +60,13 @@ typedef struct _D3DKMT_EMU_DEVICE
 static D3DKMT_EMU_ADAPTER D3DKMTEmuAdapters[D3DKMT_EMU_MAX_ADAPTERS];
 static D3DKMT_EMU_DEVICE D3DKMTEmuDevices[D3DKMT_EMU_MAX_DEVICES];
 
+/*
+ * Kush 1.1: emulated handles are stateless. The adapter handle encodes its
+ * VidPN source (TAG | source+1) and the device handle encodes its adapter
+ * (TAG | source+1), so they can never run out. The previous 16/64-slot tables
+ * leaked (handles opened by wined3d/DXGI were not always closed), after which
+ * every D3DKMTOpenAdapter* failed and Firefox retried output creation forever.
+ */
 static
 D3DKMT_EMU_ADAPTER*
 D3DKMTEmuGetAdapter(
@@ -91,12 +98,11 @@ D3DKMTEmuGetDevice(
         return NULL;
 
     Index = hDevice & D3DKMT_EMU_INDEX_MASK;
-    if (Index == 0 || Index > D3DKMT_EMU_MAX_DEVICES)
+    if (Index == 0 || Index > D3DKMT_EMU_MAX_ADAPTERS)
         return NULL;
 
-    if (!D3DKMTEmuDevices[Index - 1].InUse)
-        return NULL;
-
+    D3DKMTEmuDevices[Index - 1].InUse = 1;
+    D3DKMTEmuDevices[Index - 1].hAdapter = D3DKMT_EMU_ADAPTER_TAG | Index;
     return &D3DKMTEmuDevices[Index - 1];
 }
 
@@ -106,19 +112,15 @@ D3DKMTEmuOpenAdapter(
     _In_ const LUID* AdapterLuid,
     _In_ D3DDDI_VIDEO_PRESENT_SOURCE_ID VidPnSourceId)
 {
-    ULONG Index;
+    ULONG Index = VidPnSourceId;
 
-    for (Index = 0; Index < D3DKMT_EMU_MAX_ADAPTERS; Index++)
-    {
-        if (InterlockedCompareExchange(&D3DKMTEmuAdapters[Index].InUse, 1, 0) == 0)
-        {
-            D3DKMTEmuAdapters[Index].AdapterLuid = *AdapterLuid;
-            D3DKMTEmuAdapters[Index].VidPnSourceId = VidPnSourceId;
-            return D3DKMT_EMU_ADAPTER_TAG | (Index + 1);
-        }
-    }
+    if (Index >= D3DKMT_EMU_MAX_ADAPTERS)
+        return 0;
 
-    return 0;
+    D3DKMTEmuAdapters[Index].AdapterLuid = *AdapterLuid;
+    D3DKMTEmuAdapters[Index].VidPnSourceId = VidPnSourceId;
+    D3DKMTEmuAdapters[Index].InUse = 1;
+    return D3DKMT_EMU_ADAPTER_TAG | (Index + 1);
 }
 
 /* fake LUID */
@@ -255,10 +257,7 @@ D3DKMTCloseAdapter(_In_ const D3DKMT_CLOSEADAPTER* unnamedParam1)
      * wined3d/DXGI clients (Firefox) retried output creation forever. */
     Adapter = D3DKMTEmuGetAdapter(unnamedParam1->hAdapter);
     if (Adapter)
-    {
-        InterlockedExchange(&Adapter->InUse, 0);
-        return STATUS_SUCCESS;
-    }
+        return STATUS_SUCCESS; /* stateless, nothing to release */
 
     Status = NtGdiDdDDICloseAdapter(unnamedParam1);
     if (Status != STATUS_PROCEDURE_NOT_FOUND)
@@ -286,25 +285,16 @@ D3DKMTCreateDevice(_Inout_ D3DKMT_CREATEDEVICE* unnamedParam1)
         return STATUS_INVALID_PARAMETER;
     }
 
-    for (Index = 0; Index < D3DKMT_EMU_MAX_DEVICES; Index++)
-    {
-        if (InterlockedCompareExchange(&D3DKMTEmuDevices[Index].InUse, 1, 0) == 0)
-        {
-            D3DKMTEmuDevices[Index].hAdapter = unnamedParam1->hAdapter;
+    Index = unnamedParam1->hAdapter & D3DKMT_EMU_INDEX_MASK;
+    unnamedParam1->hDevice = D3DKMT_EMU_DEVICE_TAG | Index;
+    unnamedParam1->pCommandBuffer = NULL;
+    unnamedParam1->CommandBufferSize = 0;
+    unnamedParam1->pAllocationList = NULL;
+    unnamedParam1->AllocationListSize = 0;
+    unnamedParam1->pPatchLocationList = NULL;
+    unnamedParam1->PatchLocationListSize = 0;
 
-            unnamedParam1->hDevice = D3DKMT_EMU_DEVICE_TAG | (Index + 1);
-            unnamedParam1->pCommandBuffer = NULL;
-            unnamedParam1->CommandBufferSize = 0;
-            unnamedParam1->pAllocationList = NULL;
-            unnamedParam1->AllocationListSize = 0;
-            unnamedParam1->pPatchLocationList = NULL;
-            unnamedParam1->PatchLocationListSize = 0;
-
-            return STATUS_SUCCESS;
-        }
-    }
-
-    return STATUS_INSUFFICIENT_RESOURCES;
+    return STATUS_SUCCESS;
 }
 
 NTSTATUS
@@ -320,10 +310,7 @@ D3DKMTDestroyDevice(_In_ const D3DKMT_DESTROYDEVICE* unnamedParam1)
     /* Kush 1.1: release emulated devices locally first (see D3DKMTCloseAdapter). */
     Device = D3DKMTEmuGetDevice(unnamedParam1->hDevice);
     if (Device)
-    {
-        InterlockedExchange(&Device->InUse, 0);
-        return STATUS_SUCCESS;
-    }
+        return STATUS_SUCCESS; /* stateless, nothing to release */
 
     Status = NtGdiDdDDIDestroyDevice(unnamedParam1);
     if (Status != STATUS_PROCEDURE_NOT_FOUND)
