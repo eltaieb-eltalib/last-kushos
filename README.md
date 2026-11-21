@@ -231,6 +231,14 @@ This repo contains **only the files changed from ReactOS master commit
       `ReOpenFile`، `RegisterApplicationRestart`.
     - ✅ الحل: `GetSystemTimePreciseAsFileTime` بقت بترجع وقت النظام. `ReOpenFile` بقت حقيقية
       (`NtCreateFile` نسبةً للـ handle الأصلي، ولو فشل بيعمل `DuplicateHandle`). `RegisterApplicationRestart` بقت بترجع `S_OK`.
+    - ✅ **التجربة: Firefox 160 فتح على Kush!** نافذة "Welcome to Firefox" ظهرت بالتبويبات وشريط الأدوات
+      (`docs/firefox/10-firefox160-welcome-window.png`).
+  - **دورة 6: رسالة "ReactOS - no 3D acceleration":** فايرفوكس بيجرّب Direct3D (`wined3d`)، وما في OpenGL ICD
+    في QEMU، فبتظهر رسالة تحذير. الرسالة بتظهر مرة في كل process، ففايرفوكس (بالـ GPU process بتاعه) كان بيطلّعها كل مرة.
+    - ✅ `dll/directx/wine/wined3d/adapter_gl.c`: الرسالة بقت بتظهر **مرة واحدة لكل مستخدم**
+      (`HKCU\Software\Kush\No3DWarningShown`).
+    - ✅ `tools/firefox/distribution/policies.json`: بيتنسخ لـ `C:\Firefox\distribution\`، وبيقفل تسريع الرسوميات
+      (`HardwareAcceleration: false`) عشان فايرفوكس يرسم بالـ software (WebRender software)، وبيقفل التحديث التلقائي.
     - ⏳ التجربة.
 
 **الاستنتاج:** Firefox 160 **ما بيشتغل على Kush 1.1 هسي**. هو مبني لويندوز 10 وما فوق (Mozilla وقّفت دعم
