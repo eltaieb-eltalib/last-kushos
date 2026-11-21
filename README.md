@@ -188,6 +188,24 @@ InstallShield، 735 MB)، اتوصّل للنظام كـ CD (`D:`) واتشغّ�
        `IBM_JAVA_OPTIONS=-Xshareclasses:none` كمتغيّر نظام، فبيطبّق على كل برامج IBM Java
        (SPSS 20 وطالع) من غير أي إعداد.
 
+9. **الحل الجذري في الـ kernel (`ntoskrnl/mm/region.c`):** بعد ما ثبّتنا الرخصة، التجمّد رجع
+   حتى مع `-Xshareclasses:none`. قريت الـ trap frame من الـ kernel stack بتاع الـ thread الواقف
+   (`ZwProtectVirtualMemory`): الخطأ في **`MmAlterViewAttributes+0x45`** على العنوان **`0x68`**،
+   يعني NULL pointer: `MmLocateMemoryAreaByAddress` رجّع NULL.
+   - **السبب:** في `MmAlterRegion`،
+     `CurrentBaseAddress = StartAddress + NewRegion->Length` بيفترض إن `NewRegion` بيبدأ من
+     `StartAddress`، وده صحيح بس لما الـ region يتقسم. لما ما يتقسم (الـ region أصلًا عنده نفس
+     الحماية) `NewRegion` بيبدأ من `InitialBaseAddress`، فالعنوان **بيتخطّى نهاية الـ view**
+     وبيتنادى `MmAlterViewAttributes` على عنوان ما عنده memory area. ولأن `0x68` عنوان
+     user، الـ kernel عامله كـ page fault عادي وحاول ياخد الـ address space lock اللي هو
+     ماسكه، فحصل **deadlock بدل شاشة زرقاء**.
+   - **التصليح:** `region.c` بيحسب العنوان من `InitialBaseAddress` لما ما في تقسيم، و
+     `section.c` (`MmAlterViewAttributes`) بيرجع بأمان لو الـ memory area NULL.
+   - ✅ بعد التصليح: الـ debugger بيأكّد إن **ما في أي thread واقف في `KiAcquireGuardedMutex`**،
+     وكل threads الواجهة في SPSS بتنتظر رسائل عادي.
+   - ⏳ لسه في تجمّد تاني منفصل في الشاشة: thread الواجهة في Explorer حالته **Ready** والمعالج
+     idle (`HLT`)، يعني غالبًا **باق في الجدولة على أكتر من معالج (SMP)**. قيد التجربة بمعالج واحد.
+
 ### ملخص الوصلنا ليه
 
 | المرحلة | النتيجة |
