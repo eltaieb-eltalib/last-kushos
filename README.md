@@ -186,7 +186,13 @@ This repo contains **only the files changed from ReactOS master commit
       `RaiseFailFastException`، `SetThreadErrorMode`.
     - `dll/win32/shcore/kush_dpi.c` (جديد): `GetDpiForMonitor` (96 DPI)، `SetProcessDpiAwareness`،
       `GetProcessDpiAwareness`، `GetScaleFactorForMonitor` (100%).
-    - ⏳ التجربة.
+    - ❌ التجربة الأولى: السجل لسه بيقول `WARNING: calling stub CreateWaitableTimerExW()`.
+      **السبب:** `kernel32.spec` كان فيه السطر القديم `@ stub -version=0x600+ CreateWaitableTimerExW` **و**
+      السطر الجديد مع بعض، فالاسم اتصدّر مرتين (ordinal 174 و 1267) واللودر بيلقى الـ stub الأول.
+      نفس المشكلة كانت في `CreateWaitableTimerExA` و `SetFileInformationByHandle` و `FlushProcessWriteBuffers`.
+    - ✅ **الحل:** سكربت بيلقى كل اسم مكرر في الـ spec ويشيل سطر الـ `@ stub` (4 أسطر)، و
+      `FlushProcessWriteBuffers` طلعت ما متعرّفة أصلًا (كانت شغالة بالـ stub بس)، فاتضافت في `kush_win8.c`.
+    - ⏳ التجربة التانية.
 
 **الاستنتاج:** Firefox 160 **ما بيشتغل على Kush 1.1 هسي**. هو مبني لويندوز 10 وما فوق (Mozilla وقّفت دعم
 ويندوز 7 و 8 بعد Firefox 115)، و Kush بيقلّد Windows Server 2003 مع جزء من دوال Vista و 7. المشكلة ما
