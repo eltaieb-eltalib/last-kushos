@@ -80,6 +80,8 @@ This repo contains **only the files changed from ReactOS master commit
 | 3 | تشغيل `Firefox Setup 160.0.1.exe` على Kush | ❌ **"Machine Type Mismatch"** (`docs/firefox/01-installer-machine-type-mismatch.png`)، زي ما توقعنا | الفك بـ 7z (الخطوة 2) |
 | 4 | `xcopy /E /I D:\core C:\Firefox` | ✅ 75 ملف اتنسخت | |
 | 5 | تشغيل `C:\Firefox\firefox.exe` | ❌ **"api-ms-win-core-version-l1-1-1.dll was not found"** (`docs/firefox/02-api-ms-win-core-version-missing.png`) | Firefox 160 محتاج ويندوز 10 أو أحدث، وبيستعمل مكتبات "API set" (`api-ms-win-*`) ناقصة في Kush. ⏳ الحل: نضيف الـ API sets الناقصة (forwarders لـ `version.dll` و `kernel32`/`kernelbase`) |
+| 6 | ليه الـ API set ناقص؟ | Kush فيه جدول API sets (`sdk/lib/apisets/apisets.table.c`، 1248 مدخل) وفيه `api-ms-win-core-version-l1-1-1`، لكنه معلّم `APISET_WIN10`. الـ loader (`ntdll/rtl/libsupp.c`، `LdrpApisetVersion`) **بيفعّل الـ API sets بس لما البرنامج مصنّف ويندوز 10** (`RosGetProcessCompatVersion`)، وفايرفوكس بيشتغل بإصدار Kush العادي (NT 5.2) | نشغّله بطبقة التوافق `WIN10RTM` |
+| 7 | `set __COMPAT_LAYER=WIN10RTM` وتشغيل فايرفوكس | ⚠️ تقدّم: الـ API set اتفعّل واتحوّل، لكن لـ `kernel32.dll`، فطلع **"Entry Point Not Found: GetFileVersionInfoSizeW in api-ms-win-core-version-l1-1-1.dll"** (`docs/firefox/03-win10-layer-entry-point-not-found.png`) | في ويندوز 10 الدوال دي في `kernelbase.dll`، وفي Kush مكانها `version.dll`. ⏳ الحل: نحوّل `api-ms-win-core-version-*` لـ `version.dll` في جدول الـ API sets |
 
 ## ملخص الحالة (للمتابعة)
 
