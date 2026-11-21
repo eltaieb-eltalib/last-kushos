@@ -216,6 +216,21 @@ This repo contains **only the files changed from ReactOS master commit
     - `shlwapi`: `IsOS` بقت بتتصدّر بالاسم، مش بالرقم بس.
     - النتيجة: الأداة ما بتلقى أي دالة ناقصة في `xul.dll` و `firefox.exe`. الباقي في مكتبات Windows App SDK
       (`Microsoft.UI.*`) بس، وفايرفوكس ما بيحتاجها في التشغيل العادي.
+    - ✅ التجربة: فايرفوكس عدّى مرحلة الشبكة (`ws2_32`، `WSCGetProviderInfo`) ووصل لـ session restore.
+  - **دورة 4: stubs العادية (`@ stub`):** دي بترمي exception `0x80000100` ما بيتلغى، فقتلت فايرفوكس في
+    `GetApplicationRestartSettings`. فحص كل الـ stubs اللي فايرفوكس بيستوردها طلّع 6 في `kernel32`، واتكتبت كلها:
+    `GetApplicationRestartSettings`، `UnregisterApplicationRestart`، `FreeLibraryWhenCallbackReturns`،
+    `GetNamedPipeServerProcessId`، `QueryProcessCycleTime`، `QueryThreadCycleTime`. ✅ التجربة: عدّاها.
+  - **دورة 5: Rust panic:** الكيرنل طلّع `0x80000003` (breakpoint) في `xul.dll +0x6615f91`. أداة جديدة
+    (`tools/breakpad_sym.py` مع رموز Mozilla) وضّحت إنها `RustMozCrash`. وبما إن سبب الـ crash بيكون في `r8`
+    وقت الـ `int3`، الكيرنل بقى يطبعه:
+    **`system time before Unix epoch: SystemTimeError(11644473600s)`**.
+    - السبب: `GetSystemTimePreciseAsFileTime` في `kernel32/client/time.c` كانت `STUB;` بس، يعني بترجع من غير
+      ما تكتب الوقت، فـ Rust (`SystemTime::now()`) لقى الوقت 0 (سنة 1601).
+    - فحص كل دوال kernel32 اللي جسمها `STUB` وفايرفوكس بيستوردها: `GetSystemTimePreciseAsFileTime`،
+      `ReOpenFile`، `RegisterApplicationRestart`.
+    - ✅ الحل: `GetSystemTimePreciseAsFileTime` بقت بترجع وقت النظام. `ReOpenFile` بقت حقيقية
+      (`NtCreateFile` نسبةً للـ handle الأصلي، ولو فشل بيعمل `DuplicateHandle`). `RegisterApplicationRestart` بقت بترجع `S_OK`.
     - ⏳ التجربة.
 
 **الاستنتاج:** Firefox 160 **ما بيشتغل على Kush 1.1 هسي**. هو مبني لويندوز 10 وما فوق (Mozilla وقّفت دعم
