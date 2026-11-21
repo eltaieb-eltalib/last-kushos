@@ -94,7 +94,7 @@ This repo contains **only the files changed from ReactOS master commit
 
 ## تقرير تجربة SPSS 25 (64-bit) على Kush 1.1
 
-**النتيجة: SPSS 25 ما اشتغل.** برنامج التثبيت نفسه ما قدر يبدأ.
+**النتيجة: SPSS 25 اتثبّت و `stats.exe` بدأ، لكن سطح المكتب بيتجمّد قبل ما واجهة SPSS تظهر.** (المحاولة الأولى: برنامج التثبيت الأصلي ما بدأ لأنه 32-bit.)
 
 بيئة التجربة: Kush 1.1 مبني من `main` (ReactOS `344ebfe5` + تعديلات Kush)،
 amd64 Release، مثبّت على قرص 20 GB (FAT32) في QEMU (بدون KVM، 3 GB RAM).
@@ -109,12 +109,13 @@ InstallShield، 735 MB)، اتوصّل للنظام كـ CD (`D:`) واتشغّ�
 | 1 | الـ Live CD بخيار "Live Environment" بيعطي شاشة زرقاء STOP 0x7E في `bootvid.dll` | بدون `/DEBUG` تتبعات KUSH-DBG ما بتشتغل، فالـ race في bootvid بيظهر | الخيار الافتراضي في `boot/bootdata/bootcd.ini` بقى `LiveImg_Debug` | اتصلّح ✅ (اتأكدنا في QEMU) |
 | 2 | النظام بعد التثبيت على الهارد بيقيف في شاشة سودا (الـ kernel عالق في bootvid، 640x480) | نفس سبب #1: `freeldr.ini` اللي بيكتبه الـ Setup بيختار `ReactOS` (بدون debug) | `base/setup/lib/bootsup.c`: الـ Setup بقى يخلّي `ReactOS_Debug` الافتراضي دايمًا | اتصلّح في الكود ✅ (التجربة اتعملت بتعديل `freeldr.ini` يدويًا وفتح سطح المكتب) |
 | 3 | النظام بيبلّغ عن "NT 5.2" (Windows Server 2003) | ReactOS بيقلّد Windows 2003 | `media/sdb/sysmain.xml`: برامج SPSS بتاخد version lie لويندوز 7 SP1 | مضاف، لكن ما وصلنا لمرحلة نجربه فيها |
-| 5 | `licenseinit.exe`: "MSVCR90.dll was not found" | مكتبة VC++ 2008 x64 ما متثبّتة، لأن `vcredist_x64.exe` غلاف 32-bit وفشل (Machine Type Mismatch) | `vc_red.msi` اتثبّت لكن ما سجّل في WinSxS، فاستخدمنا private assemblies (`tools/make_vc90_private.py`) | CRT اتحلّت ✅، MFC جاري ⏳ |
+| 5 | `licenseinit.exe`: "MSVCR90.dll was not found" | مكتبة VC++ 2008 x64 ما متثبّتة، لأن `vcredist_x64.exe` غلاف 32-bit وفشل (Machine Type Mismatch) | `vc_red.msi` اتثبّت لكن ما سجّل في WinSxS، فاستخدمنا private assemblies (`tools/make_vc90_private.py`) | اتحلّت ✅ (CRT + MFC + ATL + OpenMP) |
 | 6 | الـ MSI بيتخطّى custom actions بنسخة 32-bit (`ISSELFREG.DLL`، `ISSetup.dll`، `IsChainPackages.dll`) | `msi.dll` في ReactOS amd64 ما بيقدر يشغّل DLLs بنسخة 32-bit (ما في WoW64) | تسجيل مكونات COM يدويًا بـ `regsvr32` (64-bit)، أو WoW64 على المدى الطويل | مفتوح ❌ |
 | 7 | **Fatal System Error 0x1E** أثناء تثبيت `vc_red.msi` من الـ CD | خطأ في الـ kernel (exception `0x80000016`) بعد `ole32` ما قدر يقفل الملف على الـ CD (error 158) | تشخيص: بيحصل بس لما الـ CD يتغيّر والنظام شغّال (`0x80000016` = `STATUS_VERIFY_REQUIRED` ما اتعالج في amd64). حل مؤقت: وصّل القرص قبل الإقلاع. الحل الدائم: تصليح معالجة verify في cdfs/kernel | اتشخّص ✅ / التصليح مفتوح |
+| 8 | سطح المكتب بيتجمّد بعد ما `stats.exe` يبدأ (نافذة SPSS ما بتترسم) | غير معروف لسه: win32k/user32، أو SPSS منتظر Java/COM | شوف المرحلة 2 في الخطة | مفتوح ❌ |
 | 4 | **"Machine Type Mismatch"**: `The image file ...SPSS_Statistics_25_win64.exe is valid, but is for a machine type other than the current machine` | برنامج التثبيت (InstallShield bootstrapper) هو **32-bit (PE32 / i386)** رغم إن SPSS نفسه 64-bit، و ReactOS amd64 **ما فيه WoW64** فما بيشغّل أي برنامج 32-bit | اتجاوزناه: استخرجنا حزمة الـ MSI الـ 64-bit وثبّتناها بـ `msiexec` (المحاولة 2 تحت) | اتجاوزناه ✅ |
 
-### المحاولة 2: تثبيت حزمة الـ MSI الـ 64-bit مباشرة (تجاوز مشكلة #4) — SPSS اتثبّت ✅، التشغيل جاري ⏳
+### المحاولة 2: تثبيت حزمة الـ MSI الـ 64-bit مباشرة: SPSS اتثبّت وبدأ ✅، الواجهة بتتجمّد ❌
 
 1. استخرجت حزمة الـ MSI من برنامج التثبيت بأداة `tools/isx_extract.py`
    (نسخة Python من ISx لصيغة InstallShield "ISSetupStream"):
@@ -156,46 +157,64 @@ InstallShield، 735 MB)، اتوصّل للنظام كـ CD (`D:`) واتشغّ�
    `9.0.21022.8` (النسخة اللي SPSS طالبها)، وبتتنسخ جوّا مجلد SPSS (`09-...png`).
    - ✅ بعد CRT: الخطأ اتغيّر لـ `Could not find dependent assembly Microsoft.VC90.MFC`،
      يعني CRT اتحلّت.
-   - ⏳ إضافة MFC/ATL/OpenMP وتشغيل `stats.exe` تاني.
+   - ✅ بعد إضافة MFC/ATL/OpenMP/MFCLOC: **ما في أي خطأ مكتبات**، و `stats.exe`
+     اشتغل: نافذة **"SPSS Statistics"** ظهرت في شريط المهام
+     (`10-stats-exe-started-window-in-taskbar.png`).
+   - ✅ السجل بيأكّد إن قاعدة التوافق بتاعتنا اتطبّقت على SPSS:
+     `ShimInfo(Exe(stats.exe))` → `ShimInfo(Complete)` (تعديل `media/sdb/sysmain.xml`).
+7. ❌ **النتيجة الحالية: سطح المكتب كله بيتجمّد بعد ما SPSS يبدأ.** نافذة SPSS ما
+   بتترسم، والساعة واقفة، ولوحة المفاتيح ما بتستجيب
+   (`11-desktop-frozen-after-stats-start.png`). الـ kernel شغّال (`HLT=1`، والسجل
+   بيتحدّث)، يعني المشكلة في الواجهة (win32k/user32) أو في SPSS واقف ينتظر حاجة
+   (غالبًا Java أو مكونات COM اللي ما اتسجّلت في مشكلة #6).
+
+### ملخص الوصلنا ليه
+
+| المرحلة | النتيجة |
+|---------|---------|
+| تشغيل برنامج التثبيت الأصلي (32-bit) | ❌ Machine Type Mismatch، اتجاوزناها |
+| تثبيت حزمة الـ MSI (x64) | ✅ اتثبّت (مع تخطّي custom actions بنسخة 32-bit) |
+| مكتبات VC++ 2008 x64 | ✅ اتحلّت بـ private assemblies |
+| `stats.exe` يبدأ | ✅ بدأ، والنافذة اتعملت |
+| واجهة SPSS تظهر وتشتغل | ❌ سطح المكتب بيتجمّد |
 
 ## الخطة المستقبلية لتشغيل SPSS 25 على Kush
 
-المشكلة الأساسية إن برنامج التثبيت 32-bit. الخطة مرتّبة من الأسهل للأصعب:
+المراحل 1 و 2 من الخطة القديمة **اتنفّذت** (استخراج الـ MSI وتثبيته، وحل مكتبات VC++ 2008).
+الخطوات الجاية مرتّبة حسب الأولوية:
 
-### المرحلة 1: تجاوز برنامج التثبيت الـ 32-bit (الأقرب)
-1. على جهاز ويندوز عادي: استخرج الحزمة الـ 64-bit الجوّا برنامج التثبيت:
-   `SPSS_Statistics_25_win64.exe /extract_all:C:\spss25`
-   أو شغّل برنامج التثبيت وانسخ الملفات اللي بيفكّها في `%TEMP%` قبل ما تقفله.
-   الناتج المتوقّع: ملف `IBM SPSS Statistics 25.msi` (64-bit) وملفات معاه.
-2. انقل المجلد لـ Kush (CD أو USB) وشغّل: `msiexec /i "IBM SPSS Statistics 25.msi"`.
-   `msiexec.exe` في Kush 64-bit، فما بيحتاج WoW64.
-3. لو الـ MSI رفض بسبب شرط ويندوز 7 (`VersionNT >= 601`):
-   - أضف قاعدة توافق لـ `msiexec.exe` في `media/sdb/sysmain.xml` (زي قاعدة SPSS) أو
-     في الـ registry: `HKLM\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers`
-     القيمة `C:\ReactOS\system32\msiexec.exe` = `WIN7SP1`.
-   - أو احذف صف الشرط من جدول `LaunchCondition` في الـ MSI بأداة Orca.
-
-### المرحلة 2: المكتبات اللي SPSS 25 محتاجها بعد التثبيت
-1. **Visual C++ 2015-2017 x64** (`vcruntime140.dll`, `msvcp140.dll`, `api-ms-win-crt-*`):
-   ثبّت `vc_redist.x64.exe` (برنامج 64-bit)، وأصلح أي دالة ناقصة في ReactOS
-   (`ucrtbase`/`kernel32`) تظهر في سجل الـ serial.
-2. **Java 8 x64 المرفقة مع SPSS** (`jre\bin`): أول اختبار يكون
+### المرحلة 1: فهم التجمّد (مشكلة #8)
+1. نشغّل SPSS بعد ما نوصّل الـ kernel debugger (`/DEBUG /DEBUGPORT=COM1` شغّال أصلًا)
+   ونعمل break وقت التجمّد، ونطلع stack الـ threads (`!thread`, `kb`) لـ `stats.exe`
+   و `explorer.exe` و `csrss.exe`، عشان نعرف مين ماسك الـ lock في win32k.
+2. نشغّل Java المرفقة مع SPSS لوحدها:
    `"C:\Program Files\IBM\SPSS\Statistics\25\JRE\bin\java.exe" -version`.
-   لو Java ما اشتغلت، واجهة SPSS ما حتشتغل.
-3. شغّل `stats.exe` وسجّل أي خطأ (الصورة + سجل الـ serial بخيار Debug).
+   لو هي كمان بتجمّد، تبقى المشكلة في Java على ReactOS amd64.
+3. نجرب SPSS بدون واجهة: `statisticsb.exe` (معالج الأوامر بدون GUI) مع ملف syntax بسيط.
+   لو اشتغل، يبقى محرك SPSS سليم والمشكلة في الواجهة.
 
-### المرحلة 3: لو المرحلة 1 فشلت
-- **نسخ مجلد جاهز:** ثبّت SPSS 25 (برخصة سليمة) على ويندوز 7/10 64-bit، وانسخ
-  `C:\Program Files\IBM\SPSS\Statistics\25` ومعاه مكتبات VC++ لـ Kush، وجرّب
-  `stats.exe` مباشرة. ممكن تحتاج مفاتيح registry من الجهاز الأصلي.
-- **نسخة Kush 32-bit (i386):** ReactOS 32-bit أنضج، وبيشغّل برامج التثبيت الـ 32-bit.
-  IBM عندها `SPSS_Statistics_25_win32.exe`، فالمسار ده
-  (Kush i386 + SPSS 25 32-bit) واقعي، لكن محتاج نقل تعديلات Kush (UEFI/GOP/AHCI)
-  لنسخة i386.
+### المرحلة 2: مكونات COM اللي ما اتسجّلت (مشكلة #6)
+- نطلع قائمة الملفات اللي كان `ISSELFREG.DLL` المفروض يسجّلها (جدول `ISSelfReg` في
+  الـ MSI بـ `msiinfo export ... ISSelfReg`)، ونسجّلها يدويًا بـ `regsvr32` (64-bit).
 
-### المرحلة 4: الحل الجذري (مشروع كبير)
-- إضافة **WoW64** لـ ReactOS amd64 عشان يشغّل البرامج الـ 32-bit. ده شغل كبير جدًا
-  في الـ kernel و ntdll، ولسه ما موجود في ReactOS upstream.
+### المرحلة 3: تصليحات في Kush نفسه (تفيد كل البرامج)
+1. **msi.dll:** يثبّت Win32 side-by-side assemblies (`MsiAssembly`) في `WinSxS`،
+   عشان ما نحتاج private assemblies.
+2. **تغيير الـ CD (مشكلة #7):** معالجة `STATUS_VERIFY_REQUIRED` في amd64 بدل الـ bugcheck 0x1E.
+3. **bootvid (مشكلة #1/#2):** تصليح الـ race الحقيقي عشان نرجّع خيار الإقلاع العادي.
+
+### المرحلة 4: حلول بديلة لو الطريق ده اتقفل
+- **Kush 32-bit (i386) + SPSS 25 32-bit:** ReactOS 32-bit أنضج، وبيشغّل برامج التثبيت
+  الـ 32-bit والـ custom actions مباشرة. محتاج نقل تعديلات Kush (UEFI/GOP/AHCI) لنسخة i386،
+  وجهاز يقبل Legacy/CSM أو UEFI 32-bit.
+- **WoW64 في ReactOS amd64:** بيحل برامج التثبيت والـ custom actions الـ 32-bit، لكنه مشروع
+  كبير جدًا وما بيضمن إن واجهة SPSS تشتغل.
+- **Remote Desktop:** Kush فيه `mstsc`، فممكن تستخدم SPSS من جهاز ويندوز تاني مباشرة.
+
+### أدوات الاستعملناها (في المستودع)
+- `tools/isx_extract.py`: بيطلّع الملفات من برنامج تثبيت InstallShield "ISSetupStream"
+  (زي `SPSS_Statistics_25_win64.exe`)، ومنها `IBM SPSS Statistics 25.msi`.
+- `tools/make_vc90_private.py`: بيبني مجلدات VC++ 2008 x64 (private assemblies) من `vc_red.cab`.
 
 ### معيار النجاح
 SPSS 25 يتثبّت، و `stats.exe` يفتح، ويقرأ ملف `.sav`، ويطلع جدول Frequencies.
