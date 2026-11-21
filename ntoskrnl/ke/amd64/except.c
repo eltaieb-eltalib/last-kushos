@@ -416,6 +416,22 @@ KiDispatchException(IN PEXCEPTION_RECORD ExceptionRecord,
             }
             _SEH2_EXCEPT(EXCEPTION_EXECUTE_HANDLER) {} _SEH2_END;
 
+            /* Firefox MOZ_CRASH/RustMozCrash: int3 with the reason string in R8. */
+            if (ExceptionRecord->ExceptionCode == STATUS_BREAKPOINT && Context.R8 > 0x10000 &&
+                Context.R8 < (ULONG64)MmHighestUserAddress)
+            {
+                CHAR Reason[400];
+                ULONG n = 0;
+                _SEH2_TRY
+                {
+                    PCSTR Src = (PCSTR)Context.R8;
+                    for (n = 0; n < sizeof(Reason) - 1 && Src[n]; n++) Reason[n] = Src[n];
+                }
+                _SEH2_EXCEPT(EXCEPTION_EXECUTE_HANDLER) {} _SEH2_END;
+                Reason[n] = 0;
+                if (n) DbgPrint("KUSH-EXC: crash reason (r8): %s\n", Reason);
+            }
+
             /* Delay-load failure (VcppException ERROR_MOD/PROC_NOT_FOUND):
              * parameter 0 is a DelayLoadInfo; print the DLL and function. */
             if ((ExceptionRecord->ExceptionCode == 0xC06D007E ||
