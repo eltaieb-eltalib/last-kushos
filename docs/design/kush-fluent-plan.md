@@ -128,6 +128,57 @@ Acrylic محتاج blur **حي** للمحتوى اللي ورا النافذة،
 
 ---
 
+## الشكل المطلوب (المرجع البصري)
+
+المستخدم عايز شكل **بنفس روح وجمال** Windows 11، لكن **أصلي، وما نسخة**:
+
+- **سطح المكتب:** خلفية ناعمة (✅ اتعملت: `Kush-Flow.bmp`، زهرة طبقات زرقاء أصلية بتتولد بـ
+  `tools/design/gen_wallpaper.py`، فيها نسخة فاتحة وغامقة، وهي الخلفية الافتراضية في `boot/bootdata/hivedef.inf`).
+  أيقونات سطح المكتب بمسافات مريحة وتحتها نص بظل خفيف.
+- **شريط المهام:** فاتح وشبه شفاف (Acrylic)، ارتفاعه 48px، **الأيقونات في النص**: زر Start (شعار Kush أصلي، 4
+  مربعات أو شكل مستوحى من هوية Kush)، بحث، البرامج المفتوحة، ومؤشر صغير تحت البرنامج النشط. الساعة والتاريخ في سطرين
+  يمين، ومعاهم أيقونات الشبكة والصوت.
+- **Start:** نافذة في **نص الشاشة فوق شريط المهام**، بزوايا 8px وخلفية Acrylic فاتحة وحد رمادي 1px:
+  - فوق: مربع بحث بزوايا دائرية ("Type here to search").
+  - **Pinned:** عنوان + زر "All apps >" على اليمين (بيفتح قائمة البرامج الكاملة، يعني الـ Start القديم)، وشبكة 6 أعمدة
+    × 3 صفوف: أيقونة 32px وتحتها اسم البرنامج.
+  - **Recommended:** عمودين × 3 صفوف: أيقونة + اسم الملف + وقت ("2h ago") من الملفات الأخيرة.
+  - تحت: شريط فيه صورة المستخدم (دائرة بأول حرف من الاسم) والاسم، وزر الطاقة على اليمين.
+  - تأثير hover: خلفية فاتحة بزوايا 4px. الإغلاق بـ Esc أو بالضغط برا النافذة.
+- **النوافذ:** زوايا 8px، شريط عنوان مسطح فاتح (Mica)، وأزرار تحكم مسطحة.
+
+## نقاط البداية في الكود (اتحددت بالفحص)
+
+| الحاجة | المكان |
+|---|---|
+| فتح الـ Start | `base/shell/explorer/traywnd.cpp`: `PopupStartMenu()` (حوالي السطر 1921). بيتنادى من ضغطة زر Start (`OnNcLButtonDown`/`OnLButtonDown` حوالي 2953)، ومن رسالة فتح الـ Start (`OnOpenStartMenu` حوالي 3120)، وزر Windows بيوصل لنفس المكان |
+| أوامر الإيقاف/التشغيل/البحث | `HandleCommand` في `traywnd.cpp`: `TRAYCMD_SHUTDOWN_DIALOG`، `TRAYCMD_RUN_DIALOG`، `IDM_SEARCH`. نافذة جديدة بتبعت `WM_COMMAND` للـ tray |
+| ترتيب شريط المهام | `traywnd.cpp`: `ResizeWorker` (زر Start والـ rebar والـ tray notify)، والأزرار في `taskswnd.cpp` |
+| خلفية شريط المهام | `traywnd.cpp`: `OnEraseBackground` (حوالي 2580) |
+| ملفات explorer | `base/shell/explorer/CMakeLists.txt` (أي ملف جديد بيتضاف لـ `SOURCE`، وبيبدأ بـ `#include "precomp.h"`) |
+| إطار النوافذ | `dll/win32/uxtheme/nonclient.c`، `themehooks.c` |
+| layered windows | `win32ss/user/ntuser/layered.c` |
+| DWM API | `dll/win32/dwmapi/dwmapi_main.c` |
+| الخطوط | `media/fonts/`، و FontSubstitutes في `boot/bootdata/hivesft.inf`، والرسم في `win32ss/gdi/ntgdi/freetype.c` |
+| الثيمات | `media/themes/` (أمثلة: Modern، Lautus) |
+
+**اقتراح تنفيذ الـ Start (المرحلة 7):** ملف جديد `base/shell/explorer/kushstart.cpp` فيه نافذة popup
+(`WS_POPUP`، `WS_EX_TOOLWINDOW | WS_EX_TOPMOST`) بزوايا من `CreateRoundRectRgn`، وخلفية Acrylic ثابتة: قبل الإظهار
+بنصوّر المنطقة اللي وراها من الشاشة بـ `BitBlt`، ونصغّرها ×8، ونعمل box blur، ونكبّرها، ونخلطها بلون فاتح + noise.
+البرامج المثبتة من `CSIDL_COMMON_PROGRAMS` و `CSIDL_PROGRAMS` (ملفات `.lnk`)، والأيقونات بـ `SHGetFileInfo`،
+والملفات الأخيرة من `CSIDL_RECENT`. `PopupStartMenu()` بتنادي الـ Start الجديد، إلا لو
+`HKCU\Software\Kush\Shell\ClassicStartMenu=1`. زر "All apps" بيفتح القائمة القديمة.
+
+**ملاحظة:** شاشة الـ VM في QEMU 800×600. لازم التصميم يتأقلم مع الشاشات الصغيرة (عدد الصفوف حسب المساحة)،
+أو نرفع الدقة لـ 1024×768 أو 1280×800 من إعدادات العرض قبل الصور.
+
+## الحالة
+
+| المرحلة | الحالة |
+|---|---|
+| الخلفية الأصلية Kush Flow | ✅ اتعملت (`modules/wallpapers/Kush-Flow*.bmp`، `tools/design/gen_wallpaper.py`) |
+| 0 لحد 9 | ⏳ ما بدأت. الترتيب المقترح: 7 (Start + شريط المهام) ← 0 ← 1 ← 3 ← 4 ← 5أ ← 6 ← 2 ← 8 ← 5ب ← 9 |
+
 ## الترتيب والاعتماديات
 
 ```
