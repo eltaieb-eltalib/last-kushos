@@ -43,16 +43,7 @@ HANDLE WINAPI CreateFile2(LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwSha
     return CreateFileW(lpFileName, dwDesiredAccess, dwShareMode, Sa, dwCreationDisposition, Flags, Template);
 }
 
-typedef struct _KUSH_COPYFILE2_PARAMS
-{
-    DWORD dwSize;
-    DWORD dwCopyFlags;
-    BOOL *pfCancel;
-    PVOID pProgressRoutine;
-    PVOID pvCallbackContext;
-} KUSH_COPYFILE2_PARAMS;
-
-HRESULT WINAPI CopyFile2(PCWSTR pwszExistingFileName, PCWSTR pwszNewFileName, KUSH_COPYFILE2_PARAMS *pParams)
+HRESULT WINAPI CopyFile2(PCWSTR pwszExistingFileName, PCWSTR pwszNewFileName, COPYFILE2_EXTENDED_PARAMETERS *pParams)
 {
     DWORD Flags = pParams ? (pParams->dwCopyFlags & 0x00000FFF) : 0;
     if (CopyFileExW(pwszExistingFileName, pwszNewFileName, NULL, NULL, pParams ? pParams->pfCancel : NULL, Flags))
@@ -81,17 +72,9 @@ HANDLE WINAPI KushCreateEventExA(LPSECURITY_ATTRIBUTES lpEventAttributes, LPCSTR
 #ifndef CREATE_WAITABLE_TIMER_MANUAL_RESET
 #define CREATE_WAITABLE_TIMER_MANUAL_RESET 0x1
 #endif
-HANDLE WINAPI CreateWaitableTimerExW(LPSECURITY_ATTRIBUTES lpTimerAttributes, LPCWSTR lpTimerName, DWORD dwFlags, DWORD dwDesiredAccess)
-{
-    UNREFERENCED_PARAMETER(dwDesiredAccess);
-    return CreateWaitableTimerW(lpTimerAttributes, (dwFlags & CREATE_WAITABLE_TIMER_MANUAL_RESET) != 0, lpTimerName);
-}
+/* (CreateWaitableTimerExW: already implemented in kernel32) */
 
-HANDLE WINAPI CreateWaitableTimerExA(LPSECURITY_ATTRIBUTES lpTimerAttributes, LPCSTR lpTimerName, DWORD dwFlags, DWORD dwDesiredAccess)
-{
-    UNREFERENCED_PARAMETER(dwDesiredAccess);
-    return CreateWaitableTimerA(lpTimerAttributes, (dwFlags & CREATE_WAITABLE_TIMER_MANUAL_RESET) != 0, lpTimerName);
-}
+/* (CreateWaitableTimerExA: already implemented in kernel32) */
 
 BOOL WINAPI SetWaitableTimerEx(HANDLE hTimer, const LARGE_INTEGER *lpDueTime, LONG lPeriod,
                                PTIMERAPCROUTINE pfnCompletionRoutine, LPVOID lpArgToCompletionRoutine,
@@ -223,7 +206,7 @@ BOOL WINAPI KushGetLogicalProcessorInformationEx(DWORD RelationshipType, PVOID B
     return FALSE;
 }
 
-VOID WINAPI FlushProcessWriteBuffers(VOID) { MemoryBarrier(); }
+/* (FlushProcessWriteBuffers: already implemented in kernel32) */
 
 #define APPMODEL_ERROR_NO_PACKAGE 15700
 LONG WINAPI GetCurrentPackageFullName(UINT32 *packageFullNameLength, PWSTR packageFullName)
@@ -231,11 +214,7 @@ LONG WINAPI GetCurrentPackageFullName(UINT32 *packageFullNameLength, PWSTR packa
     UNREFERENCED_PARAMETER(packageFullNameLength); UNREFERENCED_PARAMETER(packageFullName);
     return APPMODEL_ERROR_NO_PACKAGE;
 }
-LONG WINAPI GetCurrentPackageId(UINT32 *bufferLength, BYTE *buffer)
-{
-    UNREFERENCED_PARAMETER(bufferLength); UNREFERENCED_PARAMETER(buffer);
-    return APPMODEL_ERROR_NO_PACKAGE;
-}
+/* (GetCurrentPackageId: already implemented in kernel32) */
 
 BOOL WINAPI QueryUnbiasedInterruptTime(PULONGLONG UnbiasedTime)
 {

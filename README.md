@@ -103,7 +103,11 @@ This repo contains **only the files changed from ReactOS master commit
    `QueryUnbiasedInterruptTime(Precise)`، `RtlQueryPerformanceCounter`، `Wer*RuntimeExceptionModule`…
 
 **الخطوات:**
-- **أ.** ⏳ بناء Kush بـ `DLL_EXPORT_VERSION=0x600` (Vista) في مجلد بناء منفصل (شغّال).
+- **أ.** ✅ بناء Kush بـ `DLL_EXPORT_VERSION=0x600` (Vista): `cmake ... -DDLL_EXPORT_VERSION=0x600` ثم
+  `ninja bootcd`، **نجح بالكامل** (ISO 340 MB) مع تعديلات ب و ج و د. مشاكل البناء اللي ظهرت واتحلّت:
+  تعارض `CopyFile2` مع التعريف الرسمي (بقى بيستعمل `COPYFILE2_EXTENDED_PARAMETERS`)، و 4 دوال طلعت
+  موجودة أصلًا في `kernel32` (`CreateWaitableTimerExA/W`، `FlushProcessWriteBuffers`،
+  `GetCurrentPackageId`) فاتشالت من `kush_win8.c`.
 - **ب.** ✅ تصليح `sdk/lib/apisets/apisets.table.c`: علامة `APISET_WIN10` اتضافت لـ **332** API set كانت
   Win7/8/8.1 بس (ويندوز 10 بيدعمها)، و **9** اتحوّلت للمكتبة الصحيحة (registry و security و sddl ←
   `advapi32`، و version ← `version.dll`، و winrt و winrt-string و winrt-error ← `combase.dll`، و psapi ←
