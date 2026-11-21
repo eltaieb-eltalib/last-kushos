@@ -69,7 +69,7 @@ This repo contains **only the files changed from ReactOS master commit
   boots to the Kush 1.1 desktop. Revert to `DefaultOS=LiveImg` once the
   bootvid race is fixed.
 
-## تجربة Firefox 160.0.1 (64-bit) على Kush 1.1 ⏳
+## تجربة Firefox 160.0.1 (64-bit) على Kush 1.1 ❌ (محتاج ويندوز 10)
 
 المصدر: `https://ftp.mozilla.org/pub/firefox/releases/160.0.1/win64/en-US/Firefox Setup 160.0.1.exe` (مجاني، 95.8 MB).
 
@@ -82,6 +82,25 @@ This repo contains **only the files changed from ReactOS master commit
 | 5 | تشغيل `C:\Firefox\firefox.exe` | ❌ **"api-ms-win-core-version-l1-1-1.dll was not found"** (`docs/firefox/02-api-ms-win-core-version-missing.png`) | Firefox 160 محتاج ويندوز 10 أو أحدث، وبيستعمل مكتبات "API set" (`api-ms-win-*`) ناقصة في Kush. ⏳ الحل: نضيف الـ API sets الناقصة (forwarders لـ `version.dll` و `kernel32`/`kernelbase`) |
 | 6 | ليه الـ API set ناقص؟ | Kush فيه جدول API sets (`sdk/lib/apisets/apisets.table.c`، 1248 مدخل) وفيه `api-ms-win-core-version-l1-1-1`، لكنه معلّم `APISET_WIN10`. الـ loader (`ntdll/rtl/libsupp.c`، `LdrpApisetVersion`) **بيفعّل الـ API sets بس لما البرنامج مصنّف ويندوز 10** (`RosGetProcessCompatVersion`)، وفايرفوكس بيشتغل بإصدار Kush العادي (NT 5.2) | نشغّله بطبقة التوافق `WIN10RTM` |
 | 7 | `set __COMPAT_LAYER=WIN10RTM` وتشغيل فايرفوكس | ⚠️ تقدّم: الـ API set اتفعّل واتحوّل، لكن لـ `kernel32.dll`، فطلع **"Entry Point Not Found: GetFileVersionInfoSizeW in api-ms-win-core-version-l1-1-1.dll"** (`docs/firefox/03-win10-layer-entry-point-not-found.png`) | في ويندوز 10 الدوال دي في `kernelbase.dll`، وفي Kush مكانها `version.dll`. ⏳ الحل: نحوّل `api-ms-win-core-version-*` لـ `version.dll` في جدول الـ API sets |
+| 8 | فحص كامل لكل الدوال اللي فايرفوكس بيستوردها ومقارنتها بـ Kush (`tools/firefox_api_audit.py`، النتيجة في `docs/firefox/api-audit-firefox160.txt`) | ❌ **الفجوة كبيرة:** 126 دالة ناقصة في `kernel32.dll` (SRW locks، `AddDllDirectory`، thread pool…)، و 32 في `ntdll.dll` (ALPC بتاع الـ sandbox)، و 12 في `advapi32.dll` (ETW، `RegDeleteTreeW`…)، و 8 في `user32.dll` (DPI)، و ~40 API set ما ليها مدخل Win10 في الجدول، و ~13 API set بتتحوّل لمكتبة ما فيها الدالة، و 9 مكتبات ما موجودة أصلًا (`dxgi`، `dcomp`، `mf`، `mfplat`، `coremessaging`، `bcp47langs`، `profapi`، `ktmw32`، `rometadata`) | شوف الاستنتاج تحت |
+
+**الاستنتاج:** Firefox 160 **ما بيشتغل على Kush 1.1 هسي**. هو مبني لويندوز 10 وما فوق (Mozilla وقّفت دعم
+ويندوز 7 و 8 بعد Firefox 115)، و Kush بيقلّد Windows Server 2003 مع جزء من دوال Vista و 7. المشكلة ما
+في مكتبة واحدة، الفجوة **مئات الدوال**.
+
+**طرق الحل:**
+1. **الأسرع (موصى بيه): Firefox ESR 115 بنسخة 64-bit.** آخر نسخة بتدعم ويندوز 7، فبتحتاج دوال أقل بكتير،
+   ومعظمها موجود في `kernel32_vista` و API sets بتاعة Win7 في Kush. الرابط:
+   `https://ftp.mozilla.org/pub/firefox/releases/115.18.0esr/win64/en-US/` (نفس طريقة الفك بـ 7z).
+2. **متوسط:** نصلّح الأشياء السهلة اللي ظهرت في الفحص، وده بيفيد كل البرامج الحديثة مش فايرفوكس بس:
+   - `apisets.table.c`: `api-ms-win-core-version-*` → `version.dll`، و `api-ms-win-core-psapi` → `psapi.dll`،
+     و `api-ms-win-core-path` → `kernelbase`/`shlwapi`، وإضافة علامة `APISET_WIN10` للـ API sets الأساسية
+     (synch، processthreads، libraryloader، file، memory…) اللي معلّمة Win7/8 بس.
+   - تصنيف `firefox.exe` كويندوز 10 تلقائيًا (مدخل في `media/sdb/sysmain.xml`، أو دعم `LAYER_REF` جوّا
+     `EXE` في `xml2sdb` و `apphelp`)، بدل `set __COMPAT_LAYER=WIN10RTM`.
+   - تصدير دوال Vista/7 من `kernel32.dll` (forwarders لـ `kernel32_vista.dll`).
+3. **كبير (أسابيع):** تطبيق بقية دوال ويندوز 10 (ALPC في `ntdll`، و DPI في `user32`، و `dxgi`/`dcomp`،
+   و Media Foundation) عشان النسخ الحديثة زي 160 تشتغل.
 
 ## ملخص الحالة (للمتابعة)
 
