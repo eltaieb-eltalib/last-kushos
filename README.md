@@ -281,7 +281,17 @@ Build (Linux, mingw-w64 **posix** toolchain, cmake, ninja, bison, flex, libgmp-d
     | 4 | الأنوية الزيادة ما بتسرّع | `top -H` على QEMU: نواة واحدة 100% والتانية 0% | الكيرنل اللي بيقلع هو نسخة **المعالج الواحد** (`ntoskrnl.exe`) | ⏳ تشغيل `ntkrnlmp.exe` بثبات = سرعة أكبر لكل البرامج |
     | 5 | فايرفوكس: process واحدة بس، وصفحات الويب ما بتفتح | `tasklist` | الـ **sandbox** بتاع فايرفوكس ما بيقدر يشغّل الـ content processes على Kush | للتجربة: `MOZ_DISABLE_*_SANDBOX=1`، واشتغلت **9 content processes** وفتح تبويب Google. ⏳ الحل الحقيقي في النظام: restricted tokens، job objects، وalternate desktop |
     | 6 | الواجهة كلها معلّقة (فايرفوكس، شريط المهام، وحتى زر تصغير cmd) | **عينات RIP** من QEMU (`info registers`، 4767 عينة): 91% في الكيرنل `NtYieldExecution` و`KeSetEvent`، وعينات user mode في **`WinUtils::WaitForMessage`** (برموز Mozilla) | **bug في win32k:** علامات الرسائل (`fsWakeBits`) بتتحسب بعدّادات، ولما العدّاد يخرج عن المزامنة الـ bit بيفضل مرفوع من غير رسالة. `MsgWaitForMultipleObjectsEx(MWMO_INPUTAVAILABLE)` بترجع على طول، و`PeekMessage` ما بيلقى حاجة، والبرنامج بيعمل `SwitchToThread` ويعيد → **livelock** | `win32ss/user/ntuser/message.c`: `IntResyncQueueWakeBits`: لما `PeekMessage` من غير فلتر ما يلقى أي رسالة، بيمسح كل bit ما وراه رسالة حقيقية (posted، sent، hardware، paint، timer). ده **على مستوى النظام**، وبيفيد أي برنامج بيستعمل النمط ده |
-    - ⏳ التجربة بعد إصلاح win32k شغالة.
+    - ✅ **التجربة بعد إصلاح win32k:** عينات المعالج اتغيرت تمامًا: `NtYieldExecution` اختفى، والمعالج بقى **فاضي ~88%**
+      (`HalProcessorIdle`). **النظام رجع يستجيب**: قائمة Start بتفتح بالماوس، وقبل الإصلاح حتى زر التصغير ما كان بيشتغل
+      (`docs/firefox/15-after-win32k-fix-start-menu-works.png`).
+    - ❌ **فايرفوكس لسه ما بيستجيب:** الـ main thread **محبوس في انتظار** (المعالج فاضي، والنافذة ما بتتعاد رسمها بعد ما
+      قائمة Start تتقفل: `docs/firefox/16-firefox-main-thread-blocked.png`). الغالب إنه مستني رد متزامن (sync IPC) من
+      content process.
+    - ⏳ **الخطوات الجاية (بالترتيب):**
+      1. stack الـ main thread والـ content processes وهي في الانتظار (gdb + رموز Mozilla) عشان نعرف بيستنوا شنو.
+      2. دعم sandbox فايرفوكس في النظام (restricted tokens، job objects، alternate desktop/winstation)، عشان يشتغل
+         من غير `MOZ_DISABLE_*_SANDBOX`.
+      3. تشغيل كيرنل تعدد المعالجات (`ntkrnlmp.exe`) بثبات، وإصلاح bug الرام فوق 4GB (0x7B)، عشان النظام يبقى أسرع.
 
   #### ملخص مشاكل فايرفوكس اليوم وحلولها (كلها على مستوى النظام)
 
