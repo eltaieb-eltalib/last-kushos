@@ -301,6 +301,7 @@ Build (Linux, mingw-w64 **posix** toolchain, cmake, ninja, bison, flex, libgmp-d
     | 4 | ✅ **فايرفوكس فتح `google.com/search?q=السودان`**: العنوان بالعربي ظاهر صح، والاتصال عدّى الـ proxy | | `docs/firefox/17-firefox-google-sudan-tls-error.png` |
     | 6 | ❌ الضغط والكيبورد ما بيوصلوا لمحتوى الصفحة (زر "Advanced" ما بيستجيب، و Tab + Enter كمان)، رغم إن الصفحة بتترسم والنافذة نشطة | الـ input من الواجهة (parent) للـ content process ما بيوصل، أو الـ content process ما بيعالجه | ⏳ تحقيق: IPC بين الـ processes (named pipes/ALPC في Kush) |
     | 7 | إعداد `browser.xul.error_pages.expert_bad_cert` ما عرض تفاصيل الخطأ | التفاصيل محتاجة ضغطة على "Advanced"، وده ما بيشتغل (رقم 6) | ⏳ |
+    | 8 | أداة تشخيص جديدة `tools/kstackdump` (stack كل threads أي process بـ `GetThreadContext` + `ReadProcessMemory`) ما لقت processes فايرفوكس | أسماء الـ processes الراجعة من `Process32First` مقطوعة: `crashhelper.exe` ← `per.exe`، و`[System Process]` ← `Process]` (متزحزحة 8 بايت). **bug في النظام:** `sdk/include/psdk/tlhelp32.h` كان معرّف `th32DefaultHeapID` كـ `DWORD`، وفي Windows هو `ULONG_PTR` (8 بايت على 64-bit). نفس الغلطة في `HEAPLIST32` و`HEAPENTRY32`. يعني **أي برنامج 64-bit مبني لـ Windows** كان بيقرأ معلومات الـ processes والـ heaps غلط من Kush | ✅ تصحيح الـ structs لتطابق Windows، وإعادة بناء kernel32 وtaskmgr وtaskkill وdrwtsn32 وumandlg وwbemprox |
     | 5 | ❌ صفحة "Security Risk" (HSTS) | الـ proxy بيقدم **شهادة Google الأصلية** (WE2 ← GTS Root R4 ← GlobalSign، اتأكدنا بـ `openssl s_client`)، يعني **التحقق من الشهادة بيفشل جوه Kush** (NSS/التشفير أو الوقت) | ⏳ الخطوة الجاية: رمز الخطأ من "Advanced"، وبعدها إصلاح في النظام |
 
   #### ملخص مشاكل فايرفوكس اليوم وحلولها (كلها على مستوى النظام)
@@ -314,6 +315,7 @@ Build (Linux, mingw-w64 **posix** toolchain, cmake, ninja, bison, flex, libgmp-d
   | 5 | رسالة "no 3D acceleration" بتتكرر | بتظهر مرة في كل process | مرة واحدة لكل مستخدم (`wined3d/adapter_gl.c`) |
   | 6 | `Failed to initialise output` آلاف المرات | جدول handles الـ D3DKMT (16 خانة) بيتملي | handles stateless (`gdi32_vista/d3dkmt.c`) |
   | 7 | فايرفوكس ما بيستجيب | DXGI factory بيفشل (OpenGL ناقص)، والـ vsync بيعيده مع كل vblank | wined3d بيرجع لـ adapter no-3D (`wined3d/directx.c`) |
+  | 11 | أسماء الـ processes غلط لبرامج Windows الـ 64-bit | `tlhelp32.h` بأحجام 32-bit | تعريفات Win64 (`sdk/include/psdk/tlhelp32.h`) |
   | 10 | الواجهة معلّقة (livelock) | wake bits معلّقة في win32k | `IntResyncQueueWakeBits` (`ntuser/message.c`) |
   | 9 | `lround(100)=0`، `cbrtf=0` وغيرها | 65 دالة رياضية في ucrtbase كانت `-stub` | تنفيذ حقيقي (`ucrtbase/kush_math.c`)، ودقة 6e-14 |
   | 8 | فايرفوكس محتاج shim خاص بيه | النظام بيصنّف البرنامج بأقل إصدار في الـ manifest، وجدول الـ API sets بيتبع التصنيف | جدول API sets كامل لكل البرامج (`ntdll/rtl/libsupp.c`)، وشيل سطور فايرفوكس من `sysmain.xml` |
