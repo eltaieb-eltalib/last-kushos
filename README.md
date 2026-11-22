@@ -292,6 +292,14 @@ Build (Linux, mingw-w64 **posix** toolchain, cmake, ninja, bison, flex, libgmp-d
       2. دعم sandbox فايرفوكس في النظام (restricted tokens، job objects، alternate desktop/winstation)، عشان يشتغل
          من غير `MOZ_DISABLE_*_SANDBOX`.
       3. تشغيل كيرنل تعدد المعالجات (`ntkrnlmp.exe`) بثبات، وإصلاح bug الرام فوق 4GB (0x7B)، عشان النظام يبقى أسرع.
+  - **دورة 11: فايرفوكس وصل لـ Google بكلمة "السودان" (2026-11-22):**
+    | # | المشكلة | السبب | الحل |
+    |---|---|---|---|
+    | 1 | نافذة Welcome/شروط الاستخدام قافلة الشاشة | أول تشغيل لفايرفوكس 160 | إعدادات تجربة في `user.js` جوه profile جديد (`browser.preonboarding.enabled=false`، `termsofuse.*`، `browser.aboutwelcome.enabled=false`) + content process واحدة. **إعداد تجربة جوه الـ VM بس، مش جزء من Kush** |
+    | 2 | ملف إعدادات في `C:\Firefox\defaults\pref\` ما اتطبق | فايرفوكس بيقرأ إعدادات الـ browser من `user.js` أو `browser/defaults/preferences` | استعملنا `user.js` |
+    | 3 | `policies.json` (فيه `SkipTermsOfUse` و `Proxy`) خلّى فايرفوكس يقع: access violation في `xul.dll` جوه `_Find_impl` (بحث نصي) في الـ main thread، والقراءة عند حافة صفحة ذاكرة | ⏳ ما اتحدد بالضبط. الغالب في قراءة/تحليل ملف السياسات على Kush | شلنا `policies.json`. ⏳ **محتاج تحقيق في النظام** (قراءة ملفات بحجم معين أو mapping لحد الصفحة) |
+    | 4 | ✅ **فايرفوكس فتح `google.com/search?q=السودان`**: العنوان بالعربي ظاهر صح، والاتصال عدّى الـ proxy | | `docs/firefox/17-firefox-google-sudan-tls-error.png` |
+    | 5 | ❌ صفحة "Security Risk" (HSTS) | الـ proxy بيقدم **شهادة Google الأصلية** (WE2 ← GTS Root R4 ← GlobalSign، اتأكدنا بـ `openssl s_client`)، يعني **التحقق من الشهادة بيفشل جوه Kush** (NSS/التشفير أو الوقت) | ⏳ الخطوة الجاية: رمز الخطأ من "Advanced"، وبعدها إصلاح في النظام |
 
   #### ملخص مشاكل فايرفوكس اليوم وحلولها (كلها على مستوى النظام)
 
