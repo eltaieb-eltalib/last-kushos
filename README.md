@@ -271,7 +271,17 @@ Build (Linux, mingw-w64 **posix** toolchain, cmake, ninja, bison, flex, libgmp-d
     - ✅ اختبار الدقة ضد glibc libm (`tools/ucrt_math_test.c`): أسوأ خطأ نسبي **6e-14**، و`lround(100)=100`.
     - ✅ التجربة في فايرفوكس: كل تحذيرات الدوال الرياضية (`lround`، `cbrtf`، `fe*`) اختفت من السجل، وما فاضل غير
       `WSCGetProviderInfo` (معلومات Winsock، مش ضرورية). فايرفوكس فتح عادي (`docs/firefox/14-firefox160-after-ucrt-math.png`).
-    - ⏳ الخطوة الجاية: زر "Continue" لسه بطيء في الاستجابة تحت المحاكاة، فمحتاج نقيس لو ده بطء بس ولا الضغطة ما بتوصل.
+    - زر "Continue" ما بيستجيب، واتحقق فيه في الدورة 10.
+  - **دورة 10: فتح Google والبحث عن "السودان" (2026-11-22):**
+    | # | المشكلة | الفحص | السبب الجذري | الحل |
+    |---|---|---|---|---|
+    | 1 | الـ VM ما بيوصل للإنترنت | `curl` من بيئة البناء: الوصول المباشر مقفول، وبيشتغل بس عن طريق proxy `127.0.0.1:35723` | البيئة السحابية بتسمح بالخروج عن طريق proxy بس | **proxy النظام** في Kush (إعدادات الإنترنت في الـ registry: `ProxyServer=10.0.2.2:35723`، `ProxyEnable=1`)، وفايرفوكس بياخده تلقائيًا. الـ proxy بيمرر google.com بشهادة Google الأصلية، فما محتاجين شهادة إضافية. ده إعداد تجربة جوه الـ VM بس |
+    | 2 | 8 جيجا رام: شاشة زرقاء `0x7B INACCESSIBLE_BOOT_DEVICE` | `serial.log` | Kush ما بيقدر يقرأ القرص لما الرام تعدي 4GB (DMA مع الذاكرة العالية) | الحد الآمن 3GB. ⏳ **bug مفتوح في النظام** (session التصميم وثّقت نفس المشكلة) |
+    | 3 | 3.5GB و 4 أنوية: شاشة زرقاء `0xC000021A` | ملفات النظام في القرص طلعت سليمة | الغالب إن Kush ما ثابت مع 4 أنوية | الرجوع لـ 3GB وأنويتين |
+    | 4 | الأنوية الزيادة ما بتسرّع | `top -H` على QEMU: نواة واحدة 100% والتانية 0% | الكيرنل اللي بيقلع هو نسخة **المعالج الواحد** (`ntoskrnl.exe`) | ⏳ تشغيل `ntkrnlmp.exe` بثبات = سرعة أكبر لكل البرامج |
+    | 5 | فايرفوكس: process واحدة بس، وصفحات الويب ما بتفتح | `tasklist` | الـ **sandbox** بتاع فايرفوكس ما بيقدر يشغّل الـ content processes على Kush | للتجربة: `MOZ_DISABLE_*_SANDBOX=1`، واشتغلت **9 content processes** وفتح تبويب Google. ⏳ الحل الحقيقي في النظام: restricted tokens، job objects، وalternate desktop |
+    | 6 | الواجهة كلها معلّقة (فايرفوكس، شريط المهام، وحتى زر تصغير cmd) | **عينات RIP** من QEMU (`info registers`، 4767 عينة): 91% في الكيرنل `NtYieldExecution` و`KeSetEvent`، وعينات user mode في **`WinUtils::WaitForMessage`** (برموز Mozilla) | **bug في win32k:** علامات الرسائل (`fsWakeBits`) بتتحسب بعدّادات، ولما العدّاد يخرج عن المزامنة الـ bit بيفضل مرفوع من غير رسالة. `MsgWaitForMultipleObjectsEx(MWMO_INPUTAVAILABLE)` بترجع على طول، و`PeekMessage` ما بيلقى حاجة، والبرنامج بيعمل `SwitchToThread` ويعيد → **livelock** | `win32ss/user/ntuser/message.c`: `IntResyncQueueWakeBits`: لما `PeekMessage` من غير فلتر ما يلقى أي رسالة، بيمسح كل bit ما وراه رسالة حقيقية (posted، sent، hardware، paint، timer). ده **على مستوى النظام**، وبيفيد أي برنامج بيستعمل النمط ده |
+    - ⏳ التجربة بعد إصلاح win32k شغالة.
 
   #### ملخص مشاكل فايرفوكس اليوم وحلولها (كلها على مستوى النظام)
 
@@ -284,6 +294,7 @@ Build (Linux, mingw-w64 **posix** toolchain, cmake, ninja, bison, flex, libgmp-d
   | 5 | رسالة "no 3D acceleration" بتتكرر | بتظهر مرة في كل process | مرة واحدة لكل مستخدم (`wined3d/adapter_gl.c`) |
   | 6 | `Failed to initialise output` آلاف المرات | جدول handles الـ D3DKMT (16 خانة) بيتملي | handles stateless (`gdi32_vista/d3dkmt.c`) |
   | 7 | فايرفوكس ما بيستجيب | DXGI factory بيفشل (OpenGL ناقص)، والـ vsync بيعيده مع كل vblank | wined3d بيرجع لـ adapter no-3D (`wined3d/directx.c`) |
+  | 10 | الواجهة معلّقة (livelock) | wake bits معلّقة في win32k | `IntResyncQueueWakeBits` (`ntuser/message.c`) |
   | 9 | `lround(100)=0`، `cbrtf=0` وغيرها | 65 دالة رياضية في ucrtbase كانت `-stub` | تنفيذ حقيقي (`ucrtbase/kush_math.c`)، ودقة 6e-14 |
   | 8 | فايرفوكس محتاج shim خاص بيه | النظام بيصنّف البرنامج بأقل إصدار في الـ manifest، وجدول الـ API sets بيتبع التصنيف | جدول API sets كامل لكل البرامج (`ntdll/rtl/libsupp.c`)، وشيل سطور فايرفوكس من `sysmain.xml` |
 
