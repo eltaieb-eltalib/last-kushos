@@ -62,11 +62,33 @@ static void load_mods(DWORD pid)
     CloseHandle(snap);
 }
 
+typedef struct { HANDLE proc; DWORD tid; } DUMPARGS;
+static void dump_thread_impl(HANDLE proc, DWORD tid);
+static DWORD WINAPI dump_worker(LPVOID p)
+{
+    DUMPARGS *a = p;
+    dump_thread_impl(a->proc, a->tid);
+    return 0;
+}
+
+/* Some threads never answer GetThreadContext on Kush; give each 3 seconds. */
 static void dump_thread(HANDLE proc, DWORD tid)
+{
+    static DUMPARGS args;
+    HANDLE w;
+    args.proc = proc; args.tid = tid;
+    w = CreateThread(NULL, 0, dump_worker, &args, 0, NULL);
+    if (!w) return;
+    if (WaitForSingleObject(w, 3000) == WAIT_TIMEOUT)
+        out("KSTACK  tid %lu: no answer to GetThreadContext within 3 s (skipped)", tid);
+    CloseHandle(w);
+}
+
+static void dump_thread_impl(HANDLE proc, DWORD tid)
 {
     CONTEXT ctx;
     HANDLE th = OpenThread(THREAD_GET_CONTEXT | THREAD_SUSPEND_RESUME | THREAD_QUERY_INFORMATION, FALSE, tid);
-    static ULONG_PTR stack[4096];
+    ULONG_PTR *stack = HeapAlloc(GetProcessHeap(), 0, 4096 * sizeof(ULONG_PTR));
     SIZE_T got = 0;
     const MODINFO *m;
     int i, n = 0;
@@ -88,10 +110,10 @@ static void dump_thread(HANDLE proc, DWORD tid)
     {
         ULONG_PTR a = ctx.Rsp & ~(ULONG_PTR)7;
         SIZE_T total = 0;
-        while (total < sizeof(stack))
+        while (total < 4096 * sizeof(ULONG_PTR))
         {
             SIZE_T chunk = 0x1000 - (a & 0xfff), r = 0;
-            if (chunk > sizeof(stack) - total) chunk = sizeof(stack) - total;
+            if (chunk > 4096 * sizeof(ULONG_PTR) - total) chunk = 4096 * sizeof(ULONG_PTR) - total;
             if (!ReadProcessMemory(proc, (LPCVOID)a, (BYTE *)stack + total, chunk, &r) || !r) break;
             total += r; a += r;
         }
@@ -108,6 +130,7 @@ static void dump_thread(HANDLE proc, DWORD tid)
     }
     ResumeThread(th);
     CloseHandle(th);
+    HeapFree(GetProcessHeap(), 0, stack);
 }
 
 int main(int argc, char **argv)
