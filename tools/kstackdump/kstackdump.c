@@ -122,7 +122,11 @@ int main(int argc, char **argv)
     {
         do
         {
-            if (_stricmp(pe.szExeFile, target) == 0)
+            char lower[MAX_PATH], want[MAX_PATH];
+            lstrcpynA(lower, pe.szExeFile, MAX_PATH); CharLowerA(lower);
+            lstrcpynA(want, target, MAX_PATH); CharLowerA(want);
+            out("KSTACK proc pid %lu '%s'", pe.th32ProcessID, pe.szExeFile);
+            if (strstr(lower, want))
             {
                 THREADENTRY32 te;
                 HANDLE proc = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pe.th32ProcessID);
