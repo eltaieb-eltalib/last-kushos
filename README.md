@@ -299,6 +299,8 @@ Build (Linux, mingw-w64 **posix** toolchain, cmake, ninja, bison, flex, libgmp-d
     | 2 | ملف إعدادات في `C:\Firefox\defaults\pref\` ما اتطبق | فايرفوكس بيقرأ إعدادات الـ browser من `user.js` أو `browser/defaults/preferences` | استعملنا `user.js` |
     | 3 | `policies.json` (فيه `SkipTermsOfUse` و `Proxy`) خلّى فايرفوكس يقع: access violation في `xul.dll` جوه `_Find_impl` (بحث نصي) في الـ main thread، والقراءة عند حافة صفحة ذاكرة | ⏳ ما اتحدد بالضبط. الغالب في قراءة/تحليل ملف السياسات على Kush | شلنا `policies.json`. ⏳ **محتاج تحقيق في النظام** (قراءة ملفات بحجم معين أو mapping لحد الصفحة) |
     | 4 | ✅ **فايرفوكس فتح `google.com/search?q=السودان`**: العنوان بالعربي ظاهر صح، والاتصال عدّى الـ proxy | | `docs/firefox/17-firefox-google-sudan-tls-error.png` |
+    | 6 | ❌ الضغط والكيبورد ما بيوصلوا لمحتوى الصفحة (زر "Advanced" ما بيستجيب، و Tab + Enter كمان)، رغم إن الصفحة بتترسم والنافذة نشطة | الـ input من الواجهة (parent) للـ content process ما بيوصل، أو الـ content process ما بيعالجه | ⏳ تحقيق: IPC بين الـ processes (named pipes/ALPC في Kush) |
+    | 7 | إعداد `browser.xul.error_pages.expert_bad_cert` ما عرض تفاصيل الخطأ | التفاصيل محتاجة ضغطة على "Advanced"، وده ما بيشتغل (رقم 6) | ⏳ |
     | 5 | ❌ صفحة "Security Risk" (HSTS) | الـ proxy بيقدم **شهادة Google الأصلية** (WE2 ← GTS Root R4 ← GlobalSign، اتأكدنا بـ `openssl s_client`)، يعني **التحقق من الشهادة بيفشل جوه Kush** (NSS/التشفير أو الوقت) | ⏳ الخطوة الجاية: رمز الخطأ من "Advanced"، وبعدها إصلاح في النظام |
 
   #### ملخص مشاكل فايرفوكس اليوم وحلولها (كلها على مستوى النظام)
