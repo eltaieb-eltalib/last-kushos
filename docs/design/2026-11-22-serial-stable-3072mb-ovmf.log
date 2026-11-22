@@ -1,0 +1,608 @@
+[2J[01;01H[=3h[2J[01;01H[2J[01;01H[=3h[2J[01;01H[2J[01;01H[=3h[2J[01;01HBdsDxe: loading Boot0001 "UEFI QEMU DVD-ROM QM00003 " from PciRoot(0x0)/Pci(0x1,0x1)/Ata(Secondary,Master,0x0)
+BdsDxe: starting Boot0001 "UEFI QEMU DVD-ROM QM00003 " from PciRoot(0x0)/Pci(0x1,0x1)/Ata(Secondary,Master,0x0)
+UEFI EntryPoint: Starting freeldr from UEFI1.0-1.0b detected. Tables: [XSDT] [APIC] [FACP]
+KUSH-DBG MiInsertVadEx: search Result 0, StartingAddress 0000000000010000, ViewSize 147456, EndingAddress 0000000000033FFF
+ACPI Compatible Eisa/Isa HAL detected
+STORMINI: StorPortInitialize returns Status(0x0)
+BOOT DRIVERS LOADED
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 0, UBaseAddress FFFFF88075D8E8D8, PBaseAddress 0000000000000000, PRegionSize 4136, AllocType 0x3000
+KUSH-DBG MiInsertVadEx: search Result 3, StartingAddress 0000000000040000, ViewSize 8192, EndingAddress 0000000000041FFF
+KUSH-DBG NtAllocateVirtualMemory reserve: StartingAddress 0000000000040000, PRegionSize 8192, UBaseAddress FFFFF88075D8E8D8, URegionSize FFFFF88075D8E8C8
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 0, UBaseAddress FFFFF88075D8E8D0, PBaseAddress 0000000000000000, PRegionSize 4096, AllocType 0x3000
+KUSH-DBG MiInsertVadEx: search Result 3, StartingAddress 0000000000050000, ViewSize 4096, EndingAddress 0000000000050FFF
+KUSH-DBG NtAllocateVirtualMemory reserve: StartingAddress 0000000000050000, PRegionSize 4096, UBaseAddress FFFFF88075D8E8D0, URegionSize FFFFF88075D8E8C8
+KUSH-DBG MiInsertVadEx: search Result 3, StartingAddress 000007FFFFFB0000, ViewSize 147456, EndingAddress 000007FFFFFD3FFF
+KUSH-DBG MiInsertVadEx: search Result 3, StartingAddress 000007FFFFFDE000, ViewSize 4096, EndingAddress 000007FFFFFDEFFF
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 0, UBaseAddress FFFFF88075D8E6F8, PBaseAddress 0000000000000004, PRegionSize 1048320, AllocType 0x2000
+KUSH-DBG NtAllocateVirtualMemory reserve: StartingAddress 0000000000000000, PRegionSize 1048576, UBaseAddress FFFFF88075D8E6F8, URegionSize FFFFF88075D8E700
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 0, UBaseAddress FFFFF88075D8E6F8, PBaseAddress 0000000000000000, PRegionSize 126, AllocType 0x3000
+KUSH-DBG MiInsertVadEx: search Result 3, StartingAddress 0000000000100000, ViewSize 4096, EndingAddress 0000000000100FFF
+KUSH-DBG NtAllocateVirtualMemory reserve: StartingAddress 0000000000100000, PRegionSize 4096, UBaseAddress FFFFF88075D8E6F8, URegionSize FFFFF88075D8E708
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 0, UBaseAddress FFFFF88075D8E6F8, PBaseAddress 0000000000000000, PRegionSize 8192, AllocType 0x1000
+KUSH-DBG MiInsertVadEx: search Result 2, StartingAddress 0000000000110000, ViewSize 8192, EndingAddress 0000000000111FFF
+KUSH-DBG NtAllocateVirtualMemory reserve: StartingAddress 0000000000110000, PRegionSize 8192, UBaseAddress FFFFF88075D8E6F8, URegionSize FFFFF88075D8E708
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 0, UBaseAddress FFFFF88075D8E100, PBaseAddress 0000000000000000, PRegionSize 2097152, AllocType 0x2000
+KUSH-DBG MiInsertVadEx: search Result 3, StartingAddress 0000000000120000, ViewSize 2097152, EndingAddress 000000000031FFFF
+KUSH-DBG NtAllocateVirtualMemory reserve: StartingAddress 0000000000120000, PRegionSize 2097152, UBaseAddress FFFFF88075D8E100, URegionSize FFFFF88075D8E188
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 0, UBaseAddress FFFFF88075D8E100, PBaseAddress 000000000031E000, PRegionSize 8192, AllocType 0x1000
+KUSH-DBG MiInsertVadEx: search Result 2, StartingAddress 000007FFFFFDC000, ViewSize 8192, EndingAddress 000007FFFFFDDFFF
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000031F568, Heap 0000000000000000, &TotalSize 000000000031F6A0, TotalSize 1048576
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031F568, PBaseAddress 0000000000000000, PRegionSize 1048576, AllocType 0x2000
+KUSH-DBG MiInsertVadEx: search Result 3, StartingAddress 0000000000420000, ViewSize 1048576, EndingAddress 000000000051FFFF
+KUSH-DBG NtAllocateVirtualMemory reserve: StartingAddress 0000000000420000, PRegionSize 1048576, UBaseAddress 000000000031F568, URegionSize 000000000031F6A0
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000420000, TotalSize 1048576
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031F560, PBaseAddress 0000000000420000, PRegionSize 4096, AllocType 0x1000
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000420000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000031F568, Heap 0000000000000000, &TotalSize 000000000031F6A0, TotalSize 65536
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031F568, PBaseAddress 0000000000000000, PRegionSize 65536, AllocType 0x2000
+KUSH-DBG MiInsertVadEx: search Result 3, StartingAddress 0000000000320000, ViewSize 65536, EndingAddress 000000000032FFFF
+KUSH-DBG NtAllocateVirtualMemory reserve: StartingAddress 0000000000320000, PRegionSize 65536, UBaseAddress 000000000031F568, URegionSize 000000000031F6A0
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000320000, TotalSize 65536
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031F560, PBaseAddress 0000000000320000, PRegionSize 24576, AllocType 0x1000
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000320000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 0, UBaseAddress FFFFF88075A70920, PBaseAddress 000000000031D000, PRegionSize 4096, AllocType 0x1000
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031E928, PBaseAddress 0000000000421000, PRegionSize 4096, AllocType 0x1000
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031E9B8, PBaseAddress 0000000000421000, PRegionSize 4096, AllocType 0x1000
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 0, UBaseAddress FFFFF88075A70920, PBaseAddress 000000000031C000, PRegionSize 4096, AllocType 0x1000
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 0, UBaseAddress FFFFF88075A70920, PBaseAddress 000000000031B000, PRegionSize 4096, AllocType 0x1000
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031DFC8, PBaseAddress 0000000000422000, PRegionSize 4096, AllocType 0x1000
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031DA28, PBaseAddress 0000000000423000, PRegionSize 4096, AllocType 0x1000
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031FCC8, PBaseAddress 0000000000424000, PRegionSize 8192, AllocType 0x1000
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031F710, PBaseAddress 0000000000000000, PRegionSize 2097152, AllocType 0x2000
+KUSH-DBG MiInsertVadEx: search Result 3, StartingAddress 0000000000520000, ViewSize 2097152, EndingAddress 000000000071FFFF
+KUSH-DBG NtAllocateVirtualMemory reserve: StartingAddress 0000000000520000, PRegionSize 2097152, UBaseAddress 000000000031F710, URegionSize 000000000031F798
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031F710, PBaseAddress 000000000071E000, PRegionSize 8192, AllocType 0x1000
+KUSH-DBG MiInsertVadEx: search Result 2, StartingAddress 000007FFFFFDA000, ViewSize 8192, EndingAddress 000007FFFFFDBFFF
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031F710, PBaseAddress 0000000000000000, PRegionSize 2097152, AllocType 0x2000
+KUSH-DBG MiInsertVadEx: search Result 3, StartingAddress 0000000000720000, ViewSize 2097152, EndingAddress 000000000091FFFF
+KUSH-DBG NtAllocateVirtualMemory reserve: StartingAddress 0000000000720000, PRegionSize 2097152, UBaseAddress 000000000031F710, URegionSize 000000000031F798
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031F710, PBaseAddress 000000000091E000, PRegionSize 8192, AllocType 0x1000
+KUSH-DBG MiInsertVadEx: search Result 2, StartingAddress 000007FFFFFD8000, ViewSize 8192, EndingAddress 000007FFFFFD9FFF
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031FC20, PBaseAddress 0000000000000000, PRegionSize 4096, AllocType 0x3000
+KUSH-DBG MiInsertVadEx: search Result 3, StartingAddress 0000000000330000, ViewSize 4096, EndingAddress 0000000000330FFF
+KUSH-DBG NtAllocateVirtualMemory reserve: StartingAddress 0000000000330000, PRegionSize 4096, UBaseAddress 000000000031FC20, URegionSize 000000000031FC28
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031F798, PBaseAddress 0000000000426000, PRegionSize 4096, AllocType 0x1000
+Boot took 5429405295 cycles!
+Interrupts: 699 System Calls: 558 Context Switches: 0
+KUSH-DBG MiInsertVadEx: search Result 3, StartingAddress 0000000000340000, ViewSize 4096, EndingAddress 0000000000340FFF
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 0, UBaseAddress FFFFF88075A70188, PBaseAddress 0000000000340000, PRegionSize 4096, AllocType 0x1000
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap FFFFF97FDE000000, Flags 0x9, TotalSize 1048576, CommitSize 4096
+KUSH-DBG MiInsertVadEx: search Result 3, StartingAddress 0000000000920000, ViewSize 1048576, EndingAddress 0000000000A1FFFF
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 0, UBaseAddress FFFFF88075A6FF38, PBaseAddress 0000000000921000, PRegionSize 8192, AllocType 0x1000
+KUSH-DBG MiInsertVadEx: search Result 3, StartingAddress 0000000000920000, ViewSize 1048576, EndingAddress 0000000000A1FFFF
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 0, UBaseAddress FFFFF88075A6FE98, PBaseAddress 0000000000923000, PRegionSize 102400, AllocType 0x1000
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031F598, PBaseAddress 0000000000427000, PRegionSize 8192, AllocType 0x1000
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031F4A8, PBaseAddress 0000000000425000, PRegionSize 4096, AllocType 0x1000
+KUSH-DBG MiInsertVadEx: search Result 3, StartingAddress 000007FFFFFB0000, ViewSize 147456, EndingAddress 000007FFFFFD3FFF
+KUSH-DBG MiInsertVadEx: search Result 3, StartingAddress 000007FFFFFD4000, ViewSize 4096, EndingAddress 000007FFFFFD4FFF
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031F678, PBaseAddress 0000000000000004, PRegionSize 1048320, AllocType 0x2000
+KUSH-DBG NtAllocateVirtualMemory reserve: StartingAddress 0000000000000000, PRegionSize 1048576, UBaseAddress 000000000031F678, URegionSize 000000000031F680
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031F678, PBaseAddress 0000000000000000, PRegionSize 582, AllocType 0x3000
+KUSH-DBG MiInsertVadEx: search Result 3, StartingAddress 0000000000100000, ViewSize 4096, EndingAddress 0000000000100FFF
+KUSH-DBG NtAllocateVirtualMemory reserve: StartingAddress 0000000000100000, PRegionSize 4096, UBaseAddress 000000000031F678, URegionSize 000000000031F688
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031F678, PBaseAddress 0000000000000000, PRegionSize 2368, AllocType 0x1000
+KUSH-DBG MiInsertVadEx: search Result 2, StartingAddress 0000000000110000, ViewSize 4096, EndingAddress 0000000000110FFF
+KUSH-DBG NtAllocateVirtualMemory reserve: StartingAddress 0000000000110000, PRegionSize 4096, UBaseAddress 000000000031F678, URegionSize 000000000031F688
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031F080, PBaseAddress 0000000000000000, PRegionSize 2097152, AllocType 0x2000
+KUSH-DBG MiInsertVadEx: search Result 3, StartingAddress 0000000000120000, ViewSize 2097152, EndingAddress 000000000031FFFF
+KUSH-DBG NtAllocateVirtualMemory reserve: StartingAddress 0000000000120000, PRegionSize 2097152, UBaseAddress 000000000031F080, URegionSize 000000000031F108
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031F080, PBaseAddress 000000000031E000, PRegionSize 8192, AllocType 0x1000
+KUSH-DBG MiInsertVadEx: search Result 3, StartingAddress 000007FFFFFDE000, ViewSize 8192, EndingAddress 000007FFFFFDFFFF
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000031F568, Heap 0000000000000000, &TotalSize 000000000031F6A0, TotalSize 1048576
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031F568, PBaseAddress 0000000000000000, PRegionSize 1048576, AllocType 0x2000
+KUSH-DBG MiInsertVadEx: search Result 2, StartingAddress 0000000000410000, ViewSize 1048576, EndingAddress 000000000050FFFF
+KUSH-DBG NtAllocateVirtualMemory reserve: StartingAddress 0000000000410000, PRegionSize 1048576, UBaseAddress 000000000031F568, URegionSize 000000000031F6A0
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000410000, TotalSize 1048576
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031F560, PBaseAddress 0000000000410000, PRegionSize 4096, AllocType 0x1000
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000410000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000031F568, Heap 0000000000000000, &TotalSize 000000000031F6A0, TotalSize 65536
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031F568, PBaseAddress 0000000000000000, PRegionSize 65536, AllocType 0x2000
+KUSH-DBG MiInsertVadEx: search Result 3, StartingAddress 0000000000320000, ViewSize 65536, EndingAddress 000000000032FFFF
+KUSH-DBG NtAllocateVirtualMemory reserve: StartingAddress 0000000000320000, PRegionSize 65536, UBaseAddress 000000000031F568, URegionSize 000000000031F6A0
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000320000, TotalSize 65536
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031F560, PBaseAddress 0000000000320000, PRegionSize 24576, AllocType 0x1000
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000320000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 0, UBaseAddress FFFFF88075A4D920, PBaseAddress 000000000031D000, PRegionSize 4096, AllocType 0x1000
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031E928, PBaseAddress 0000000000411000, PRegionSize 4096, AllocType 0x1000
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031E9B8, PBaseAddress 0000000000411000, PRegionSize 4096, AllocType 0x1000
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 0, UBaseAddress FFFFF88075A4D920, PBaseAddress 000000000031C000, PRegionSize 4096, AllocType 0x1000
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 0, UBaseAddress FFFFF88075A4D920, PBaseAddress 000000000031B000, PRegionSize 4096, AllocType 0x1000
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031DFC8, PBaseAddress 0000000000412000, PRegionSize 4096, AllocType 0x1000
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031DA28, PBaseAddress 0000000000413000, PRegionSize 4096, AllocType 0x1000
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031F038, PBaseAddress 0000000000321000, PRegionSize 4096, AllocType 0x1000
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031FCC8, PBaseAddress 0000000000414000, PRegionSize 8192, AllocType 0x1000
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031FC50, PBaseAddress 000007FFFEBF0000, PRegionSize 4096, AllocType 0x1000
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 000007FFFEBF0000, Flags 0x7008, TotalSize 12582912, CommitSize 4096
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031F598, PBaseAddress 000007FFFEBF1000, PRegionSize 8192, AllocType 0x1000
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031E1A8, PBaseAddress 0000000000415000, PRegionSize 4096, AllocType 0x1000
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031DDB8, PBaseAddress 0000000000415000, PRegionSize 4096, AllocType 0x1000
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031EFB8, PBaseAddress 0000000000415000, PRegionSize 4096, AllocType 0x1000
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031EE58, PBaseAddress 0000000000416000, PRegionSize 4096, AllocType 0x1000
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031EE68, PBaseAddress 0000000000417000, PRegionSize 4096, AllocType 0x1000
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031EED8, PBaseAddress 0000000000417000, PRegionSize 4096, AllocType 0x1000
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031EFF8, PBaseAddress 0000000000418000, PRegionSize 69632, AllocType 0x1000
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031EFF8, PBaseAddress 0000000000429000, PRegionSize 69632, AllocType 0x1000
+KUSH-DBG MiInsertVadEx: search Result 3, StartingAddress 0000000000510000, ViewSize 1048576, EndingAddress 000000000060FFFF
+KUSH-DBG MiInsertVadEx: search Result 3, StartingAddress 0000000000610000, ViewSize 1585152, EndingAddress 0000000000792FFF
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031DE88, PBaseAddress 0000000000322000, PRegionSize 4096, AllocType 0x1000
+KUSH-DBG NtAllocateVirtualMemory entry: PrevMode 1, UBaseAddress 000000000031DD68, PBaseAddress 0000000000428000, PRegionSize 69632, AllocType 0x1000
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+err:(base/system/winlogon/winlogon.c:168) WL: RegOpenKeyExW("HKLM\System\CurrentControlSet\Services\Tcpip\Parameters") failed (error 2)
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap FFFFF97FDE2D0000, Flags 0x9, TotalSize 20971520, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap FFFFF97FDF6D0000, Flags 0x9, TotalSize 131072, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap FFFFF97FDF6F0000, Flags 0x9, TotalSize 20971520, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022E008, Heap 0000000000000000, &TotalSize 000000000022E140, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000390000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000390000, Flags 0x2, TotalSize 65536, CommitSize 65536
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap FFFFF97FE0AF0000, Flags 0x9, TotalSize 131072, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022DAD8, Heap 0000000000000000, &TotalSize 000000000022DC10, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 00000000003A0000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 00000000003A0000, Flags 0x2, TotalSize 65536, CommitSize 65536
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+fixme:(dll/win32/rpcrt4/rpc_server.c:1736) (0x1000): stub
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+fixme:(dll/win32/rpcrt4/rpc_server.c:1736) (0x1000): stub
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+err:(dll/win32/lsasrv/lsarpc.c:1452) LsapOpenDbObject(Accounts/S-1-5-6) failed (Status 0xc0000034)
+Boot took 12034231740 cycles!
+Interrupts: 2401 System Calls: 11787 Context Switches: 0
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 0000000001CAEF98, Heap 0000000000000000, &TotalSize 0000000001CAF0D0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000370000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000370000, Flags 0x0, TotalSize 65536, CommitSize 4096
+fixme:(win32ss/printing/providers/localspl/monitors.c:265) InitializePrintMonitor2 loaded.
+fixme:(win32ss/printing/providers/localspl/monitors.c:304) InitializePrintMonitorList Handle 00000000002468E0
+err:(win32ss/printing/providers/localspl/printprocessors.c:649) _OpenEnvironment failed with error 1805!
+err:(win32ss/printing/base/spoolss/main.c:28) LoadLibraryW failed for "localspl" with error 1114!
+err:(win32ss/printing/base/spoolss/main.c:94) The Local Spooler could not be loaded!
+err:(win32ss/printing/base/spoolsv/main.c:76) InitializeRouter failed with error 1114!
+err:(win32ss/user/user32/windows/cursoricon.c:274) Loading System Cursors
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 0000000000E9ED08, Heap 0000000000000000, &TotalSize 0000000000E9EE40, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000370000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000370000, Flags 0x0, TotalSize 65536, CommitSize 4096
+err:(base/services/wkssvc/wkssvc.c:82) ServiceInit()
+err:(base/services/wkssvc/rpcserver.c:61) RpcServerListen() failed (Status 6b1)
+fixme:(base/services/browser/browser.c:144) ServiceMain(1 0000000000238C90)
+err:(base/services/browser/rpcserver.c:42) RpcServerListen() failed (Status 6b1)
+err:(base/services/srvsvc/rpcserver.c:64) RpcServerListen() failed (Status 6b1)
+err:(win32ss/user/user32/misc/dllmain.c:607) hIconSmWindows 0000000000020074 hIconWindows 0000000000020072 
+err:(win32ss/user/user32/windows/window.c:496) CreateWindowExW RegisterSystemControls
+Boot took 14938780170 cycles!
+Interrupts: 3017 System Calls: 16297 Context Switches: 0
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022BB78, Heap 0000000000000000, &TotalSize 000000000022BCB0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000390000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000390000, Flags 0x2, TotalSize 65536, CommitSize 65536
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+err:(dll/win32/combase/combase.c:1796) class {56fdf344-fd6d-11d0-958a-006097c9a090} not registered
+err:(dll/win32/combase/combase.c:1874) no class object {56fdf344-fd6d-11d0-958a-006097c9a090} could be created for context 0x1
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000109DE08, Heap 0000000000000000, &TotalSize 000000000109DF40, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000370000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000370000, Flags 0x2, TotalSize 65536, CommitSize 65536
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+err:(dll/win32/newdev/newdev.c:1039) DevInstallW failed with error 31
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+err:(dll/win32/newdev/newdev.c:1039) DevInstallW failed with error 31
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+fixme:(dll/win32/msports/classinst.c:41) GetBootResourceList()
+err:(dll/win32/msports/classinst.c:118) RegQueryValueExW() failed (Error 0)
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+fixme:(dll/win32/msports/classinst.c:41) GetBootResourceList()
+err:(dll/win32/msports/classinst.c:118) RegQueryValueExW() failed (Error 0)
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+err:(dll/win32/newdev/newdev.c:1039) DevInstallW failed with error 259
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+err:(dll/win32/newdev/newdev.c:1039) DevInstallW failed with error 2
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+err:(dll/win32/newdev/newdev.c:1039) DevInstallW failed with error 31
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+err:(dll/win32/newdev/newdev.c:1039) DevInstallW failed with error 259
+NDIS_STATUS_MEDIA_CONNECT
+Unhandled event type: 6
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+fixme:(dll/win32/rpcrt4/rpc_server.c:1736) (0x1000): stub
+DHCPCSVC: Adapter Name: [{8ba682e5-e4b6-4644-aac0-261e76ff9813}] (dynamic)
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022C978, Heap 0000000000000000, &TotalSize 000000000022CAB0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 00000000003E0000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 00000000003E0000, Flags 0x1002, TotalSize 65536, CommitSize 65536
+err:(dll/win32/combase/combase.c:1729) apartment not initialised
+err:(dll/win32/combase/combase.c:1729) apartment not initialised
+fixme:(dll/win32/wintrust/register.c:1227) stub
+err:(dll/win32/advpack/reg.c:55) Can't get temp ini file path
+err:(dll/win32/mshtml/main.c:491) RegInstall failed: 80004005
+err:(dll/shellext/mydocs/mydocs.cpp:46) CreateEmptyFile(X:\Users\Default\AppData\Roaming\Microsoft\Windows\SendTo\Documents.mydocs, X:\Users\Default\Documents) failed!
+err:(dll/win32/combase/combase.c:1729) apartment not initialised
+err:(dll/win32/combase/combase.c:1729) apartment not initialised
+err:(dll/shellext/sendmail/sendmail.cpp:47) CreateEmptyFile('X:\Users\Default\AppData\Roaming\Microsoft\Windows\SendTo\Desktop (Create shortcut).DeskLink')
+fixme:(dll/win32/shdocvw/shdocvw_main.c:222) (TRUE, (null)): stub!
+err:(dll/win32/shell32/wine/shellpath.c:3999) Failed to create directory L"X:\\Users\\Default\\Documents".
+err:(dll/win32/shell32/wine/shellpath.c:3999) Failed to create directory L"X:\\Users\\Default\\AppData\\Roaming\\Microsoft\\Windows\\Templates".
+err:(dll/win32/advpack/reg.c:55) Can't get temp ini file path
+fixme:(dll/win32/wininet/internet.c:352) (1 (null)): stub
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+err:(win32ss/user/user32/windows/window.c:496) CreateWindowExW RegisterSystemControls
+err:(win32ss/user/user32/windows/class.c:208) VersionRegisterClass: Attempting to call RegisterClassNameW in comctl32.dll.
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022C898, Heap 0000000000000000, &TotalSize 000000000022C9D0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 00000000003A0000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 00000000003A0000, Flags 0x2, TotalSize 65536, CommitSize 65536
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+fixme:(dll/win32/shdocvw/winlist.cpp:81) ()
+fixme:(dll/win32/comctl32/toolbar.c:403) [00000000000400AC] TBSTYLE_REGISTERDROP not implemented
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022CF68, Heap 0000000000000000, &TotalSize 000000000022D0A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000001E90000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000001E90000, Flags 0x1002, TotalSize 65536, CommitSize 65536
+err:(base/shell/explorer/mediabtns.cpp:64) CMultimediaBackend::Initialize: No waveform-audio output devices detected
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022DAF8, Heap 0000000000000000, &TotalSize 000000000022DC30, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000001F00000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000001F00000, Flags 0x2, TotalSize 65536, CommitSize 65536
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+fixme:(dll/win32/shell32/shlexec.cpp:2369) flags ignored: 0x00000100
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022BC18, Heap 0000000000000000, &TotalSize 000000000022BD50, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000390000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000390000, Flags 0x2, TotalSize 65536, CommitSize 65536
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+fixme:(dll/win32/setupapi/install.c:1494) default path of the installation not changed
+err:(dll/win32/shell32/wine/shellpath.c:3999) Failed to create directory L"X:\\Program Files".
+fixme:(dll/win32/setupapi/dirid.c:150) CSIDL 26 not found
+err:(dll/win32/setupapi/queue.c:1048) GetTempFileNameW(L"X:\\reactos\\TEMP\\") error
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022B2D8, Heap 0000000000000000, &TotalSize 000000000022B410, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000390000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000390000, Flags 0x2, TotalSize 65536, CommitSize 65536
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000230000, TotalSize 1048576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000230000, Flags 0x2, TotalSize 1048576, CommitSize 4096
+KUSH-DBG RtlCreateHeap: before reserve, &Heap 000000000022F568, Heap 0000000000000000, &TotalSize 000000000022F6A0, TotalSize 65536
+KUSH-DBG RtlCreateHeap: reserve OK, Heap 0000000000330000, TotalSize 65536
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000330000, Flags 0x1002, TotalSize 65536, CommitSize 24576
+KUSH-DBG RtlCreateHeap: before RtlpInitializeHeap, Heap 0000000000340000, Flags 0x0, TotalSize 65536, CommitSize 4096

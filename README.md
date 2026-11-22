@@ -349,6 +349,42 @@ Build (Linux, mingw-w64 **posix** toolchain, cmake, ninja, bison, flex, libgmp-d
 **القاعدة الملزمة من هنا: لا تُرفع الرام فوق 4GB ولا الأنوية لـ 4 من غير اختبار
 منفصل موثق** (إعداد مستقل + screenshot + سجل). ولا تُعطَ المحاكي كل رام الهوست
 (7.7GB) أبدًا لأن الهوست هيتقتل (OOM).
+**تشخيص عطلي الإقلاع 0x1E و0xB4 (2026-11-22) — السبب الجذري واحد: bug الرام
+فوق 4GB، وليس انحدارًا في تغييرات 19–21 نوفمبر.** التجربة الضابطة حاسمة: نفس
+الثنائيات بالضبط (نفس `bootcd.iso`، SHA-256 `7498d242…`) تتعطل عند 5120MB
+وتعمل باستقرار عند 3072MB — تحت OVMF وتحت SeaBIOS على حد سواء، ووصلت لسطح
+مكتب مستقر (الساعة تقدّمت والصور أدناه). لو كان السبب في `except.c` (طباعة
+KUSH-EXC) أو إصلاحات الذاكرة SPSS أو Dynamic TLS أو apisets/wined3d، لتكرر
+العطل عند 3072MB — لم يتكرر، فكلها بريئة من هذا العطل.
+سلسلة عطل 0x1E عند 5120MB (مؤكدة بالسجل وgdb): استثناء وصول (كتابة) في
+`csrss.exe` داخل `usp10.dll+0x20c02` على عنوان بريّ `0x7FED400341B` أثناء
+إنشاء نافذة معالج LiveCD → الكيرنل ينهي العملية الحرجة csrss →
+`PspCatchCriticalBreak` يجد مصحّح الكيرنل مفعّلًا فيطبع `Break, or Ignore
+(bi)?` ويستدعي `DbgBreakPoint()` (int3 في وضع الكيرنل) → bugcheck ‏0x1E.
+وعطل 0xB4 تحت SeaBIOS **ليس سببًا منفصلًا**: عند 3072MB وصل SeaBIOS لسطح
+المكتب دون 0xB4 — فشل `co_IntInitializeDesktopGraphics()` كان عرضًا لنفس فساد
+الذاكرة فوق 4GB، لا عطلًا في مسار VBE/GOP.
+تصحيح تقني: قاعدة الكيرنل وقت التشغيل هي `0xFFFFF80000400000` (وليست
+`0xFFFFF80000000000`) — تصدير `DbgBreakPoint` عند RVA `0x105FA0` يطابق عنوان
+التشغيل `0xFFFFF80000505FA0` فقط بهذه القاعدة.
+**هشاشة ثانوية حقيقية (ليست السبب الجذري، وتستحق إصلاحًا منفصلًا):**
+`PspCatchCriticalBreak` في `ntoskrnl/ps/kill.c:28–70` يحوّل موت عملية حرجة إلى
+‏0x1E مضلِّل بدل 0xF4 المقصود (`CRITICAL_OBJECT_TERMINATION`)، لأنه يقرأ
+`Action[2]` — بفر غير مهيأ في الستاك — ويعتمد عليه؛ إن صادف `'b'` استدعى
+`DbgBreakPoint()`. الإصلاح المقترح (لم يُطبق بعد): تهيئة
+`CHAR Action[2] = {0}`، والتحقق من قيمة إرجاع `DbgPrompt`، واستدعاء
+`DbgBreakPoint()` فقط عند رد `'b'` حقيقي من مصحّح متصل فعلًا، وإلا السقوط على
+`KeBugCheckEx(CRITICAL_OBJECT_TERMINATION, …)`. أما إصلاح bug الـ 4GB نفسه
+(السطر الدقيق في `Mm` لم يُحدد بعد) فيحتاج تحقيقًا مخصصًا وتنصيفًا بحجم الرام
+حول حد 4096MB.
+**صور سطح المكتب المستقر (البناء الجديد، 3072MB، تحققت منها بنفسي):**
+`docs/design/2026-11-22-desktop-stable-3072mb-ovmf.png` (OVMF، الساعة 12:32)
+و`docs/design/2026-11-22-desktop-stable-3072mb-seabios.png` (SeaBIOS، 12:35)
+— أيقونات My Documents وMy Computer وMy Network Places وRecycle Bin وCommand
+Prompt وInstall Kush 1.1 وRead Me، وزر Start وشريط مهام وساعة. والسجلات النظيفة
+(بلا `KUSH-EXC` ولا `Fatal System Error`) في
+`docs/design/2026-11-22-serial-stable-3072mb-ovmf.log` و
+`docs/design/2026-11-22-serial-stable-3072mb-seabios.log`.
 والقرص `~/workspace/kush-vm/k.raw` بحجم **8GB** (ملف sparse، الحجم المنطقي
 8,589,934,592 بايت؛ الهوست فيه 128GB فاضية وقت الإنشاء). التثبيت من
 `bootcd.iso` باختيار Setup، والإقلاع بـ `tools/qemu/run_vm.sh <workdir> k.raw`.
