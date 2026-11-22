@@ -94,13 +94,14 @@ static void dump_thread_impl(HANDLE proc, DWORD tid)
     int i, n = 0;
 
     if (!th) { out("KSTACK  tid %lu: OpenThread failed %lu", tid, GetLastError()); return; }
-    SuspendThread(th);
+    /* No SuspendThread: suspending a thread that holds a win32k/console lock froze
+     * the whole Kush desktop. Waiting threads give a stable context anyway. */
     memset(&ctx, 0, sizeof(ctx));
     ctx.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
     if (!GetThreadContext(th, &ctx))
     {
         out("KSTACK  tid %lu: GetThreadContext failed %lu", tid, GetLastError());
-        ResumeThread(th); CloseHandle(th); return;
+        CloseHandle(th); return;
     }
     m = find_mod(ctx.Rip);
     out("KSTACK  tid %lu rip %p %s+0x%Ix rsp %p", tid, (void *)ctx.Rip,
@@ -128,7 +129,6 @@ static void dump_thread_impl(HANDLE proc, DWORD tid)
             n++;
         }
     }
-    ResumeThread(th);
     CloseHandle(th);
     HeapFree(GetProcessHeap(), 0, stack);
 }
