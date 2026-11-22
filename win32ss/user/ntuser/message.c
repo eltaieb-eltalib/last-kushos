@@ -1010,6 +1010,61 @@ IntDispatchMessage(PMSG pMsg)
  *   WM_PAINT messages
  *   WM_TIMER messages
  */
+static VOID FASTCALL
+IntResyncQueueWakeBits(PTHREADINFO pti)
+{
+    /*
+     * Kush 1.1: resynchronise the queue wake bits with the real queue contents.
+     * The QS_* bits are kept with counters (nCntsQBits, cPaintsReady, cTimersReady).
+     * When a counter drifts, the bit stays set although no message exists, and
+     * MsgWaitForMultipleObjectsEx(MWMO_INPUTAVAILABLE) returns immediately forever.
+     * Programs that then PeekMessage and SwitchToThread (Firefox's
+     * WinUtils::WaitForMessage, and others) livelock at 100% CPU with a frozen UI.
+     * Called only after an unfiltered peek found nothing, so any remaining bit
+     * without a backing entry is stale.
+     */
+    UINT Clear = 0;
+    PLIST_ENTRY Entry;
+    BOOL HaveInput = FALSE;
+
+    if (IsListEmpty(&pti->PostedMessagesListHead) && !pti->QuitPosted)
+    {
+        pti->nCntsQBits[QSRosPostMessage] = 0;
+        pti->nCntsQBits[QSRosHotKey] = 0;
+        pti->nCntsQBits[QSRosEvent] = 0;
+        Clear |= QS_POSTMESSAGE | QS_ALLPOSTMESSAGE | QS_HOTKEY | QS_EVENT;
+    }
+    if (IsListEmpty(&pti->SentMessagesListHead))
+    {
+        pti->nCntsQBits[QSRosSendMessage] = 0;
+        Clear |= QS_SENDMESSAGE;
+    }
+    if (!(pti->MessageQueue->QF_flags & QF_MOUSEMOVED))
+    {
+        for (Entry = pti->MessageQueue->HardwareMessagesListHead.Flink;
+             Entry != &pti->MessageQueue->HardwareMessagesListHead;
+             Entry = Entry->Flink)
+        {
+            PUSER_MESSAGE Message = CONTAINING_RECORD(Entry, USER_MESSAGE, ListEntry);
+            if (Message->pti == pti || Message->pti == NULL) { HaveInput = TRUE; break; }
+        }
+        if (!HaveInput)
+        {
+            pti->nCntsQBits[QSRosKey] = 0;
+            pti->nCntsQBits[QSRosMouseMove] = 0;
+            pti->nCntsQBits[QSRosMouseButton] = 0;
+            Clear |= QS_KEY | QS_MOUSEMOVE | QS_MOUSEBUTTON;
+        }
+    }
+    /* The unfiltered peek generated no WM_PAINT and posted no WM_TIMER. */
+    pti->cPaintsReady = 0;
+    pti->cTimersReady = 0;
+    Clear |= QS_PAINT | QS_TIMER;
+
+    pti->pcti->fsWakeBits &= ~Clear;
+    pti->pcti->fsChangeBits &= ~Clear;
+}
+
 BOOL APIENTRY
 co_IntPeekMessage( PMSG Msg,
                    PWND Window,
@@ -1164,6 +1219,13 @@ co_IntPeekMessage( PMSG Msg,
             PostTimerMessages(Window))
         {
             continue;
+        }
+
+        /* Kush 1.1: nothing at all for an unfiltered peek -> drop stale wake bits. */
+        if (!Window && !MsgFilterMin && !MsgFilterMax &&
+            (ProcessMask & QS_ALLINPUT) == QS_ALLINPUT)
+        {
+            IntResyncQueueWakeBits(pti);
         }
 
         return FALSE;
