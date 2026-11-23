@@ -21,6 +21,12 @@ Build (Linux, mingw-w64 **posix** toolchain, cmake, ninja, bison, flex, libgmp-d
    `uefildr.efi` to `EFI/BOOT/BOOTX64.EFI`, `freeldr.ini` to the root, and the
    `reactos` tree. Write it with Rufus in DD mode, UEFI only, Secure Boot off.
 
+## الخطوة الجاية: WoW64 (تشغيل برامج 32-bit)
+
+برامج التثبيت بتاعة Firefox وSPSS وvcredist كلها **32-bit**، وKush ما بيشغّل برامج 32-bit لسه ("Machine Type Mismatch").
+الحل على مستوى النظام هو طبقة **WoW64**. التقدير حوالي شهرين لـ 3 شهور شغل متواصل، على 5 مراحل كل واحدة ليها اختبار قبول.
+الـ prompt الجاهز لوكيل برمجة يشتغل عليها لوحده: [`docs/wow64/AGENT_PROMPT.md`](docs/wow64/AGENT_PROMPT.md).
+
 ## Firefox فتح Google وبحث عن "ok" على Kush (23 نوفمبر 2026)
 
 **النتيجة:** على آخر نسخة من النظام (بناء 20261123 من `main`)، Firefox 160 فتح `google.com`، واتكتب "ok" في البحث، وظهرت النتائج
