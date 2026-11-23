@@ -924,6 +924,26 @@ InstallBootloaderFiles(
     /* Protect rosload.exe (this is optional, so any potential errors are ignored) */
     SetupSetFileAttributes(DstPath, ProtectAttribs);
 
+    /*
+     * Kush 1.1: also install the UEFI loader, so the installed system boots on
+     * UEFI-only machines (Acer/Lenovo laptops have no legacy BIOS/CSM). The boot
+     * media keeps it at \efi\boot\bootx64.efi; the firmware's removable/fallback
+     * path \EFI\BOOT\BOOTX64.EFI on the system partition loads it, and it reads
+     * freeldr.ini from the root of that same partition, exactly like the USB stick.
+     * Optional: BIOS-only media without the file are unaffected.
+     */
+    CombinePaths(SrcPath, ARRAYSIZE(SrcPath), 2, SourceRootPath->Buffer, L"\\efi\\boot\\bootx64.efi");
+    CombinePaths(DstPath, ARRAYSIZE(DstPath), 2, SystemRootPath->Buffer, L"EFI");
+    SetupCreateDirectory(DstPath);
+    CombinePaths(DstPath, ARRAYSIZE(DstPath), 2, SystemRootPath->Buffer, L"EFI\\BOOT");
+    SetupCreateDirectory(DstPath);
+    CombinePaths(DstPath, ARRAYSIZE(DstPath), 2, SystemRootPath->Buffer, L"EFI\\BOOT\\BOOTX64.EFI");
+    Status = SetupCopyFile(SrcPath, DstPath, FALSE);
+    if (!NT_SUCCESS(Status))
+        DPRINT1("UEFI loader not installed (Status 0x%08lx): %S\n", Status, SrcPath);
+    else
+        DPRINT1("UEFI loader installed: %S\n", DstPath);
+
     return STATUS_SUCCESS;
 }
 

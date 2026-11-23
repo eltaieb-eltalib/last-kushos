@@ -3457,7 +3457,14 @@ FindSupportedSystemPartition(
 //
 
 UseAlternativeDisk:
-    if (!AlternativeDisk || (!ForceSelect && (DiskEntry != AlternativeDisk)))
+    /*
+     * Kush 1.1: on UEFI machines no disk is flagged as found by the (legacy BIOS)
+     * firmware enumeration and the boot USB stick is removable, so there is no
+     * system disk at all (DiskEntry == NULL). Use the installation disk then,
+     * instead of refusing to install ("could not find a supported system
+     * partition"), which blocked every install on UEFI-only laptops.
+     */
+    if (!AlternativeDisk || (!ForceSelect && DiskEntry && (DiskEntry != AlternativeDisk)))
         goto NoSystemPartition;
 
     if (AlternativeDisk->DiskStyle == PARTITION_STYLE_GPT)
