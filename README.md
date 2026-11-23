@@ -27,6 +27,13 @@ Build (Linux, mingw-w64 **posix** toolchain, cmake, ninja, bison, flex, libgmp-d
 (`docs/firefox/21-google-home-on-kush.png`، `docs/firefox/22-google-typing-ok.png`، `docs/firefox/23-google-results-ok.png`).
 دي أول مرة صفحة ويب حقيقية تترسم في Firefox على Kush (عملية المحتوى بقت شغالة بعد إصلاحات الدمج).
 
+**3 تابات في نفس الوقت:** Google، وويكيبيديا العربية، و BBC عربي، كلها اتفتحت واترسمت، والعربي ظاهر صح من اليمين لليسار
+(`docs/firefox/24-three-tabs-google.png`، `docs/firefox/25-three-tabs-ar-wikipedia.png`، `docs/firefox/26-three-tabs-bbc-arabic.png`).
+
+**طريقة وجود Firefox على Kush (ما اتثبت ببرنامج التثبيت):** ملف `Firefox Setup 160.0.1.exe` نفسه 32-bit (غلاف NSIS) وKush 64-bit
+من غير WoW64، فبيطلع "Machine Type Mismatch". عشان كده اتفك بـ `7z`، واتنسخ مجلد `core` (فيه `firefox.exe` 64-bit) لـ
+`C:\Firefox`، وبيشتغل من هناك مباشرة زي النسخة المحمولة.
+
 | # | المشكلة | السبب | الحل |
 |---|---|---|---|
 | 1 | تحذير `SEC_ERROR_UNKNOWN_ISSUER` في google.com | **من بيئة الاختبار، مش من Kush:** الـ proxy بتاع بيئتي بيعيد إصدار الشهادات بـ CA خاص بيه ("CCR agent-proxy interception CA"). في جهاز حقيقي شهادة Google بتوصل زي ما هي | إعداد اختبار بس جوه الـ VM (ما اترفع للمستودع): `policies.json` بيثبّت شهادة الـ CA دي في نسخة Firefox الاختبارية |
