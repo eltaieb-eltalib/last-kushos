@@ -21,6 +21,17 @@ Build (Linux, mingw-w64 **posix** toolchain, cmake, ninja, bison, flex, libgmp-d
    `uefildr.efi` to `EFI/BOOT/BOOTX64.EFI`, `freeldr.ini` to the root, and the
    `reactos` tree. Write it with Rufus in DD mode, UEFI only, Secure Boot off.
 
+## تنزيل الـ ISO الجديد وحرقه على فلاش (23 نوفمبر 2026)
+
+- **الـ ISO:** بناء GitHub Actions نجح (run 45220800817، commit `6fdbae1`، فيه كل إصلاحات UEFI تحت):
+  https://github.com/eltaieb-eltalib/last-kushos/actions/runs/45220800817 ← تحت **Artifacts** نزّل `kush-bootcd-45220800817`
+  (ملف zip فيه `bootcd.iso` و`build-sha256.txt`). الرابط صالح لحد **26 نوفمبر 2026**.
+- **Rufus:** Device = الفلاش، Boot selection = `bootcd.iso`، **Partition scheme = GPT**، **Target system = UEFI (non CSM)**،
+  File system = FAT32. لو سأل ISO أو DD اختار **ISO mode**. وفي الـ BIOS: اقفل **Secure Boot**.
+- **التثبيت:** من قائمة الإقلاع اختار **"Kush 1.1 Setup (Text Mode)"** (بقى بيشتغل تحت UEFI) أو **"Kush 1.1 Live Environment"**
+  ← "Install Kush 1.1". بعد النسخ لو الجهاز ما عمل إعادة تشغيل لوحده، اقفله وشيل الفلاش وشغّله.
+- **مهم:** النسخة القديمة اللي اتجربت على Acer وLenovo (ختم `6b031252`) فيها الأخطاء دي؛ لازم تحرق النسخة الجديدة دي.
+
 ## إصلاح الإقلاع على Acer وLenovo من فلاش USB (UEFI)، 23 نوفمبر 2026
 
 **البلاغ:** الفلاش ما بيقلع على Acer ولا Lenovo، وكل الخيارات (التثبيت وLive) بتطلّع
