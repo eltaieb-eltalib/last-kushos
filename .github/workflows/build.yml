@@ -16,6 +16,12 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 300
     steps:
+      # Checkout MUST come first: actions/checkout empties the workspace when it
+      # is not yet a git repo (clean: false does not prevent that), which
+      # deleted RosBE-CI/ in run 45188926228 ("RosBE.sh: No such file").
+      - name: Source checkout
+        uses: actions/checkout@v4
+
       - name: Get RosBE build specifics
         id: get_rosbe_spec
         run: |
@@ -49,13 +55,6 @@ jobs:
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
             /usr/local/share/powershell /opt/hostedtoolcache || true
           df -h /
-
-      - name: Source checkout
-        uses: actions/checkout@v4
-        with:
-          # Do NOT clean the workspace: the RosBE toolchain we just built
-          # (RosBE-CI/) and the ccache dir live next to the source tree.
-          clean: false
 
       - name: Set up cache for ccache
         uses: actions/cache@v4
