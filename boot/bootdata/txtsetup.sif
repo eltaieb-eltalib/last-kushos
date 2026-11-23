@@ -345,6 +345,10 @@ xbox             = "Original Xbox NV2A Framebuffer (640x480x32)",,XboxVmp,640,48
 [Map.Display]
 ;<id> = <pnp id string>
 vga = "VGA Display"
+; Kush 1.1: default to the VBE/GOP miniport (service vga = vbemp). It drives the
+; UEFI GOP framebuffer on UEFI-only laptops (Acer/Lenovo), where VgaSave gives a
+; black screen after installation. The last matching line wins.
+vbe = "VGA Display"
 vbe = "VBE Display"
 xbox = "NV2A Framebuffer"
 
