@@ -26,6 +26,10 @@ Build (Linux, mingw-w64 **posix** toolchain, cmake, ninja, bison, flex, libgmp-d
 برامج التثبيت بتاعة Firefox وSPSS وvcredist كلها **32-bit**، وKush ما بيشغّل برامج 32-bit لسه ("Machine Type Mismatch").
 الحل على مستوى النظام هو طبقة **WoW64**. التقدير حوالي شهرين لـ 3 شهور شغل متواصل، على 5 مراحل كل واحدة ليها اختبار قبول.
 الـ prompt الجاهز لوكيل برمجة يشتغل عليها لوحده: [`docs/wow64/AGENT_PROMPT.md`](docs/wow64/AGENT_PROMPT.md).
+**نقطة البداية:** فرع [`wow64sync`](https://github.com/TheNNX/reactos/tree/wow64sync) بتاع Marcin Jabłoński (TheNNX):
+حوالي 27 ألف سطر WoW64 جاهزة (`wow64.dll`، و`wow64win.dll`، وبناء i386 لـ `SysWOW64`)، لسه تجريبي. فرع
+[mateo-cogeanu/ReactOS](https://github.com/mateo-cogeanu/ReactOS) اتفحص واترفض: README بتاعه بيقول إن برامج 32-bit
+متوقفة في تهيئة أول عملية، والإصلاح موجود عند TheNNX.
 
 ## Firefox فتح Google وبحث عن "ok" على Kush (23 نوفمبر 2026)
 

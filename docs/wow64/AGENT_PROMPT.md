@@ -1,4 +1,4 @@
-# Prompt لتنفيذ WoW64 في Kush 1.1 (تشغيل برامج 32-bit)
+# Prompt لتنفيذ WoW64 في Kush 1.1 (تشغيل برامج 32-bit) انطلاقًا من فرع TheNNX
 
 انسخ النص ده كله وابدأ بيه session جديد لوكيل برمجة (Claude Code أو Muse Code أو غيره) على المستودع:
 **https://github.com/eltaieb-eltalib/last-kushos**
@@ -7,9 +7,12 @@
 
 إنت شغال على **Kush 1.1**، نظام تشغيل مبني على ReactOS (amd64). المستودع
 **https://github.com/eltaieb-eltalib/last-kushos** فيه **النظام كامل** (كل الكود وكل تعديلات Kush)، فبتبني منه
-مباشرة من غير أي مستودع تاني.
+مباشرة.
 
 **المهمة:** تضيف لـ Kush طبقة **WoW64**، عشان يشغّل برامج **32-bit (i386)** على النظام الـ 64-bit زي ويندوز بالظبط.
+**ما بتبدأ من الصفر:** بتاخد شغل WoW64 الموجود في فرع **`wow64sync`** بتاع **Marcin Jabłoński (TheNNX)**:
+**https://github.com/TheNNX/reactos/tree/wow64sync**، وتدمجه في Kush وتكمّله لحد ما يشتغل.
+
 الهدف العملي: ملفات التثبيت دي تفتح **بالضغط عليها مباشرة** وتكمّل التثبيت وتعمل الأيقونات لوحدها:
 - `Firefox Setup 160.0.1.exe` (غلاف NSIS بنسخة 32-bit)، من
   `https://ftp.mozilla.org/pub/firefox/releases/160.0.1/win64/en-US/`
@@ -17,7 +20,25 @@
 - `SPSS_Statistics_25_win64.exe` (InstallShield، غلافه 32-bit)، **لو** المستخدم وفّر الملف. ما تنزّل برامج
   مدفوعة أو مقرصنة.
 
-حاليًا أي برنامج 32-bit بيطلّع **"Machine Type Mismatch"**، والتفاصيل في README (أقسام Firefox وSPSS).
+حاليًا أي برنامج 32-bit في Kush بيطلّع **"Machine Type Mismatch"**، والتفاصيل في README (أقسام Firefox وSPSS).
+
+## اللي اتعرف عن فرع TheNNX (اتفحص في 23 نوفمبر 2026، اتأكد منه تاني)
+
+- آخر commit وقت الفحص: `b03f7c52f29ba6e510a9f1b09d7b48be2967b994` (11 أكتوبر 2026، "Start working on WOW64CPU").
+  الفرع لسه شغال عليه، فخد **آخر** commit فيه وسجّل رقمه بالظبط في `docs/wow64/README.md`.
+- الفرع مبني فوق ReactOS الرسمي عند commit `e6d2efe9` (4 أغسطس 2026)، وفوقه حوالي 130 commit من TheNNX:
+  **311 ملف، +26,900 سطر، −2,050 سطر.** أهمها:
+  - `dll/wow64` (حوالي 11 ألف سطر، جزء منه من Wine في `dll/wow64/wine`)، و`dll/wow64win` (حوالي 10.5 ألف سطر)،
+    و`sdk/lib/rtl/wow64.c`، و`sdk/include/reactos/wow64.h`، و`sdk/include/reactos/drivers/wow64`.
+  - تعديلات في `win32ss` (58 ملف)، و`dll/win32/kernel32` (21 ملف)، و`dll/ntdll`، و`subsystems/csr`، و`ntoskrnl`،
+    وشوية drivers (AFD والشبكة) وملفات CMake.
+  - **بناء i386 تابع** بيطلع مع بناء الـ amd64 ويملا `SysWOW64` (`sdk/cmake/wow64.cmake`، وخيارات `-wow64` و
+    `-nowow64` في `spec2def`).
+- **الحالة:** تجريبي، وما اندمج في ReactOS الرسمي. سجله بيذكر نداءات النظام، والواجهة، والشبكة، والـ exceptions،
+  وTask Manager. ما في تقرير منشور يأكد إن برامج 32-bit بتشتغل عليه بثبات، فاعتبر كل حاجة غير مجرّبة لحد ما تجربها.
+- **فرع مرفوض:** `https://github.com/mateo-cogeanu/ReactOS` فيه نفس الشغل مدموج مع UEFI وAHCI، لكن README بتاعه بيقول
+  إن تشغيل برامج 32-bit "متوقف بشكل ثابت في تهيئة أول عملية" بسبب `__debugbreak()` في `Wow64LdrpInitialize`، والإصلاح
+  ده موجود عند TheNNX (commit 10 أكتوبر). **ما تاخد منه.** Kush عنده UEFI وAHCI بتاعته.
 
 ## قواعد ثابتة
 
@@ -28,58 +49,64 @@
 4. **اشتغل على `main` مباشرة.** كل خطوة صغيرة شغالة: commit و push لـ `main` على طول، وما تجمّع شغل كتير من غير رفع.
 5. **وثّق كل حاجة في `README.md` بالعربي:** المشكلة، والسبب الجذري، والحل، والصور، وحدود الاختبار. وحدّث جدول
    **"الحالة"** في `docs/wow64/README.md` (اعمله في أول مرحلة) بعد كل مرحلة.
-6. **حل المشاكل من جذورها.** لو لقيت باق في الكيرنل أو أي مكان تاني، صلّحه في مكانه، وافحص الصنف كله مش أول حالة بس.
-7. **قانوني:** مسموح تنقل كود من **Wine** (رخصة LGPL، متوافقة مع ReactOS)، خصوصًا `dlls/wow64`، و`dlls/wow64cpu`،
-   و`dlls/wow64win`. اكتب مصدر أي كود منقول في أول الملف. **ممنوع** أي كود أو ملفات من Microsoft.
-8. ما ترفع أي ملفات خاصة بالمستخدم (رخصة SPSS، ملفات بيانات، صور فيها محتواها)، ولا ملفات إعدادات الاختبار
-   (`user.js`، `policies.json`، شهادات الـ proxy).
+6. **حل المشاكل من جذورها.** لو لقيت باق في الكيرنل أو في كود TheNNX أو أي مكان تاني، صلّحه في مكانه، وافحص الصنف كله
+   مش أول حالة بس.
+7. **حافظ على حقوق المؤلفين:** كود TheNNX وWine لازم يدخل باسم مؤلفيه الأصليين (commits بنفس الـ author، أو أقل حاجة
+   `Co-Authored-By` لكل commit مدموج)، والـ headers والرخص (GPL/LGPL) تفضل زي ما هي. سجّل في README إن أساس WoW64 من
+   TheNNX مع الرابط. **ممنوع** أي كود أو ملفات من Microsoft.
+8. **ما تفتح pull request ولا issue ولا تكتب أي حاجة في مستودع TheNNX أو أي مستودع تاني.** لو لقيت إصلاحات مفيدة ليهم،
+   سجّلها في `docs/wow64/upstream-fixes.md` بس، والمستخدم يقرر.
+9. **مفتاح إيقاف:** WoW64 لازم يتقفل بقيمة في الريجستري (مثلًا `HKLM\SYSTEM\CurrentControlSet\Control\Kush\Wow64`
+   `Enabled=0`). لما يكون مقفول، النظام يرجع يرفض برامج 32-bit زي دلوقتي بالظبط وما يحمّل أي حاجة من WoW64، عشان لو
+   ظهرت مشكلة المستخدم يقفله من غير ما يعيد التثبيت. جرّب المفتاح في كل مرحلة.
+10. ما ترفع أي ملفات خاصة بالمستخدم (رخصة SPSS، ملفات بيانات، صور فيها محتواها)، ولا ملفات إعدادات الاختبار
+    (`user.js`، `policies.json`، شهادات الـ proxy).
 
-## نقاط البداية في الكود (اتأكد منها، وصحّحها في الخطة لو لقيتها مختلفة)
+## نقاط البداية في Kush (اتأكد منها، وصحّحها في الخطة لو لقيتها مختلفة)
 
 - **رفض الـ 32-bit:** `dll/win32/kernel32/client/proc.c` حوالي السطر 3526: `ImageInformation.Machine` بيتقارن بـ
   `SharedUserData->ImageNumberLow/High`، وبعدها `ERROR_EXE_MACHINE_TYPE_MISMATCH`. وفي نفس الملف `PebAddressWow64 = 0`
   مع تعليق `TODO: WOW64 is not supported yet`.
 - **الكيرنل فيه بداية:** `ntoskrnl/ke/amd64/kiinit.c` (سطر 228) بيضبط MSR الـ `STAR` بمقطع `KGDT64_R3_CMCODE`، و
-  `context.c` و`except.c` بيعرفوا الـ CS بتاع وضع 32-bit (compatibility mode)، و`Wow64Process` موجود في
-  `ntoskrnl/ps/query.c` و`ntoskrnl/mm/ARM3/procsup.c`.
-- **إنشاء العملية والـ PEB/TEB:** `ntoskrnl/ps/process.c` (`PspCreateProcess`)، و`ntoskrnl/mm/ARM3/procsup.c`
-  (`MmCreatePeb` و`MmCreateTeb`).
-- **قراية ملفات PE32:** `ntoskrnl/mm/section.c` (فيه `IMAGE_NT_OPTIONAL_HDR32_MAGIC`).
-- **الـ loader:** `dll/ntdll/ldr/ldrinit.c` (فيه `Wow64ExecOptionsKey`).
+  `context.c` و`except.c` بيعرفوا الـ CS بتاع وضع 32-bit، و`Wow64Process` موجود في `ntoskrnl/ps/query.c` و
+  `ntoskrnl/mm/ARM3/procsup.c` (`MmCreatePeb` و`MmCreateTeb`).
+- **تعديلات Kush الكبيرة اللي حتتعارض مع الدمج:** `win32ss` (إصلاحات طابور الرسائل في `msgqueue.c` و`message.c`، و
+  تصميم Fluent)، و`dll/win32/kernel32` (دوال Windows 8+ في `dll/win32/kernel32/kush/kush_win8.c` وغيرها)، و`ntoskrnl` (تشخيص `KUSH-EXC`،
+  و`SystemBootEnvironmentInformation`، وإصلاحات Mm)، و`dll/ntdll` (الـ API sets). اقرا README عشان تعرف سبب كل تعديل.
 
 ## المراحل (بالترتيب، وكل مرحلة ليها اختبار قبول لازم يعدّي قبل اللي بعدها)
 
-**0. الخطة والبيئة:** اكتب `docs/wow64/README.md`: التصميم، والمراحل دي، وجدول الحالة. وجهّز بيئة البناء والاختبار
-(تحت).
+**0. الخطة والبيئة:** اكتب `docs/wow64/README.md`: الخطة، ورقم commit TheNNX اللي بتاخده، وجدول الحالة. وجهّز بيئة
+البناء والاختبار (تحت)، وابني Kush زي ما هو وجرّبه **قبل** أي دمج، عشان يبقى عندك نقطة مقارنة.
 
-**1. الكيرنل: عملية 32-bit حقيقية.**
-- `section.c` و`ps`: تحميل صورة PE32 في عملية 64-bit مع علامة WoW64 على العملية (`Wow64Process`).
-- عمل `PEB32` و`TEB32` جنب الـ PEB والـ TEB الـ 64-bit، وstack بنسخة 32-bit، وتحميل `ntdll` الـ 64-bit و`ntdll` الـ
-  32-bit (من `SysWOW64`).
-- الانتقال لوضع 32-bit (CS = `KGDT64_R3_CMCODE`)، والـ context بين 32 و64 bit
-  (`NtQueryInformationThread`/`ThreadWow64Context`)، والـ exceptions اللي بتحصل في كود 32-bit.
-- `kernel32/proc.c`: يقبل `IMAGE_FILE_MACHINE_I386` ويملا `PebAddressWow64`، و`IsWow64Process` يرجع القيمة الصح.
-- **اختبار القبول:** برنامج 32-bit صغير بيرجع exit code معيّن، من غير ما يستعمل أي مكتبة غير `ntdll`، يشتغل ويرجع الكود.
+**1. الدمج.**
+- جيب الفرع: `git fetch https://github.com/TheNNX/reactos wow64sync` (بعمق كافي يوصل `e6d2efe9`).
+- طلّع تعديلات TheNNX بس: الفرق بين `e6d2efe9` وآخر commit في `wow64sync`، كـ commits بمؤلفيها (`git format-patch`
+  ثم `git am -3`، أو cherry-pick). **ما تدمج تاريخ ReactOS الرسمي كله.**
+- في التعارضات: **تعديلات Kush بتكسب**، إلا لو WoW64 محتاج التغيير فعلًا. وقتها ادمج الاتنين، واكتب كل قرار تعارض مهم
+  في `docs/wow64/README.md`.
+- شغّل البناء الـ i386 التابع لـ `SysWOW64`، وحدّث `.github/workflows/build.yml` عشان CI يبنيه كمان (ممكن الـ ISO يكبر
+  حوالي 150 لـ 250MB، اكتب الحجم).
+- أضف مفتاح الإيقاف (القاعدة 9).
+- **اختبار القبول:** الـ ISO بيتبني محليًا وفي CI، وKush بيقلع ويثبّت زي قبل الدمج (BIOS وUEFI)، و`SysWOW64` فيه مكتبات
+  PE32 (اتأكد بـ `file`)، وexplorer وcmd وNotepad وControl Panel وFirefox الـ 64-bit شغالين، ومن غير شاشة زرقاء.
 
-**2. `wow64.dll` و`wow64cpu.dll`: نداءات `ntdll`.**
-- انقل التصميم من Wine: `wow64cpu` بيعمل الانتقال 32↔64، و`wow64` بيحوّل كل نداء نظام من `ntdll` الـ 32-bit (المؤشرات،
-  والأحجام، و`UNICODE_STRING`، و`OBJECT_ATTRIBUTES`، و`IO_STATUS_BLOCK`...) وينادي النداء الـ 64-bit.
-- أرقام نداءات النظام في ReactOS مختلفة عن ويندوز: ولّد جداول التحويل من ملفات الـ syscall في ReactOS نفسه
-  (`ntoskrnl/sysfuncs.lst` لـ `ntdll`، و`win32ss/w32ksvc32.h` و`w32ksvc64.h` لـ win32k)، مش من أرقام ويندوز.
-- **اختبار القبول:** برامج 32-bit في سطر الأوامر (`hello32.exe` بـ `printf`، وبرنامج بيقرا ويكتب ملفات، وبرنامج بيعمل
-  threads) تشتغل في `cmd` وتطلع النتيجة الصح.
+**2. أول عملية 32-bit.**
+- الهدف: `C:\ReactOS\SysWOW64\cmd.exe` يفتح ويشتغل. ده بالظبط المكان اللي فرع mateo وقف فيه: تتبّع تهيئة أول عملية
+  (`Wow64LdrpInitialize`، و`Wow64InitProcess`، وwow64cpu) بالسجل وgdb لحد ما تعدّي.
+- اعمل برامج اختبار 32-bit صغيرة في `tools/wow64_tests/` (تتبني بـ `i686-w64-mingw32-gcc`): exit code، و`printf`،
+  وقراية وكتابة ملفات، وthreads، وexceptions (`__try` وSEH)، و`IsWow64Process`، وتحويل مسارات `System32`.
+- **اختبار القبول:** `cmd.exe` الـ 32-bit بيطبع نسخته وبينفّذ `dir` و`echo`، وكل برامج الاختبار بتطلع النتيجة الصح،
+  ومفتاح الإيقاف بيرجّع "Machine Type Mismatch".
 
-**3. `wow64win.dll`: نداءات الواجهة (win32k).**
-- تحويل نداءات `NtUser*` و`NtGdi*` (حوالي 1000). ده **أكبر جزء**: ابدأ بالمستعملة فعلًا (اعمل أداة بتطبع النداءات
-  اللي برامج التجربة بتعملها)، والباقي بعدين.
-- الـ callbacks من الكيرنل للـ user mode (window procedures) لازم تتحول لـ 32-bit كمان.
-- **اختبار القبول:** برنامج 32-bit فيه `MessageBox` ونافذة عادية، وNotepad بنسخة 32-bit من ReactOS i386، يفتحوا
-  ويترسموا ويستجيبوا للكيبورد والماوس.
+**3. برامج 32-bit فيها نوافذ.**
+- `wow64win.dll` (نداءات `NtUser*` و`NtGdi*` والـ callbacks): كمّل الناقص اللي برامج التجربة بتحتاجه. اعمل أداة
+  بتطبع أي نداء ما ليه تحويل، عشان تعرف الناقص من القياس مش بالتخمين.
+- **اختبار القبول:** برنامج 32-bit فيه `MessageBox` ونافذة عادية، و`notepad.exe` و`taskmgr.exe` من `SysWOW64`، يفتحوا
+  ويترسموا صح ويستجيبوا للكيبورد والماوس، والعربي يظهر صح.
 
-**4. مكتبات 32-bit والتحويل.**
-- بناء نسخة **i386** من ReactOS (مجلد بناء تاني بـ `-DARCH=i386`) ونسخ مكتباتها لـ `C:\ReactOS\SysWOW64` في الـ ISO
-  (عدّل `boot/bootdata` وملفات `add_cd_file`). وحدّث `.github/workflows/build.yml` عشان CI يبني الاتنين.
-- تحويل مسارات الملفات (`System32` ← `SysWOW64` لبرامج 32-bit، و`Program Files (x86)`) والريجستري (`Wow6432Node`).
+**4. برامج التثبيت.**
+- تحويل مسارات الملفات (`Program Files (x86)`) والريجستري (`Wow6432Node`) لو ناقصين في فرع TheNNX.
 - **اختبار القبول:** `Firefox Setup 160.0.1.exe` يفتح بالضغط عليه، ويثبّت Firefox، ويعمل أيقونة في سطح المكتب وقائمة
   Start، وFirefox يفتح منها ويحمّل `google.com`. وبعدها `vcredist_x64.exe` يثبّت مكتبات VC++ 2008 في `WinSxS`.
 
@@ -88,11 +115,12 @@
 
 ## بيئة البناء (مرة واحدة)
 
-- ثبّت: mingw-w64 (نسخة **posix**: `x86_64-w64-mingw32-gcc-posix`، و`i686-w64-mingw32-gcc-posix` للمرحلة 4)، و
-  cmake، وninja، وbison، وflex، وlibgmp-dev، وqemu-system-x86، وmtools، وpython3-pil، وp7zip-full.
+- ثبّت: mingw-w64 (نسخة **posix**: `x86_64-w64-mingw32-gcc-posix` و`i686-w64-mingw32-gcc-posix`)، وcmake، وninja،
+  وbison، وflex، وlibgmp-dev، وqemu-system-x86، وmtools، وpython3-pil، وp7zip-full.
 - ابني برا المستودع (مثلًا `../build`):
   `cmake -G Ninja -DARCH=amd64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=<repo>/toolchain-gcc.cmake -DENABLE_CCACHE=0 -DDLL_EXPORT_VERSION=0x600 <repo>`
-  وبعدها `ninja bootcd`. اقرا قسم "بيئة البناء" في README، فيه مشاكل البناء المعروفة وحلولها.
+  وبعدها `ninja bootcd`. بعد الدمج، اقرا طريقة البناء التابع في `sdk/cmake/wow64.cmake` وREADME فرع TheNNX. واقرا قسم
+  "بيئة البناء" في README بتاع Kush، فيه مشاكل البناء المعروفة وحلولها.
 
 ## طريقة الشغل (حلقة مغلقة، كل حاجة بتتقاس)
 
@@ -102,12 +130,13 @@
    طويل). اقرا `tools/qemu/README.md`.
 3. `python3 tools/qemu/vm.py <workdir> shot:name` بيطلع صورة: **افتحها وشوفها بنفسك** بعد كل تعديل. `click.py` للضغط،
    و`typ.py` للكتابة.
-4. عدّل بسرعة: ابني الملف المتغيّر بس (مثلًا `ninja ntoskrnl` أو `ninja wow64`)، وانسخه جوه القرص بـ `mcopy` والنظام
+4. عدّل بسرعة: ابني الملف المتغيّر بس (مثلًا `ninja wow64` أو `ninja ntoskrnl`)، وانسخه جوه القرص بـ `mcopy` والنظام
    **مقفول** (الأمر في `tools/qemu/README.md`)، وأعد الإقلاع.
 5. لو حاجة قفلت: اقرا `serial.log`. سطر `KUSH-EXC` بيقول الـ exception والموديول والـ RVA، وبيطبع **stack تقريبي**
    (`KUSH-EXC: stack ...`). لو حصلت شاشة زرقاء: `gdbserver` من QEMU monitor، وحدد الموديول بالبحث عن `MZ` لورا من عنوان
    الكراش، وبعدها `nm` على الملف من البناء لاسم الدالة. **ما تصدّق إن حاجة اشتغلت لحد ما الصورة أو السجل يأكدوا.**
-6. **ما تكسر الموجود:** بعد كل مرحلة اتأكد إن explorer وcmd وNotepad وControl Panel وFirefox الـ 64-bit لسه شغالين.
+6. **ما تكسر الموجود:** بعد كل مرحلة اتأكد إن explorer وcmd وNotepad وControl Panel وFirefox الـ 64-bit لسه شغالين، وإن
+   مفتاح الإيقاف شغال.
 
 ## حاجات معروفة عن البيئة (عشان ما تضيّع وقت)
 
@@ -115,7 +144,7 @@
   MSVC الحديثة (زي Firefox) بتقفل عشوائيًا. ده عطل في المحاكي، مش في Kush.
 - الكيرنل بيشتغل UP (`ntoskrnl.exe`). أكتر من 4GB رام بتعمل `0x7B`، فخلي الذاكرة 3072MB.
 - لو بيئتك فيها proxy بيعيد إصدار شهادات TLS، المتصفح حيرفضها. ده من البيئة، ما تعدّل النظام عشانه.
-- `tools/ipc_pipe_test/pipetest.c` اختبار جاهز للـ named pipes بين عمليتين، ممكن تبني منه اختبارات للـ WoW64.
+- `tools/ipc_pipe_test/pipetest.c` اختبار جاهز للـ named pipes بين عمليتين، ممكن تبني منه نسخة 32-bit لاختبار WoW64.
 
 ## لما تخلص كل مرحلة
 
