@@ -628,6 +628,8 @@ AhciCompleteIssuedSrb (
  * @param PortExtension
  *
  */
+VOID AhciActivatePort(__in PAHCI_PORT_EXTENSION PortExtension); /* Kush 1.1: used by error recovery */
+
 VOID
 AhciInterruptHandler (
     __in PAHCI_PORT_EXTENSION PortExtension
@@ -674,6 +676,61 @@ AhciInterruptHandler (
         // non-queued commands were being issued or native command queuing commands were being issued.
 
         AhciDebugPrint("\tFatal Error: %x\n", PxIS.Status);
+
+        /*
+         * Kush 1.1: AHCI 1.3 section 6.2.2.1 error recovery (non-queued commands).
+         * The driver used to only print this message: the error bits stayed set in
+         * PxIS, the level interrupt fired again immediately (an endless interrupt
+         * storm, ~360000 messages in one boot) and the failed command never
+         * completed, so boot hung (seen booting from USB under UEFI; any ATAPI
+         * error, e.g. an empty DVD drive or card reader, triggers it).
+         */
+        {
+            AHCI_PORT_CMD cmd;
+            ULONG failed, i, n, NCS;
+            PSCSI_REQUEST_BLOCK FailedSrb;
+
+            /* 1. acknowledge everything we saw, including the error bits */
+            StorPortWriteRegisterUlong(AdapterExtension, &PortExtension->Port->IS, PxIS.Status);
+
+            /* 2. stop the port (PxCMD.ST=0) and wait for PxCMD.CR=0 (max 500 ms) */
+            cmd.Status = StorPortReadRegisterUlong(AdapterExtension, &PortExtension->Port->CMD);
+            cmd.ST = 0;
+            StorPortWriteRegisterUlong(AdapterExtension, &PortExtension->Port->CMD, cmd.Status);
+            for (n = 0; n < 500; n++)
+            {
+                cmd.Status = StorPortReadRegisterUlong(AdapterExtension, &PortExtension->Port->CMD);
+                if (!cmd.CR)
+                    break;
+                StorPortStallExecution(1000);
+            }
+
+            /* 3. clear SATA errors, then restart the port */
+            StorPortWriteRegisterUlong(AdapterExtension, &PortExtension->Port->SERR, 0xFFFFFFFF);
+            cmd.ST = 1;
+            StorPortWriteRegisterUlong(AdapterExtension, &PortExtension->Port->CMD, cmd.Status);
+            StorPortWriteRegisterUlong(AdapterExtension, AdapterExtension->IS, (1 << PortExtension->PortNumber));
+
+            /* 4. stopping the port cleared PxCI: fail every issued command so the
+             *    class driver (disk/cdrom) can retry or report the error. */
+            failed = PortExtension->CommandIssuedSlots;
+            PortExtension->CommandIssuedSlots = 0;
+            NCS = AHCI_Global_Port_CAP_NCS(AdapterExtension->CAP);
+            for (i = 0; i < NCS; i++)
+            {
+                if (!(failed & (1 << i)))
+                    continue;
+                FailedSrb = PortExtension->Slot[i];
+                if (FailedSrb == NULL)
+                    continue;
+                FailedSrb->SrbStatus = SRB_STATUS_ERROR;
+                StorPortNotification(RequestComplete, AdapterExtension, FailedSrb);
+            }
+
+            /* 5. issue whatever was queued behind the failed command */
+            AhciActivatePort(PortExtension);
+            return;
+        }
     }
 
     // Normal Command Completion

@@ -21,6 +21,20 @@ Build (Linux, mingw-w64 **posix** toolchain, cmake, ninja, bison, flex, libgmp-d
    `uefildr.efi` to `EFI/BOOT/BOOTX64.EFI`, `freeldr.ini` to the root, and the
    `reactos` tree. Write it with Rufus in DD mode, UEFI only, Secure Boot off.
 
+## إصلاح الإقلاع على Acer وLenovo من فلاش USB (UEFI)، 23 نوفمبر 2026
+
+**البلاغ:** الفلاش ما بيقلع على Acer ولا Lenovo، وكل الخيارات (التثبيت وLive) بتطلّع
+`STOP 0x7E (C0000006) bootvid.dll Address FFFFF8000007B7A1, DateStamp 6b031252`.
+
+| # | المشكلة | السبب | الحل والاختبار |
+|---|---|---|---|
+| 1 | `0x7E/C0000006` في `bootvid.dll +0x27A1` | الـ ISO المحروق **قديم**: ختمه `6b031252` = 22 نوفمبر 16:03، قبل الإصلاح. `BitBlt` كان بياخد انتقال الصف كرقم موجب (`ULONG`)، فالصور bottom-up بتقفز ~4GB على amd64 | الإصلاح (`Stride` → `LONG` في `drivers/base/bootvid/common.c`) موجود في النسخة المدمجة. اختبار الدالة المباشر (`tools/qemu/test_bootvid_stride.py`) نجح، ومن فلاش USB تحت UEFI **شعار الإقلاع اترسم كامل** في نفس المرحلة اللي كان بيقع فيها (`docs/fixes/2026-11-23-usb-uefi-bootlogo-bootvid-ok.png`) |
+| 2 | بعد إصلاح 1: الإقلاع من USB تحت UEFI **بيعلّق** بعد تحميل الـ drivers (`docs/fixes/2026-11-23-usb-uefi-hang-before-fix.png`) | **bug في driver الـ SATA `storahci`:** لما الجهاز يرجع خطأ (`PxIS.TFES` = `0x40000000`)، الـ driver كان بيطبع "Fatal Error" بس، **ما بيمسح الـ bit ولا بيعمل recovery**، فالـ interrupt بيرجع للأبد (**358,048 رسالة** في إقلاع واحد، والسجل وصل 72MB)، والأمر الفاشل ما بيكتمل أبدًا. أي خطأ ATAPI (زي DVD أو card reader فاضي) بيعمل كده | `drivers/storage/port/storahci/storahci.c`: recovery حسب **AHCI 1.3 القسم 6.2.2.1**: مسح bits الخطأ، وإيقاف المنفذ (`ST=0`، والانتظار لحد `CR=0`)، ومسح `SERR`، وإعادة تشغيله، وإنهاء الأوامر الفاشلة بـ `SRB_STATUS_ERROR` عشان الـ class driver يعيد المحاولة، وبعدها تشغيل الأوامر المنتظرة. **بعد الإصلاح:** 24 رسالة بس (كل خطأ اتعالج مرة)، و**Kush قلع من فلاش USB (xHCI) تحت UEFI لحد شاشة الترحيب** (`docs/fixes/2026-11-23-usb-uefi-after-storahci-fix.png`) |
+
+**طريقة الاختبار:** صورة فلاش زي Rufus (GPT، قسم ESP واحد FAT32 فيه ملفات الـ ISO) متوصلة كـ USB على
+متحكم xHCI، و OVMF (UEFI) على جهاز q35، وده أقرب وضع للأجهزة الحقيقية. **حدود:** اتجرب في المحاكاة بس، ولسه
+محتاج تجربة على Acer وLenovo الحقيقيين بالـ ISO الجديد.
+
 ## دمج insticnt-kush-os في last-kushos، 23 نوفمبر 2026
 
 اتدمج كل شغل المستودع الموحد `insticnt-kush-os` (commit `1cc53ae9`) هنا، بدمج تلاتي ملف بملف على أساس ReactOS `344ebfe5`:
