@@ -713,7 +713,11 @@ CreateDisplayDriverList(
     PCWSTR KeyName;
     PCWSTR KeyValue;
     WCHAR DisplayIdentifier[128];
-    WCHAR DisplayKey[32];
+    /* Kush 1.1: default to the VBE/GOP miniport ("vbe" = service vga/vbemp) when the
+     * firmware reports no known display identifier, as on UEFI-only machines,
+     * where the old VgaSave default gives a black screen after installation.
+     * (The array was previously left uninitialized when nothing matched.) */
+    WCHAR DisplayKey[32] = L"vbe";
 
     /* Get the display identification */
     if (!GetDisplayIdentifier(DisplayIdentifier, 128))
