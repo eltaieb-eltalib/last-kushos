@@ -12,6 +12,9 @@
 
 #include "blue.h"
 #include <ndk/inbvfuncs.h>
+#include <ndk/halfuncs.h>
+#include <bootvid/bootvid.h>
+#include <bootvid/display.h>
 
 #define NDEBUG
 #include <debug.h>
@@ -301,6 +304,142 @@ ScrInbvCleanup(VOID)
     return STATUS_SUCCESS;
 }
 
+/* UEFI FRAMEBUFFER TEXT OUTPUT (Kush 1.1) ************************************/
+/*
+ * On UEFI-only machines there is no VGA text mode: writing to 0xB8000 and
+ * programming the VGA registers shows nothing, so text-mode Setup was a
+ * black screen. In that case the text buffer lives in memory, and every
+ * changed cell is drawn on the boot framebuffer through BootVid (lfbbvid on
+ * UEFI, which already scales its 640x480 screen to the GOP resolution).
+ */
+#define FB_COLUMNS  80
+#define FB_ROWS     25
+#define FB_CELL_W   8
+#define FB_CELL_H   16
+#define FB_LEFT     ((640 - FB_COLUMNS * FB_CELL_W) / 2)
+#define FB_TOP      ((480 - FB_ROWS * FB_CELL_H) / 2)
+
+extern const UCHAR ScrFbFont8x16[256 * 16];
+
+static BOOLEAN ScrFbMode = FALSE;
+static PUCHAR  ScrFbShown = NULL;   /* Cells currently drawn on the screen */
+static USHORT  ScrFbCurX = 0xFFFF, ScrFbCurY = 0xFFFF; /* Drawn cursor */
+
+/* VGA attribute colour index -> BootVid palette index */
+static const UCHAR ScrFbColor[16] =
+{
+    BV_COLOR_BLACK, BV_COLOR_BLUE, BV_COLOR_GREEN, BV_COLOR_CYAN,
+    BV_COLOR_RED, BV_COLOR_MAGENTA, BV_COLOR_BROWN, BV_COLOR_LIGHT_GRAY,
+    BV_COLOR_DARK_GRAY, BV_COLOR_LIGHT_BLUE, BV_COLOR_LIGHT_GREEN, BV_COLOR_LIGHT_CYAN,
+    BV_COLOR_LIGHT_RED, BV_COLOR_LIGHT_MAGENTA, BV_COLOR_YELLOW, BV_COLOR_WHITE
+};
+
+static BOOLEAN
+ScrFbDetect(VOID)
+{
+#ifdef _M_AMD64
+    ULONG Size = PAGE_SIZE;
+    USHORT Segment, Offset;
+
+    /* No BootVid framebuffer: nothing we could draw on */
+    if (!InbvIsBootDriverInstalled())
+        return FALSE;
+
+    /* The HAL only sets up the real-mode BIOS emulation when booted by a
+     * BIOS; on UEFI it is not initialized and this call fails. */
+    if (NT_SUCCESS(x86BiosAllocateBuffer(&Size, &Segment, &Offset)))
+    {
+        x86BiosFreeBuffer(Segment, Offset);
+        return FALSE;
+    }
+    DPRINT1("blue: no PC BIOS (UEFI), using the boot framebuffer for text output\n");
+    return TRUE;
+#else
+    return FALSE;
+#endif
+}
+
+static VOID
+ScrFbDrawCell(
+    _In_ PDEVICE_EXTENSION DeviceExtension,
+    _In_ ULONG X,
+    _In_ ULONG Y,
+    _In_ UCHAR Char,
+    _In_ UCHAR Attr,
+    _In_ BOOLEAN Cursor)
+{
+    UCHAR Cell[FB_CELL_H * FB_CELL_W / 2];
+    UCHAR Fg = ScrFbColor[Attr & 0x0F], Bg = ScrFbColor[(Attr >> 4) & 0x0F];
+    ULONG Row, Col;
+
+    for (Row = 0; Row < FB_CELL_H; Row++)
+    {
+        UCHAR Bits;
+
+        /* A code page font loaded by the console is 8x8: double its lines */
+        if (DeviceExtension->FontBitfield)
+            Bits = DeviceExtension->FontBitfield[Char * 8 + Row / 2];
+        else
+            Bits = ScrFbFont8x16[Char * 16 + Row];
+
+        if (Cursor && Row >= FB_CELL_H - 2)
+            Bits = 0xFF;
+
+        for (Col = 0; Col < FB_CELL_W; Col += 2)
+        {
+            UCHAR Hi = (Bits & (0x80 >> Col)) ? Fg : Bg;
+            UCHAR Lo = (Bits & (0x40 >> Col)) ? Fg : Bg;
+            Cell[Row * (FB_CELL_W / 2) + Col / 2] = (UCHAR)((Hi << 4) | Lo);
+        }
+    }
+
+    VidBufferToScreenBlt(Cell,
+                         FB_LEFT + X * FB_CELL_W,
+                         FB_TOP + Y * FB_CELL_H,
+                         FB_CELL_W, FB_CELL_H,
+                         FB_CELL_W / 2);
+}
+
+/* Draw every cell that changed since the last update, and the cursor */
+static VOID
+ScrFbFlush(
+    _In_ PDEVICE_EXTENSION DeviceExtension,
+    _In_ BOOLEAN Force)
+{
+    PUCHAR Mem = DeviceExtension->VideoMemory;
+    USHORT CurX, CurY;
+    ULONG i, Cells;
+
+    if (!ScrFbMode || !Mem || !ScrFbShown || !DeviceExtension->Enabled)
+        return;
+
+    /* INBV (e.g. the bugcheck screen) owns the display: do not draw */
+    if (InbvCheckDisplayOwnership())
+        return;
+
+    CurX = DeviceExtension->CursorVisible ? DeviceExtension->CursorX : 0xFFFF;
+    CurY = DeviceExtension->CursorVisible ? DeviceExtension->CursorY : 0xFFFF;
+
+    Cells = DeviceExtension->Rows * DeviceExtension->Columns;
+    for (i = 0; i < Cells; i++)
+    {
+        USHORT X = (USHORT)(i % DeviceExtension->Columns);
+        USHORT Y = (USHORT)(i / DeviceExtension->Columns);
+        BOOLEAN IsCursor = (X == CurX && Y == CurY);
+        BOOLEAN WasCursor = (X == ScrFbCurX && Y == ScrFbCurY);
+
+        if (Force || IsCursor != WasCursor ||
+            Mem[i * 2] != ScrFbShown[i * 2] || Mem[i * 2 + 1] != ScrFbShown[i * 2 + 1])
+        {
+            ScrFbDrawCell(DeviceExtension, X, Y, Mem[i * 2], Mem[i * 2 + 1], IsCursor);
+            ScrFbShown[i * 2] = Mem[i * 2];
+            ScrFbShown[i * 2 + 1] = Mem[i * 2 + 1];
+        }
+    }
+    ScrFbCurX = CurX;
+    ScrFbCurY = CurY;
+}
+
 /* FUNCTIONS **************************************************************/
 
 static VOID
@@ -367,6 +506,12 @@ ScrSetCursor(
     if (!DeviceExtension->VideoMemory)
         return;
 
+    if (ScrFbMode)
+    {
+        ScrFbFlush(DeviceExtension, FALSE);
+        return;
+    }
+
     Offset = (DeviceExtension->CursorY * DeviceExtension->Columns) + DeviceExtension->CursorX;
 
     _disable();
@@ -387,6 +532,12 @@ ScrSetCursorShape(
 
     if (!DeviceExtension->VideoMemory)
         return;
+
+    if (ScrFbMode)
+    {
+        ScrFbFlush(DeviceExtension, FALSE);
+        return;
+    }
 
     height = DeviceExtension->ScanLines;
     data = (DeviceExtension->CursorVisible) ? 0x00 : 0x20;
@@ -414,6 +565,23 @@ ScrAcquireOwnership(
     UCHAR data, value;
     ULONG offset;
     ULONG Index;
+
+    if (ScrFbMode)
+    {
+        /* Standard 80x25 text screen, drawn on the framebuffer */
+        DeviceExtension->Columns = FB_COLUMNS;
+        DeviceExtension->Rows = FB_ROWS;
+        DeviceExtension->ScanLines = FB_CELL_H;
+        DeviceExtension->CursorX = 0;
+        DeviceExtension->CursorY = 0;
+
+        /* Default palette, black screen; everything is redrawn on flush */
+        VidResetDisplay(FALSE);
+        if (ScrFbShown)
+            RtlFillMemory(ScrFbShown, FB_COLUMNS * FB_ROWS * 2, 0xFF);
+        ScrFbCurX = ScrFbCurY = 0xFFFF;
+        return;
+    }
 
     _disable();
 
@@ -538,7 +706,10 @@ ScrResetScreen(
             if (DeviceExtension->VideoMemory)
             {
                 ASSERT(DeviceExtension->VideoMemorySize != 0);
-                MmUnmapIoSpace(DeviceExtension->VideoMemory, DeviceExtension->VideoMemorySize);
+                if (ScrFbMode)
+                    ExFreePoolWithTag(DeviceExtension->VideoMemory, TAG_BLUE);
+                else
+                    MmUnmapIoSpace(DeviceExtension->VideoMemory, DeviceExtension->VideoMemorySize);
             }
             DeviceExtension->VideoMemory = NULL;
             DeviceExtension->VideoMemorySize = 0;
@@ -558,9 +729,27 @@ ScrResetScreen(
                 return FALSE; // STATUS_INVALID_VIEW_SIZE; STATUS_MAPPED_FILE_SIZE_ZERO;
 
             /* Map the video memory */
-            BaseAddress.QuadPart = VIDMEM_BASE;
-            DeviceExtension->VideoMemory =
-                (PUCHAR)MmMapIoSpace(BaseAddress, DeviceExtension->VideoMemorySize, MmNonCached);
+            if (ScrFbMode)
+            {
+                /* In-memory text buffer, drawn on the framebuffer (blank: spaces) */
+                DeviceExtension->VideoMemory =
+                    (PUCHAR)ExAllocatePoolWithTag(NonPagedPool, DeviceExtension->VideoMemorySize, TAG_BLUE);
+                if (DeviceExtension->VideoMemory)
+                {
+                    ULONG i;
+                    for (i = 0; i < DeviceExtension->VideoMemorySize; i += 2)
+                    {
+                        DeviceExtension->VideoMemory[i] = ' ';
+                        DeviceExtension->VideoMemory[i + 1] = (UCHAR)DeviceExtension->CharAttribute;
+                    }
+                }
+            }
+            else
+            {
+                BaseAddress.QuadPart = VIDMEM_BASE;
+                DeviceExtension->VideoMemory =
+                    (PUCHAR)MmMapIoSpace(BaseAddress, DeviceExtension->VideoMemorySize, MmNonCached);
+            }
             if (!DeviceExtension->VideoMemory)
             {
                 DeviceExtension->VideoMemorySize = 0;
@@ -604,6 +793,7 @@ ScrResetScreen(
             ScrSetCursorShape(DeviceExtension);
         }
         DeviceExtension->Enabled = TRUE;
+        ScrFbFlush(DeviceExtension, TRUE);
     }
     else
     {
@@ -621,7 +811,10 @@ ScrResetScreen(
             if (DeviceExtension->VideoMemory)
             {
                 ASSERT(DeviceExtension->VideoMemorySize != 0);
-                MmUnmapIoSpace(DeviceExtension->VideoMemory, DeviceExtension->VideoMemorySize);
+                if (ScrFbMode)
+                    ExFreePoolWithTag(DeviceExtension->VideoMemory, TAG_BLUE);
+                else
+                    MmUnmapIoSpace(DeviceExtension->VideoMemory, DeviceExtension->VideoMemorySize);
             }
             DeviceExtension->VideoMemory = NULL;
             DeviceExtension->VideoMemorySize = 0;
@@ -1522,7 +1715,9 @@ ScrIoControl(
             RtlCopyMemory(DeviceExtension->FontBitfield, Irp->AssociatedIrp.SystemBuffer, 256 * 8);
 
             /* Set the font if needed */
-            if (DeviceExtension->Enabled && DeviceExtension->VideoMemory)
+            if (ScrFbMode)
+                ScrFbFlush(DeviceExtension, TRUE);
+            else if (DeviceExtension->Enabled && DeviceExtension->VideoMemory)
                 ScrSetFont(DeviceExtension->FontBitfield);
 
             Irp->IoStatus.Information = 0;
@@ -1533,6 +1728,9 @@ ScrIoControl(
         default:
             Status = STATUS_NOT_IMPLEMENTED;
     }
+
+    /* Show what the request changed (UEFI framebuffer mode only) */
+    ScrFbFlush(DeviceExtension, FALSE);
 
     Irp->IoStatus.Status = Status;
     IoCompleteRequest(Irp, IO_VIDEO_INCREMENT);
@@ -1574,6 +1772,14 @@ DriverEntry(
     UNICODE_STRING SymlinkName = RTL_CONSTANT_STRING(L"\\??\\BlueScreen");
 
     DPRINT("Screen Driver 0.0.6\n");
+
+    ScrFbMode = ScrFbDetect();
+    if (ScrFbMode)
+    {
+        ScrFbShown = ExAllocatePoolWithTag(NonPagedPool, FB_COLUMNS * FB_ROWS * 2, TAG_BLUE);
+        if (!ScrFbShown)
+            ScrFbMode = FALSE;
+    }
 
     DriverObject->MajorFunction[IRP_MJ_CREATE] = ScrCreateClose;
     DriverObject->MajorFunction[IRP_MJ_CLOSE]  = ScrCreateClose;
