@@ -21,6 +21,19 @@ Build (Linux, mingw-w64 **posix** toolchain, cmake, ninja, bison, flex, libgmp-d
    `uefildr.efi` to `EFI/BOOT/BOOTX64.EFI`, `freeldr.ini` to the root, and the
    `reactos` tree. Write it with Rufus in DD mode, UEFI only, Secure Boot off.
 
+## Firefox فتح Google وبحث عن "ok" على Kush (23 نوفمبر 2026)
+
+**النتيجة:** على آخر نسخة من النظام (بناء 20261123 من `main`)، Firefox 160 فتح `google.com`، واتكتب "ok" في البحث، وظهرت النتائج
+(`docs/firefox/21-google-home-on-kush.png`، `docs/firefox/22-google-typing-ok.png`، `docs/firefox/23-google-results-ok.png`).
+دي أول مرة صفحة ويب حقيقية تترسم في Firefox على Kush (عملية المحتوى بقت شغالة بعد إصلاحات الدمج).
+
+| # | المشكلة | السبب | الحل |
+|---|---|---|---|
+| 1 | تحذير `SEC_ERROR_UNKNOWN_ISSUER` في google.com | **من بيئة الاختبار، مش من Kush:** الـ proxy بتاع بيئتي بيعيد إصدار الشهادات بـ CA خاص بيه ("CCR agent-proxy interception CA"). في جهاز حقيقي شهادة Google بتوصل زي ما هي | إعداد اختبار بس جوه الـ VM (ما اترفع للمستودع): `policies.json` بيثبّت شهادة الـ CA دي في نسخة Firefox الاختبارية |
+| 2 | **شاشة زرقاء `0x1E`** في `win32k.sys` (`MsqDestroyMessage`) لما ضغطت Alt+Tab وFirefox شغال | use-after-free: أثناء معالجة رسالة كيبورد/ماوس (`co_MsqPeekHardwareMessage`) الـ hooks بتشتغل والقفل مفكوك، ومسار تاني (rawinput، focus، تنظيف نافذة أو thread) ممكن **يمسح نفس الرسالة**. الذاكرة بترجع للـ lookaside وبتتاخد لرسالة جديدة ما اتضافت لقائمة، فالحلقة بتمسح الرسالة الجديدة دي (`Flink = NULL`) | `win32ss/user/ntuser/msgqueue.[ch]`: علامة `InPlay` على الرسالة أثناء المعالجة؛ `MsqDestroyMessage` بيفكها من القائمة بس ويأجل التحرير، والحلقة بتحررها بعد ما تخلص، وبتقرأ الرسالة الجاية من جديد بعد الـ callbacks. **بعد الإصلاح:** Alt+Tab 6 مرات مع Firefox من غير شاشة زرقاء |
+| 3 | Firefox بيقفل بعد شوية (`c0000005` في `xul.dll +0x2d9e749`) | الـ stack الجديد (تحت) بيّن: العملية الرئيسية استلمت رسالة IPC من عملية المحتوى فيها URL، و`nsStandardURL::Deserialize/IsValid` لقى أطوال أكبر من النص، يعني **بيانات رسالة IPC وصلت تالفة** بين العمليتين | ⏳ **مفتوحة:** المشتبه فيه نقل البيانات بين العمليات في Kush (pipes أو الذاكرة المشتركة). الخطوة الجاية: مقارنة الرسالة عند الإرسال والاستلام |
+| 4 | (أداة) ما كان في طريقة نعرف بيها مين نادى الدالة اللي قفلت | | `ntoskrnl/ke/amd64/except.c`: `KUSH-EXC` بقى بيطبع **stack تقريبي** (كل قيمة في الـ stack بتشاور على موديول، كـ module+RVA) عشان يتحول لأسماء دوال بـ `tools/breakpad_sym.py` |
+
 ## تنزيل الـ ISO الجديد وحرقه على فلاش (23 نوفمبر 2026)
 
 - **الـ ISO:** بناء GitHub Actions نجح (run 45220800817، commit `6fdbae1`، فيه كل إصلاحات UEFI تحت):

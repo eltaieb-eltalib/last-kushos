@@ -416,6 +416,40 @@ KiDispatchException(IN PEXCEPTION_RECORD ExceptionRecord,
             }
             _SEH2_EXCEPT(EXCEPTION_EXECUTE_HANDLER) {} _SEH2_END;
 
+            /* Kush 1.1: likely call stack - every stack slot (from RSP up) that
+             * points into a loaded module, as module+RVA, so the caller of a
+             * crashing library routine can be found (symbolize with
+             * tools/breakpad_sym.py). Heuristic, may include stale values. */
+            _SEH2_TRY
+            {
+                PPEB Peb = PsGetCurrentProcess()->Peb;
+                PLIST_ENTRY Head = &Peb->Ldr->InLoadOrderModuleList, Entry;
+                PULONG_PTR Slot = (PULONG_PTR)(Context.Rsp & ~7ULL);
+                PULONG_PTR End = (PULONG_PTR)min((ULONG_PTR)StackBase, Context.Rsp + 0x4000);
+                ULONG Found = 0;
+
+                for (; Slot < End && Found < 32; Slot++)
+                {
+                    ULONG_PTR Value = *Slot;
+                    ULONG Count = 0;
+                    if (Value < 0x10000 || Value >= (ULONG_PTR)MmHighestUserAddress)
+                        continue;
+                    for (Entry = Head->Flink; Entry != Head && Count < 512; Entry = Entry->Flink, Count++)
+                    {
+                        PLDR_DATA_TABLE_ENTRY Mod = CONTAINING_RECORD(Entry, LDR_DATA_TABLE_ENTRY, InLoadOrderLinks);
+                        ULONG_PTR Base = (ULONG_PTR)Mod->DllBase;
+                        if (Value > Base + 0x1000 && Value < Base + Mod->SizeOfImage)
+                        {
+                            DbgPrint("KUSH-EXC: stack +%04Ix %wZ +0x%Ix\n",
+                                     (ULONG_PTR)Slot - Context.Rsp, &Mod->BaseDllName, Value - Base);
+                            Found++;
+                            break;
+                        }
+                    }
+                }
+            }
+            _SEH2_EXCEPT(EXCEPTION_EXECUTE_HANDLER) {} _SEH2_END;
+
             /* Firefox MOZ_CRASH/RustMozCrash: int3 with the reason string in R8. */
             if (ExceptionRecord->ExceptionCode == STATUS_BREAKPOINT && Context.R8 > 0x10000 &&
                 Context.R8 < (ULONG64)MmHighestUserAddress)
