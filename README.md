@@ -53,9 +53,11 @@ Build (Linux, mingw-w64 **posix** toolchain, cmake, ninja, bison, flex, libgmp-d
 
 ## تنزيل الـ ISO الجديد وحرقه على فلاش (23 نوفمبر 2026)
 
-- **الـ ISO:** بناء GitHub Actions نجح (run 45220800817، commit `6fdbae1`، فيه كل إصلاحات UEFI تحت):
-  https://github.com/eltaieb-eltalib/last-kushos/actions/runs/45220800817 ← تحت **Artifacts** نزّل `kush-bootcd-45220800817`
-  (ملف zip فيه `bootcd.iso` و`build-sha256.txt`). الرابط صالح لحد **26 نوفمبر 2026**.
+- **الـ ISO:** بناء GitHub Actions نجح (run 45250069151، commit `d01eefd`): فيه كل إصلاحات UEFI تحت، وإصلاح الشاشة
+  الزرقاء مع Alt+Tab (`win32k`)، وطباعة الـ stack في `KUSH-EXC`.
+  صفحة البناء: https://github.com/eltaieb-eltalib/last-kushos/actions/runs/45250069151
+  تنزيل مباشر (لازم تكون مسجّل دخول في GitHub): https://github.com/eltaieb-eltalib/last-kushos/actions/runs/45250069151/artifacts/14855702776
+  (ملف zip حوالي 150MB فيه `bootcd.iso` و`build-sha256.txt`). الرابط صالح لحد **26 نوفمبر 2026، 19:37 UTC**.
 - **Rufus:** Device = الفلاش، Boot selection = `bootcd.iso`، **Partition scheme = GPT**، **Target system = UEFI (non CSM)**،
   File system = FAT32. لو سأل ISO أو DD اختار **ISO mode**. وفي الـ BIOS: اقفل **Secure Boot**.
 - **التثبيت:** من قائمة الإقلاع اختار **"Kush 1.1 Setup (Text Mode)"** (بقى بيشتغل تحت UEFI) أو **"Kush 1.1 Live Environment"**
