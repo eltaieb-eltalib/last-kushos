@@ -689,6 +689,11 @@ AhciInterruptHandler (
             AHCI_PORT_CMD cmd;
             ULONG failed, i, n, NCS;
             PSCSI_REQUEST_BLOCK FailedSrb;
+            AHCI_TASK_FILE_DATA tfd;
+
+            /* 0. the device's error register; for ATAPI its high nibble is the
+             *    SCSI sense key of the CHECK CONDITION (e.g. 2 = NOT READY) */
+            tfd.Status = StorPortReadRegisterUlong(AdapterExtension, &PortExtension->Port->TFD);
 
             /* 1. acknowledge everything we saw, including the error bits */
             StorPortWriteRegisterUlong(AdapterExtension, &PortExtension->Port->IS, PxIS.Status);
@@ -724,6 +729,34 @@ AhciInterruptHandler (
                 if (FailedSrb == NULL)
                     continue;
                 FailedSrb->SrbStatus = SRB_STATUS_ERROR;
+
+                /* ATAPI: report CHECK CONDITION with sense data, as a SCSI
+                 * device would, so cdrom.sys sees e.g. "medium not present"
+                 * instead of a generic error it keeps retrying. */
+                if (PortExtension->DeviceParams.DeviceType == AHCI_DEVICE_TYPE_ATAPI &&
+                    FailedSrb->Function == SRB_FUNCTION_EXECUTE_SCSI &&
+                    (tfd.ERR >> 4) != 0)
+                {
+                    FailedSrb->ScsiStatus = SCSISTAT_CHECK_CONDITION;
+                    if (FailedSrb->SenseInfoBuffer &&
+                        FailedSrb->SenseInfoBufferLength >= FIELD_OFFSET(SENSE_DATA, FieldReplaceableUnitCode) &&
+                        !(FailedSrb->SrbFlags & SRB_FLAGS_DISABLE_AUTOSENSE))
+                    {
+                        PSENSE_DATA Sense = (PSENSE_DATA)FailedSrb->SenseInfoBuffer;
+                        UCHAR SenseKey = tfd.ERR >> 4;
+
+                        RtlZeroMemory(Sense, FailedSrb->SenseInfoBufferLength);
+                        Sense->ErrorCode = 0x70; /* current error, fixed format */
+                        Sense->SenseKey = SenseKey;
+                        Sense->AdditionalSenseLength =
+                            sizeof(SENSE_DATA) - FIELD_OFFSET(SENSE_DATA, CommandSpecificInformation);
+                        /* NOT READY from an ATAPI drive is almost always an
+                         * empty tray: medium not present */
+                        if (SenseKey == SCSI_SENSE_NOT_READY)
+                            Sense->AdditionalSenseCode = SCSI_ADSENSE_NO_MEDIA_IN_DEVICE;
+                        FailedSrb->SrbStatus |= SRB_STATUS_AUTOSENSE_VALID;
+                    }
+                }
                 StorPortNotification(RequestComplete, AdapterExtension, FailedSrb);
             }
 
