@@ -819,6 +819,21 @@ HalpSetupAcpiPhase0(IN PLOADER_PARAMETER_BLOCK LoaderBlock)
     /* Copy it in the HAL static buffer */
     RtlCopyMemory(&HalpFixedAcpiDescTable, Fadt, TableLength);
 
+    /* Kush 1.1: remember the ACPI reset register for HalpReboot (FADT rev 2+) */
+    if (TableLength >= FIELD_OFFSET(FADT, reset_val) + sizeof(UCHAR) &&
+        (HalpFixedAcpiDescTable.flags & 0x400 /* RESET_REG_SUP */) &&
+        HalpFixedAcpiDescTable.reset_reg.Address.QuadPart != 0 &&
+        HalpFixedAcpiDescTable.reset_reg.AddressSpaceID <= 1)
+    {
+        HalpAcpiResetSupported = TRUE;
+        HalpAcpiResetSpace = HalpFixedAcpiDescTable.reset_reg.AddressSpaceID;
+        HalpAcpiResetAddress = HalpFixedAcpiDescTable.reset_reg.Address.QuadPart;
+        HalpAcpiResetValue = HalpFixedAcpiDescTable.reset_val;
+        DPRINT1("HAL: ACPI reset register %s 0x%I64x value 0x%x\n",
+                HalpAcpiResetSpace ? "I/O" : "memory",
+                HalpAcpiResetAddress, HalpAcpiResetValue);
+    }
+
     /* Anything special this HAL needs to do? */
     HalpAcpiDetectMachineSpecificActions(LoaderBlock, &HalpFixedAcpiDescTable);
 

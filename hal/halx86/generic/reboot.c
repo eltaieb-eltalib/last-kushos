@@ -11,13 +11,53 @@
 
 #include <hal.h>
 
+/* GLOBALS *******************************************************************/
+
+/*
+ * Kush 1.1: ACPI reset register (FADT RESET_REG), filled by the ACPI HAL.
+ * Many UEFI-only laptops have no (working) 8042 keyboard controller, so the
+ * old 0xFE-to-port-0x64 reset alone left them hanging at reboot.
+ */
+BOOLEAN HalpAcpiResetSupported = FALSE;
+UCHAR HalpAcpiResetSpace;       /* 0 = memory, 1 = I/O */
+ULONG64 HalpAcpiResetAddress;
+UCHAR HalpAcpiResetValue;
+
 /* PRIVATE FUNCTIONS *********************************************************/
 
 static VOID
 HalpWriteResetCommand(VOID)
 {
-    /* Generate RESET signal via keyboard controller */
+    ULONG i;
+
+    /* 1. ACPI reset register, the method the platform advertises */
+    if (HalpAcpiResetSupported)
+    {
+        if (HalpAcpiResetSpace == 1)
+        {
+            WRITE_PORT_UCHAR((PUCHAR)(ULONG_PTR)HalpAcpiResetAddress, HalpAcpiResetValue);
+        }
+        else if (HalpAcpiResetSpace == 0)
+        {
+            PHYSICAL_ADDRESS Pa;
+            PUCHAR Va;
+            Pa.QuadPart = (LONGLONG)HalpAcpiResetAddress;
+            Va = HalpMapPhysicalMemory64(Pa, 1);
+            if (Va)
+                WRITE_REGISTER_UCHAR(Va + (Pa.LowPart & (PAGE_SIZE - 1)), HalpAcpiResetValue);
+        }
+        for (i = 0; i < 50; i++) KeStallExecutionProcessor(1000);
+    }
+
+    /* 2. Keyboard controller pulse (legacy PCs) */
     WRITE_PORT_UCHAR((PUCHAR)0x64, 0xFE);
+    for (i = 0; i < 50; i++) KeStallExecutionProcessor(1000);
+
+    /* 3. PCI reset control register: system reset, then full (hard) reset */
+    WRITE_PORT_UCHAR((PUCHAR)0xCF9, 0x02);
+    KeStallExecutionProcessor(10);
+    WRITE_PORT_UCHAR((PUCHAR)0xCF9, 0x06);
+    for (i = 0; i < 50; i++) KeStallExecutionProcessor(1000);
 };
 
 DECLSPEC_NORETURN

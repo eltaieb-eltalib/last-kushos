@@ -634,4 +634,10 @@ extern KAFFINITY HalpDefaultInterruptAffinity;
 extern IDTUsageFlags HalpIDTUsageFlags[MAXIMUM_IDTVECTOR+1];
 
 extern BOOLEAN HalBootViaEfi;
+
+/* Kush 1.1: ACPI reset register (generic/reboot.c, filled by acpi/halacpi.c) */
+extern BOOLEAN HalpAcpiResetSupported;
+extern UCHAR HalpAcpiResetSpace;
+extern ULONG64 HalpAcpiResetAddress;
+extern UCHAR HalpAcpiResetValue;
 extern const USHORT HalpBuildType;
