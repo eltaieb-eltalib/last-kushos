@@ -44,7 +44,7 @@ static
 NTSTATUS
 NtfsHasFileSystem(PDEVICE_OBJECT DeviceToMount)
 {
-    PARTITION_INFORMATION PartitionInfo;
+    PARTITION_INFORMATION_EX PartitionInfo;
     DISK_GEOMETRY DiskGeometry;
     ULONG ClusterSize, Size, k;
     PBOOT_SECTOR BootSector;
@@ -68,10 +68,16 @@ NtfsHasFileSystem(PDEVICE_OBJECT DeviceToMount)
 
     if (DiskGeometry.MediaType == FixedMedia)
     {
-        /* We have found a hard disk */
-        Size = sizeof(PARTITION_INFORMATION);
+        /* We have found a hard disk.
+         * Kush 1.1: use the _EX query. The legacy IOCTL_DISK_GET_PARTITION_INFO
+         * is MBR-only and fails with STATUS_INVALID_DEVICE_REQUEST on GPT disks;
+         * returning that error made IopMountVolume stop trying the remaining
+         * file systems (fastfat), so booting text-mode Setup from a GPT (UEFI)
+         * USB stick bugchecked with 0x7B (C0000010). On GPT there is no MBR
+         * partition type to check: the boot sector check below decides. */
+        Size = sizeof(PARTITION_INFORMATION_EX);
         Status = NtfsDeviceIoControl(DeviceToMount,
-                                     IOCTL_DISK_GET_PARTITION_INFO,
+                                     IOCTL_DISK_GET_PARTITION_INFO_EX,
                                      NULL,
                                      0,
                                      &PartitionInfo,
@@ -80,10 +86,11 @@ NtfsHasFileSystem(PDEVICE_OBJECT DeviceToMount)
         if (!NT_SUCCESS(Status))
         {
             DPRINT1("NtfsDeviceIoControl() failed (Status %lx)\n", Status);
-            return Status;
+            return STATUS_UNRECOGNIZED_VOLUME;
         }
 
-        if (PartitionInfo.PartitionType != PARTITION_IFS)
+        if (PartitionInfo.PartitionStyle == PARTITION_STYLE_MBR &&
+            PartitionInfo.Mbr.PartitionType != PARTITION_IFS)
         {
             DPRINT1("Invalid partition type\n");
             return STATUS_UNRECOGNIZED_VOLUME;
