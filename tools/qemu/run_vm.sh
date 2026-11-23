@@ -8,8 +8,13 @@
 #   python3 typ.py <workdir> $'text\n'       -> type text
 #   python3 click.py <workdir> X Y           -> left click at screen X,Y
 W=$1; DISK=$2; ISO=${3:-}; T=$(cd "$(dirname "$0")" && pwd)
+# -avx2: QEMU TCG (8.2) faults on the masked-out lanes of VPMASKMOVD/VPMASKMOVQ,
+# which real CPUs never do. MSVC STL's vectorized std::find uses exactly that
+# for buffer tails, so Firefox crashed at random (xul.dll +0x2d9e749, a read of
+# the next, unmapped page). Without AVX2 the STL takes its SSE path.
+CPU="max,-avx2"
 pkill -9 -f qemu-system; sleep 1; rm -f "$W/serial.log"
-qemu-system-x86_64 -m 3072 -cpu max -smp 2 -drive file="$DISK",format=raw ${ISO:+-cdrom "$ISO"} -boot c \
+qemu-system-x86_64 -m 3072 -cpu "$CPU" -smp 2 -drive file="$DISK",format=raw ${ISO:+-cdrom "$ISO"} -boot c \
   -vga std -display none -serial file:"$W/serial.log" -monitor unix:"$W/mon.sock",server,nowait -daemonize
 # Boot takes ~3-4 min under TCG (no KVM). Dismiss any dialog, open Run -> cmd.
 python3 "$T/vm.py" "$W" sleep:220 esc sleep:2 meta_l-r sleep:6
