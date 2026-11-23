@@ -115,8 +115,14 @@ list(APPEND PCH_SKIP_SOURCE
     kush_shell.c
     ${CMAKE_CURRENT_BINARY_DIR}/shell32_stubs.c)
 
+# Kush 1.1: ONE dependency list for shell32.rc. add_rc_deps() *replaces*
+# OBJECT_DEPENDS, so a second call (for the Kush icons) used to drop the
+# generated shell32_shldisp.tlb: clean CI builds then failed with
+# "windres: can't open file shell32_shldisp.tlb".
 file(GLOB_RECURSE shell32_rc_deps res/*.*)
-list(APPEND shell32_rc_deps ${CMAKE_CURRENT_BINARY_DIR}/shell32_shldisp.tlb)
+list(APPEND shell32_rc_deps
+    ${CMAKE_CURRENT_BINARY_DIR}/shell32_shldisp.tlb
+    ${CMAKE_CURRENT_SOURCE_DIR}/icon_res.rc)
 add_rc_deps(shell32.rc ${shell32_rc_deps})
 
 add_library(shell32 MODULE
@@ -131,7 +137,6 @@ if(MSVC)
 endif()
 
 add_typelib(shell32_shldisp.idl)
-set_source_files_properties(shell32.rc PROPERTIES OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/shell32_shldisp.tlb)
 
 set_module_type(shell32 win32dll UNICODE)
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
@@ -147,7 +152,3 @@ add_importlibs(shell32 advapi32 gdi32 user32 comctl32 comdlg32 shlwapi shcore ms
 add_dependencies(shell32 stdole2) # shell32_shldisp.tlb needs stdole2.tlb
 add_pch(shell32 precomp.h "${PCH_SKIP_SOURCE}")
 add_cd_file(TARGET shell32 DESTINATION reactos/system32 FOR all)
-
-# Track the included icon table and generated Kush artwork explicitly.
-file(GLOB kush_shell_icon_deps "${CMAKE_CURRENT_SOURCE_DIR}/res/icons/kush/*.ico")
-add_rc_deps(shell32.rc "${CMAKE_CURRENT_SOURCE_DIR}/icon_res.rc" ${kush_shell_icon_deps})

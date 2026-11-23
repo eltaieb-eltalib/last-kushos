@@ -915,7 +915,11 @@ else()
 endif()
 
 function(add_rc_deps _target_rc)
-    set_source_files_properties(${_target_rc} PROPERTIES OBJECT_DEPENDS "${ARGN}")
+    # Kush 1.1: append, do not replace. Several CMakeLists call this twice for
+    # the same .rc (e.g. resources + Kush icons); replacing silently dropped
+    # the first list, including generated files such as shell32_shldisp.tlb,
+    # which broke clean (CI) builds.
+    set_property(SOURCE ${_target_rc} APPEND PROPERTY OBJECT_DEPENDS ${ARGN})
 endfunction()
 
 add_custom_target(rostests_install COMMAND ${CMAKE_COMMAND} -DCOMPONENT=rostests -P ${CMAKE_BINARY_DIR}/cmake_install.cmake)
