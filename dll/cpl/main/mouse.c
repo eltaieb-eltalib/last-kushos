@@ -32,6 +32,7 @@
 #include <commdlg.h>
 #include <cplext.h>
 #include <tchar.h>
+#include "kush_static_icons.h"
 
 #define DEFAULT_DOUBLE_CLICK_SPEED	500
 #define DEFAULT_CLICK_LOCK_TIME		2200
@@ -167,6 +168,7 @@ MouseHardwareProc(IN HWND hwndDlg,
     switch(uMsg)
     {
         case WM_INITDIALOG:
+            KushRefreshMainStaticIcons(hwndDlg);
             /* create the hardware page */
             DeviceCreateHardwarePageEx(hwndDlg,
                                        Guids,
@@ -196,6 +198,7 @@ ClickLockProc(IN HWND hwndDlg,
     switch(uMsg)
     {
         case WM_INITDIALOG:
+            KushRefreshMainStaticIcons(hwndDlg);
             pButtonData = (PBUTTON_DATA)lParam;
             SetWindowLongPtr(hwndDlg, DWLP_USER, (LONG_PTR)pButtonData);
 
@@ -246,6 +249,7 @@ ButtonProc(IN HWND hwndDlg,
     switch (uMsg)
     {
         case WM_INITDIALOG:
+            KushRefreshMainStaticIcons(hwndDlg);
             pButtonData = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(BUTTON_DATA));
             SetWindowLongPtr(hwndDlg, DWLP_USER, (LONG_PTR)pButtonData);
 
@@ -667,6 +671,7 @@ SaveSchemeProc(IN HWND hwndDlg,
     switch (uMsg)
     {
         case WM_INITDIALOG:
+            KushRefreshMainStaticIcons(hwndDlg);
             pSchemeName = (LPTSTR)lParam;
             SetWindowLongPtr(hwndDlg, DWLP_USER, (LONG_PTR)pSchemeName);
             SendDlgItemMessage(hwndDlg, IDC_EDIT_SCHEME_NAME, WM_SETTEXT,
@@ -1210,6 +1215,7 @@ PointerProc(IN HWND hwndDlg,
     switch (uMsg)
     {
         case WM_INITDIALOG:
+            KushRefreshMainStaticIcons(hwndDlg);
             pPointerData = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(POINTER_DATA));
             SetWindowLongPtr(hwndDlg, DWLP_USER, (LONG_PTR)pPointerData);
 
@@ -1393,6 +1399,7 @@ OptionProc(IN HWND hwndDlg,
     switch(uMsg)
     {
         case WM_INITDIALOG:
+            KushRefreshMainStaticIcons(hwndDlg);
             pOptionData = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(OPTION_DATA));
             SetWindowLongPtr(hwndDlg, DWLP_USER, (LONG_PTR)pOptionData);
 
@@ -1737,6 +1744,7 @@ WheelProc(IN HWND hwndDlg,
     switch (uMsg)
     {
         case WM_INITDIALOG:
+            KushRefreshMainStaticIcons(hwndDlg);
             pWheelData = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(WHEEL_DATA));
             SetWindowLongPtr(hwndDlg, DWLP_USER, (LONG_PTR)pWheelData);
 
@@ -1848,7 +1856,7 @@ MouseApplet(HWND hwnd, UINT uMsg, LPARAM lParam1, LPARAM lParam2)
     psh.dwFlags = PSH_PROPTITLE | PSH_USEICONID | PSH_USECALLBACK;
     psh.hwndParent = hwnd;
     psh.hInstance = hApplet;
-    psh.pszIcon = MAKEINTRESOURCEW(IDC_CPLICON_1);
+    psh.pszIcon = MAKEINTRESOURCEW(KushOwnIconId(IDC_CPLICON_1));
     psh.pszCaption = MAKEINTRESOURCEW(IDS_CPLNAME_1);
     psh.nStartPage = 0;
     psh.phpage = hpsp;

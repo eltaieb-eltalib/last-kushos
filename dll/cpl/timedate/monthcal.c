@@ -459,6 +459,7 @@ MonthCalPaint(IN PMONTHCALWND infoPtr,
     COLORREF crOldText, crOldCtrlText = CLR_INVALID;
     HFONT hOldFont;
     INT iOldBkMode;
+    COLORREF oldBrushColor = GetDCBrushColor(hDC);
 
 #if MONTHCAL_CTRLBG != MONTHCAL_DISABLED_CTRLBG
     if (!infoPtr->Enabled)
@@ -491,12 +492,15 @@ MonthCalPaint(IN PMONTHCALWND infoPtr,
             rcHeader.right = prcUpdate->right;
             rcHeader.bottom = rcCell.bottom;
 
-            FillRect(hDC,
-                     &rcHeader,
-                     infoPtr->hbHeader);
+            if (KushDateTimeModern() && infoPtr->Enabled)
+            {
+                SetDCBrushColor(hDC, RGB(239, 245, 246));
+                FillRect(hDC, &rcHeader, (HBRUSH)GetStockObject(DC_BRUSH));
+            }
+            else FillRect(hDC, &rcHeader, infoPtr->hbHeader);
 
             crOldText = SetTextColor(hDC,
-                                     GetSysColor(infoPtr->Enabled ? MONTHCAL_HEADERFG : MONTHCAL_DISABLED_HEADERFG));
+                                     (KushDateTimeModern() && infoPtr->Enabled) ? RGB(62, 77, 88) : GetSysColor(infoPtr->Enabled ? MONTHCAL_HEADERFG : MONTHCAL_DISABLED_HEADERFG));
 
             for (x = prcUpdate->left / infoPtr->CellSize.cx;
                  x <= prcUpdate->right / infoPtr->CellSize.cx && x < 7;
@@ -521,7 +525,7 @@ MonthCalPaint(IN PMONTHCALWND infoPtr,
             if (crOldCtrlText == CLR_INVALID)
             {
                 crOldCtrlText = SetTextColor(hDC,
-                                             GetSysColor(infoPtr->Enabled ? MONTHCAL_CTRLFG : MONTHCAL_DISABLED_CTRLFG));
+                                             (KushDateTimeModern() && infoPtr->Enabled) ? RGB(40, 48, 56) : GetSysColor(infoPtr->Enabled ? MONTHCAL_CTRLFG : MONTHCAL_DISABLED_CTRLFG));
             }
 
             for (x = prcUpdate->left / infoPtr->CellSize.cx;
@@ -576,16 +580,17 @@ MonthCalPaint(IN PMONTHCALWND infoPtr,
                                         GetSystemMetrics(SM_CXFOCUSBORDER),
                                         GetSystemMetrics(SM_CYFOCUSBORDER));
 
+                            if (KushDateTimeModern() && infoPtr->Enabled) SetDCBrushColor(hDC, RGB(13, 115, 119));
                             if (!FillRect(hDC,
                                           &rcHighlight,
-                                          infoPtr->hbSelection))
+                                          (KushDateTimeModern() && infoPtr->Enabled) ? (HBRUSH)GetStockObject(DC_BRUSH) : infoPtr->hbSelection))
                             {
                                 goto FailNoHighlight;
                             }
 
                             /* Highlight the selected day */
                             crOldText = SetTextColor(hDC,
-                                                     GetSysColor(infoPtr->Enabled ? MONTHCAL_SELFG : MONTHCAL_DISABLED_SELFG));
+                                                     (KushDateTimeModern() && infoPtr->Enabled) ? RGB(255, 255, 255) : GetSysColor(infoPtr->Enabled ? MONTHCAL_SELFG : MONTHCAL_DISABLED_SELFG));
                         }
                         else
                         {
@@ -607,7 +612,7 @@ FailNoHighlight:
                                 COLORREF crOldBk;
 
                                 crOldBk = SetBkColor(hDC,
-                                                     GetSysColor(infoPtr->Enabled ? MONTHCAL_SELBG : MONTHCAL_DISABLED_SELBG));
+                                                     (KushDateTimeModern() && infoPtr->Enabled) ? RGB(13, 115, 119) : GetSysColor(infoPtr->Enabled ? MONTHCAL_SELBG : MONTHCAL_DISABLED_SELBG));
 
                                 DrawFocusRect(hDC,
                                               &rcHighlight);
@@ -635,6 +640,7 @@ FailNoHighlight:
               iOldBkMode);
     SelectObject(hDC,
                  (HGDIOBJ)hOldFont);
+    SetDCBrushColor(hDC, oldBrushColor);
 }
 
 static HFONT

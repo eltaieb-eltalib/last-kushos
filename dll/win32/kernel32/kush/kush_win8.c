@@ -85,27 +85,99 @@ BOOL WINAPI SetWaitableTimerEx(HANDLE hTimer, const LARGE_INTEGER *lpDueTime, LO
     return SetWaitableTimer(hTimer, lpDueTime, lPeriod, pfnCompletionRoutine, lpArgToCompletionRoutine, FALSE);
 }
 
-/* WaitOnAddress: polling implementation (correct semantics, wakes when the value changes) */
-BOOL WINAPI WaitOnAddress(volatile VOID *Address, PVOID CompareAddress, SIZE_T AddressSize, DWORD dwMilliseconds)
+/* Address waits must remember wakeups even if the address value is unchanged.
+ * Keep registration and wake selection under the same short-held lock. Each
+ * waiter owns its event and removes itself before closing it. */
+typedef struct _KUSH_ADDRESS_WAITER
 {
-    DWORD Start = GetTickCount();
-    DWORD SpinSleep = 0;
-    for (;;)
-    {
-        if (RtlCompareMemory((const VOID *)Address, CompareAddress, AddressSize) != AddressSize)
-            return TRUE;
-        if (dwMilliseconds != INFINITE && (GetTickCount() - Start) >= dwMilliseconds)
-        {
-            SetLastError(ERROR_TIMEOUT);
-            return FALSE;
-        }
-        Sleep(SpinSleep);
-        if (SpinSleep < 1) SpinSleep = 1;
-    }
+    struct _KUSH_ADDRESS_WAITER *Next;
+    const volatile VOID *Address;
+    HANDLE Event;
+    BOOL Signaled;
+} KUSH_ADDRESS_WAITER;
+
+static volatile LONG KushAddressWaitLock;
+static KUSH_ADDRESS_WAITER *KushAddressWaiters;
+
+static VOID KushLockAddressWaiters(VOID)
+{
+    while (InterlockedCompareExchange(&KushAddressWaitLock, 1, 0))
+        Sleep(0);
 }
 
-VOID WINAPI WakeByAddressSingle(PVOID Address) { UNREFERENCED_PARAMETER(Address); }
-VOID WINAPI WakeByAddressAll(PVOID Address) { UNREFERENCED_PARAMETER(Address); }
+static VOID KushUnlockAddressWaiters(VOID)
+{
+    InterlockedExchange(&KushAddressWaitLock, 0);
+}
+
+BOOL WINAPI WaitOnAddress(volatile VOID *Address, PVOID CompareAddress,
+                         SIZE_T AddressSize, DWORD dwMilliseconds)
+{
+    KUSH_ADDRESS_WAITER Waiter, **Link;
+    DWORD Status, Error = ERROR_SUCCESS;
+    BOOL Signaled;
+
+    if (AddressSize != 1 && AddressSize != 2 &&
+        AddressSize != 4 && AddressSize != 8)
+    {
+        SetLastError(ERROR_INVALID_PARAMETER);
+        return FALSE;
+    }
+
+    Waiter.Event = CreateEventW(NULL, FALSE, FALSE, NULL);
+    if (!Waiter.Event) return FALSE;
+    Waiter.Address = Address;
+    Waiter.Signaled = FALSE;
+
+    KushLockAddressWaiters();
+    if (RtlCompareMemory((const VOID *)Address, CompareAddress, AddressSize) != AddressSize)
+    {
+        KushUnlockAddressWaiters();
+        CloseHandle(Waiter.Event);
+        return TRUE;
+    }
+    Waiter.Next = KushAddressWaiters;
+    KushAddressWaiters = &Waiter;
+    KushUnlockAddressWaiters();
+
+    Status = WaitForSingleObject(Waiter.Event, dwMilliseconds);
+    if (Status == WAIT_FAILED) Error = GetLastError();
+
+    KushLockAddressWaiters();
+    Signaled = Waiter.Signaled;
+    for (Link = &KushAddressWaiters; *Link; Link = &(*Link)->Next)
+    {
+        if (*Link == &Waiter)
+        {
+            *Link = Waiter.Next;
+            break;
+        }
+    }
+    KushUnlockAddressWaiters();
+    CloseHandle(Waiter.Event);
+
+    if (Signaled || Status == WAIT_OBJECT_0) return TRUE;
+    SetLastError(Status == WAIT_TIMEOUT ? ERROR_TIMEOUT : Error);
+    return FALSE;
+}
+
+static VOID KushWakeAddress(PVOID Address, BOOL All)
+{
+    KUSH_ADDRESS_WAITER *Waiter;
+    KushLockAddressWaiters();
+    for (Waiter = KushAddressWaiters; Waiter; Waiter = Waiter->Next)
+    {
+        if (Waiter->Address == Address && !Waiter->Signaled)
+        {
+            if (SetEvent(Waiter->Event)) Waiter->Signaled = TRUE;
+            if (!All) break;
+        }
+    }
+    KushUnlockAddressWaiters();
+}
+
+VOID WINAPI WakeByAddressSingle(PVOID Address) { KushWakeAddress(Address, FALSE); }
+VOID WINAPI WakeByAddressAll(PVOID Address) { KushWakeAddress(Address, TRUE); }
 
 BOOLEAN WINAPI KushTryAcquireSRWLockShared(PSRWLOCK SRWLock)
 {

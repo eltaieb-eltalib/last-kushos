@@ -9,6 +9,7 @@
  */
 
 #include "precomp.h"
+#include "kush_static_icons.h"
 
 typedef BOOL (WINAPI *PDEVMGREXEC)(HWND hWndParent, HINSTANCE hInst, PVOID Unknown, int nCmdShow);
 
@@ -75,6 +76,7 @@ HardwarePageProc(HWND hwndDlg,
     switch (uMsg)
     {
         case WM_INITDIALOG:
+            KushRefreshSysdmStaticIcons(hwndDlg);
             break;
 
         case WM_COMMAND:

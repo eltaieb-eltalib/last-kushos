@@ -28,6 +28,7 @@
  */
 
 #include "joy.h"
+#include <kushicons.h>
 
 #define NUM_APPLETS    (1)
 
@@ -336,7 +337,7 @@ CPlApplet(HWND hwndCPl, UINT uMsg, LPARAM lParam1, LPARAM lParam2)
             {
                 CPlInfo = (CPLINFO*)lParam2;
                 CPlInfo->lData = 0;
-                CPlInfo->idIcon = Applets[i].idIcon;
+                CPlInfo->idIcon = KushOwnIconId(Applets[i].idIcon);
                 CPlInfo->idName = Applets[i].idName;
                 CPlInfo->idInfo = Applets[i].idDescription;
             }

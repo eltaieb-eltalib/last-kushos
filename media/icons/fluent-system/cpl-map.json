@@ -1,0 +1,770 @@
+[
+  {
+    "module": "console",
+    "resource": "IDC_CPLICON",
+    "original": "res/terminal.ico",
+    "fluent": "window_console",
+    "svg": "window_console_20_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "access",
+    "resource": "IDI_CPLACCESS",
+    "original": "resources/applet.ico",
+    "fluent": "accessibility",
+    "svg": "accessibility_48_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "hotplug",
+    "resource": "IDI_HOTPLUG",
+    "original": "resources/1.ico",
+    "fluent": "usb_plug",
+    "svg": "usb_plug_24_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "input",
+    "resource": "IDI_CPLSYSTEM",
+    "original": "resources/keyboard-shortcuts.ico",
+    "fluent": "keyboard",
+    "svg": "keyboard_24_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "input",
+    "resource": "IDI_KEYBOARD",
+    "original": "resources/keyboard.ico",
+    "fluent": "keyboard",
+    "svg": "keyboard_24_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "mmsys",
+    "resource": "IDI_CPLICON",
+    "original": "resources/3004.ico",
+    "fluent": "speaker_2",
+    "svg": "speaker_2_48_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "mmsys",
+    "resource": "IDI_MIDICON",
+    "original": "resources/4353.ico",
+    "fluent": "music_note_2",
+    "svg": "music_note_2_24_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "mmsys",
+    "resource": "4354",
+    "original": "resources/4354.ico",
+    "fluent": "speaker_2",
+    "svg": "speaker_2_48_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "mmsys",
+    "resource": "IDI_JOY_ICON",
+    "original": "resources/4361.ico",
+    "fluent": "games",
+    "svg": "games_48_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "mmsys",
+    "resource": "4363",
+    "original": "resources/4363.ico",
+    "fluent": "speaker_2",
+    "svg": "speaker_2_48_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "mmsys",
+    "resource": "IDI_CAMERA_ICON",
+    "original": "resources/4364.ico",
+    "fluent": "camera",
+    "svg": "camera_24_color.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "mmsys",
+    "resource": "IDI_SOUND_SECTION",
+    "original": "resources/4366.ico",
+    "fluent": "music_note_2",
+    "svg": "music_note_2_24_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "mmsys",
+    "resource": "IDI_SOUND_ASSIGNED",
+    "original": "resources/4367.ico",
+    "fluent": "speaker_2",
+    "svg": "speaker_2_48_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "mmsys",
+    "resource": "4368",
+    "original": "resources/4368.ico",
+    "fluent": "speaker_2",
+    "svg": "speaker_2_48_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "mmsys",
+    "resource": "4369",
+    "original": "resources/4369.ico",
+    "fluent": "mic",
+    "svg": "mic_48_color.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "mmsys",
+    "resource": "IDI_MICROPHONE_ICON",
+    "original": "resources/4378.ico",
+    "fluent": "mic",
+    "svg": "mic_48_color.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "mmsys",
+    "resource": "4379",
+    "original": "resources/4379.ico",
+    "fluent": "speaker_2",
+    "svg": "speaker_2_48_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "mmsys",
+    "resource": "4380",
+    "original": "resources/4380.ico",
+    "fluent": "mic",
+    "svg": "mic_48_color.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "mmsys",
+    "resource": "IDI_NO_HW",
+    "original": "resources/4390.ico",
+    "fluent": "speaker_off",
+    "svg": "speaker_off_48_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "mmsys",
+    "resource": "IDI_MUTED_ICON",
+    "original": "resources/4393.ico",
+    "fluent": "speaker_mute",
+    "svg": "speaker_mute_48_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "mmsys",
+    "resource": "IDI_SHUTDOWN_ICON",
+    "original": "resources/4394.ico",
+    "fluent": "power",
+    "svg": "power_24_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "mmsys",
+    "resource": "IDI_PLAY_ICON",
+    "original": "resources/play.ico",
+    "fluent": "play",
+    "svg": "play_48_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "mmsys",
+    "resource": "IDI_STOP_ICON",
+    "original": "resources/stop.ico",
+    "fluent": "stop",
+    "svg": "stop_24_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "mmsys",
+    "resource": "IDI_SPEAKIMG",
+    "original": "resources/speaker.ico",
+    "fluent": "speaker_box",
+    "svg": "speaker_box_24_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "powercfg",
+    "resource": "IDI_AC",
+    "original": "resources/ac.ico",
+    "fluent": "plug_connected",
+    "svg": "plug_connected_48_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "powercfg",
+    "resource": "IDI_ACDC",
+    "original": "resources/acdc.ico",
+    "fluent": "plug_connected",
+    "svg": "plug_connected_48_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "powercfg",
+    "resource": "IDI_DC",
+    "original": "resources/dc.ico",
+    "fluent": "battery_10",
+    "svg": "battery_10_32_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "powercfg",
+    "resource": "IDI_SCREEN",
+    "original": "resources/screen.ico",
+    "fluent": "desktop",
+    "svg": "desktop_48_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "powercfg",
+    "resource": "IDI_HIBERNATE",
+    "original": "resources/hibernate.ico",
+    "fluent": "weather_moon",
+    "svg": "weather_moon_48_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "powercfg",
+    "resource": "IDI_BAT_CHARGE_CRIT",
+    "original": "resources/batterychargingcritical.ico",
+    "fluent": "battery_charge_critical",
+    "svg": "battery_0_32_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "powercfg",
+    "resource": "IDI_BAT_CHARGE_LOW",
+    "original": "resources/batterycharginglow.ico",
+    "fluent": "battery_charge_low",
+    "svg": "battery_2_32_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "powercfg",
+    "resource": "IDI_BAT_CHARGE_HALF",
+    "original": "resources/batterycharginghalf.ico",
+    "fluent": "battery_charge_half",
+    "svg": "battery_5_32_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "powercfg",
+    "resource": "IDI_BAT_CHARGE_HIGH",
+    "original": "resources/batterycharginghigh.ico",
+    "fluent": "battery_charge_high",
+    "svg": "battery_8_32_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "powercfg",
+    "resource": "IDI_BAT_CHARGE_FULL",
+    "original": "resources/batterycharginghigh.ico",
+    "fluent": "battery_charge_full",
+    "svg": "battery_10_32_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "powercfg",
+    "resource": "IDI_BAT_DISCHRG_CRIT",
+    "original": "resources/batterycritical.ico",
+    "fluent": "battery_warning",
+    "svg": "battery_warning_24_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "powercfg",
+    "resource": "IDI_BAT_DISCHRG_LOW",
+    "original": "resources/batterylow.ico",
+    "fluent": "battery_2",
+    "svg": "battery_2_32_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "powercfg",
+    "resource": "IDI_BAT_DISCHRG_HALF",
+    "original": "resources/batteryhalf.ico",
+    "fluent": "battery_5",
+    "svg": "battery_5_32_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "powercfg",
+    "resource": "IDI_BAT_DISCHRG_HIGH",
+    "original": "resources/batteryhigh.ico",
+    "fluent": "battery_8",
+    "svg": "battery_8_32_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "powercfg",
+    "resource": "IDI_BAT_DISCHRG_FULL",
+    "original": "resources/batteryfull.ico",
+    "fluent": "battery_10",
+    "svg": "battery_10_32_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "powercfg",
+    "resource": "IDI_BAT_UNKNOWN",
+    "original": "resources/batteryunknown.ico",
+    "fluent": "battery_unknown",
+    "svg": "battery_0_32_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "powercfg",
+    "resource": "IDI_BAT_NONE",
+    "original": "resources/nobattery.ico",
+    "fluent": "battery_none",
+    "svg": "battery_0_32_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "wined3dcfg",
+    "resource": "IDI_CPLICON",
+    "original": "resources/wined3dcfg.ico",
+    "fluent": "cube",
+    "svg": "cube_48_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "sysdm",
+    "resource": "IDI_CPLSYSTEM",
+    "original": "resources/applet.ico",
+    "fluent": "desktop_tower",
+    "svg": "desktop_tower_24_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "sysdm",
+    "resource": "IDI_USERPROF",
+    "original": "resources/devmgr.ico",
+    "fluent": "person_settings",
+    "svg": "person_settings_20_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "sysdm",
+    "resource": "IDI_HARDPROF",
+    "original": "resources/hwprofile.ico",
+    "fluent": "desktop_tower",
+    "svg": "desktop_tower_24_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "sysdm",
+    "resource": "IDI_DEVMGR",
+    "original": "resources/dev.ico",
+    "fluent": "settings",
+    "svg": "settings_48_color.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "sysdm",
+    "resource": "IDI_LICENSE",
+    "original": "resources/license.ico",
+    "fluent": "certificate",
+    "svg": "certificate_32_color.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "sysdm",
+    "resource": "IDI_UP",
+    "original": "resources/up.ico",
+    "fluent": "chevron_up",
+    "svg": "chevron_up_48_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "sysdm",
+    "resource": "IDI_DOWN",
+    "original": "resources/down.ico",
+    "fluent": "chevron_down",
+    "svg": "chevron_down_48_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "sysdm",
+    "resource": "IDI_ADDHW",
+    "original": "resources/addhw.ico",
+    "fluent": "plug_connected",
+    "svg": "plug_connected_48_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "openglcfg",
+    "resource": "IDI_CPLICON",
+    "original": "resources/openglcfg.ico",
+    "fluent": "cube",
+    "svg": "cube_48_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "appwiz",
+    "resource": "IDI_CPLSYSTEM",
+    "original": "resources/applet.ico",
+    "fluent": "apps",
+    "svg": "apps_48_color.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "appwiz",
+    "resource": "IDI_APPICO",
+    "original": "resources/1501.ico",
+    "fluent": "apps",
+    "svg": "apps_48_color.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "appwiz",
+    "resource": "IDI_INSTICO",
+    "original": "resources/1502.ico",
+    "fluent": "arrow_download",
+    "svg": "arrow_download_48_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "appwiz",
+    "resource": "IDI_RECBINICO",
+    "original": "resources/1503.ico",
+    "fluent": "delete",
+    "svg": "delete_48_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "appwiz",
+    "resource": "IDI_DOWNLOADICO",
+    "original": "resources/1504.ico",
+    "fluent": "arrow_download",
+    "svg": "arrow_download_48_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "appwiz",
+    "resource": "IDI_APPINETICO",
+    "original": "resources/1505.ico",
+    "fluent": "globe",
+    "svg": "globe_24_color.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "inetcpl",
+    "resource": "ICO_MAIN",
+    "original": "resources/inetcpl.ico",
+    "fluent": "globe",
+    "svg": "globe_24_color.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "inetcpl",
+    "resource": "ICO_INTERNET",
+    "original": "resources/inetcpl.ico",
+    "fluent": "globe",
+    "svg": "globe_24_color.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "inetcpl",
+    "resource": "ICO_CERTIFICATES",
+    "original": "resources/certificates.ico",
+    "fluent": "certificate",
+    "svg": "certificate_32_color.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "inetcpl",
+    "resource": "ICO_RESTRICTED",
+    "original": "resources/restricted.ico",
+    "fluent": "prohibited",
+    "svg": "prohibited_48_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "inetcpl",
+    "resource": "ICO_HISTORY",
+    "original": "resources/history.ico",
+    "fluent": "history",
+    "svg": "history_48_color.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "inetcpl",
+    "resource": "ICO_TRUSTED",
+    "original": "resources/trusted.ico",
+    "fluent": "shield_checkmark",
+    "svg": "shield_checkmark_48_color.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "inetcpl",
+    "resource": "ICO_HOME",
+    "original": "resources/home.ico",
+    "fluent": "home",
+    "svg": "home_48_color.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "timedate",
+    "resource": "IDC_CPLICON",
+    "original": "resources/applet.ico",
+    "fluent": "calendar_clock",
+    "svg": "calendar_clock_24_color.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "joy",
+    "resource": "IDI_CPLSYSTEM",
+    "original": "resources/applet.ico",
+    "fluent": "games",
+    "svg": "games_48_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "telephon",
+    "resource": "IDI_CPLSYSTEM",
+    "original": "resources/applet.ico",
+    "fluent": "phone",
+    "svg": "phone_48_color.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "hdwwiz",
+    "resource": "IDI_CPLICON",
+    "original": "resources/applet.ico",
+    "fluent": "plug_connected",
+    "svg": "plug_connected_48_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "hdwwiz",
+    "resource": "IDI_WARNINGICON",
+    "original": "resources/warning.ico",
+    "fluent": "warning",
+    "svg": "warning_48_color.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "hdwwiz",
+    "resource": "IDI_SEARCHICON",
+    "original": "resources/search.ico",
+    "fluent": "search",
+    "svg": "search_48_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "main",
+    "resource": "IDC_CPLICON_1",
+    "original": "resources/mouse.ico",
+    "fluent": "cursor_click",
+    "svg": "cursor_click_24_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "main",
+    "resource": "IDC_CPLICON_2",
+    "original": "resources/keyboard.ico",
+    "fluent": "keyboard",
+    "svg": "keyboard_24_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "main",
+    "resource": "IDI_FOLDER_OPEN",
+    "original": "resources/folder_open.ico",
+    "fluent": "folder_open",
+    "svg": "folder_open_24_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "main",
+    "resource": "IDI_FOLDER_CLOSED",
+    "original": "resources/folder_closed.ico",
+    "fluent": "folder",
+    "svg": "folder_48_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "main",
+    "resource": "IDI_MOUSE_LEFT",
+    "original": "resources/mouse_left.ico",
+    "fluent": "cursor_click",
+    "svg": "cursor_click_24_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "main",
+    "resource": "IDI_MOUSE_RIGHT",
+    "original": "resources/mouse_right.ico",
+    "fluent": "cursor_click",
+    "svg": "cursor_click_24_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "main",
+    "resource": "IDI_MOUSE_SPEED",
+    "original": "resources/mouse_speed.ico",
+    "fluent": "cursor",
+    "svg": "cursor_32_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "main",
+    "resource": "IDI_MOUSE_BUTTON",
+    "original": "resources/mouse_button.ico",
+    "fluent": "cursor_click",
+    "svg": "cursor_click_24_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "main",
+    "resource": "IDI_MOUSE_TRAILS",
+    "original": "resources/mouse_trails.ico",
+    "fluent": "cursor",
+    "svg": "cursor_32_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "main",
+    "resource": "IDI_MOUSE_HIDE",
+    "original": "resources/mouse_hide.ico",
+    "fluent": "cursor_hover_off",
+    "svg": "cursor_hover_off_48_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "main",
+    "resource": "IDI_PRINTERS_FOLDER",
+    "original": "../../win32/shell32/res/icons/38.ico",
+    "fluent": "print",
+    "svg": "print_48_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "main",
+    "resource": "IDI_FONTS_FOLDER",
+    "original": "../../win32/shell32/res/icons/39.ico",
+    "fluent": "text_font",
+    "svg": "text_font_24_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "main",
+    "resource": "IDI_ADMIN_TOOLS_FOLDER",
+    "original": "resources/admintools_folder.ico",
+    "fluent": "wrench",
+    "svg": "wrench_24_color.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "main",
+    "resource": "IDI_MOUSE_POINTER",
+    "original": "resources/mouse_pointer.ico",
+    "fluent": "cursor",
+    "svg": "cursor_32_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "main",
+    "resource": "IDI_MOUSE_WHEEL",
+    "original": "resources/mouse_wheel.ico",
+    "fluent": "arrow_sort",
+    "svg": "arrow_sort_24_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "main",
+    "resource": "IDI_REPEAT_RATE",
+    "original": "resources/repeat_rate.ico",
+    "fluent": "keyboard",
+    "svg": "keyboard_24_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "main",
+    "resource": "IDI_REPEAT_DELAY",
+    "original": "resources/repeat_delay.ico",
+    "fluent": "clock",
+    "svg": "clock_48_color.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "main",
+    "resource": "IDI_LOCK_KEY",
+    "original": "resources/lock_key.ico",
+    "fluent": "lock_closed",
+    "svg": "lock_closed_48_color.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "intl",
+    "resource": "IDC_CPLICON",
+    "original": "resources/applet.ico",
+    "fluent": "local_language",
+    "svg": "local_language_24_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "usrmgr",
+    "resource": "IDI_USRMGR_ICON",
+    "original": "resources/applet.ico",
+    "fluent": "people",
+    "svg": "people_48_color.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "usrmgr",
+    "resource": "IDI_USRMGR_ICON2",
+    "original": "resources/applet.ico",
+    "fluent": "people",
+    "svg": "people_48_color.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "usrmgr",
+    "resource": "IDI_USER",
+    "original": "resources/user.ico",
+    "fluent": "person",
+    "svg": "person_48_color.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "usrmgr",
+    "resource": "IDI_LOCKED_USER",
+    "original": "resources/locked.ico",
+    "fluent": "person_prohibited",
+    "svg": "person_prohibited_32_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "usrmgr",
+    "resource": "IDI_GROUP",
+    "original": "resources/group.ico",
+    "fluent": "people",
+    "svg": "people_48_color.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "desk",
+    "resource": "IDC_DESK_ICON",
+    "original": "resources/applet.ico",
+    "fluent": "desktop",
+    "svg": "desktop_48_filled.svg",
+    "fluent_offset": 40000
+  },
+  {
+    "module": "desk",
+    "resource": "IDC_DESK_ICON2",
+    "original": "resources/applet.ico",
+    "fluent": "desktop",
+    "svg": "desktop_48_filled.svg",
+    "fluent_offset": 40000
+  }
+]

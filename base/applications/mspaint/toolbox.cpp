@@ -36,9 +36,9 @@ BOOL CPaintToolBar::DoCreate(HWND hwndParent)
     // NOTE: The horizontal line above the toolbar is hidden by CCS_NODIVIDER style.
     RECT toolbarPos =
     {
-        0, 0,
-        CX_TOOLBAR + 2 * GetSystemMetrics(SM_CXBORDER),
-        CY_TOOLBAR + 2 * GetSystemMetrics(SM_CYBORDER)
+        KUSH_PAINT_PADDING, KUSH_PAINT_PADDING,
+        KUSH_PAINT_PADDING + CX_TOOLBUTTONS + 2 * GetSystemMetrics(SM_CXBORDER),
+        KUSH_PAINT_PADDING + CY_TOOLBAR + 2 * GetSystemMetrics(SM_CYBORDER)
     };
     DWORD style = WS_CHILD | WS_VISIBLE | CCS_NOPARENTALIGN | CCS_VERT | CCS_NORESIZE |
                   TBSTYLE_TOOLTIPS | TBSTYLE_FLAT;

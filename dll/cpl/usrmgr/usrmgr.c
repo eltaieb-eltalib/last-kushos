@@ -89,7 +89,7 @@ UsrmgrApplet(HWND hwnd, UINT uMsg, LPARAM wParam, LPARAM lParam)
     psh.dwFlags =  PSH_PROPSHEETPAGE | PSH_USEICONID | PSH_USECALLBACK;
     psh.hwndParent = hwnd;
     psh.hInstance = hApplet;
-    psh.pszIcon = MAKEINTRESOURCEW(IDI_USRMGR_ICON);
+    psh.pszIcon = MAKEINTRESOURCEW(KushOwnIconId(IDI_USRMGR_ICON));
     psh.pszCaption = MAKEINTRESOURCEW(IDS_CPLNAME);
     psh.nPages = sizeof(psp) / sizeof(PROPSHEETPAGE);
     psh.nStartPage = 0;
@@ -123,7 +123,7 @@ CPlApplet(HWND hwndCPl, UINT uMsg, LPARAM lParam1, LPARAM lParam2)
             {
                 CPLINFO *CPlInfo = (CPLINFO*)lParam2;
                 CPlInfo->lData = 0;
-                CPlInfo->idIcon = Applets[i].idIcon;
+                CPlInfo->idIcon = KushOwnIconId(Applets[i].idIcon);
                 CPlInfo->idName = Applets[i].idName;
                 CPlInfo->idInfo = Applets[i].idDescription;
             }

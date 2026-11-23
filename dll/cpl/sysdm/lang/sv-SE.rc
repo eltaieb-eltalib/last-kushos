@@ -31,15 +31,15 @@ CAPTION "Hårdvara"
 FONT 8, "MS Shell Dlg"
 BEGIN
     GROUPBOX "Enhetshanteraren", IDC_STATIC, 6, 7, 244, 61
-    ICON IDI_DEVMGR, IDC_STATIC, 12, 18, 23, 21, SS_ICON
+    ICON IDI_DEVMGR, IDC_KUSH_STATIC_DEVMGR, 12, 18, 23, 21, SS_ICON
     LTEXT "Enhetshanteraren visar all hårdvara i din dator. Använd enhetshanteraren för att ändra egenskaper på dina enheter.", IDC_STATIC, 42, 18, 204, 24
     PUSHBUTTON "&Enhetshanteraren...", IDC_HARDWARE_DEVICE_MANAGER, 154, 48, 90, 15
     GROUPBOX "Guiden anslut ny hårdvara", IDC_STATIC, 6, 79, 244, 61
-    ICON IDI_ADDHW, IDC_STATIC, 12, 90, 23, 21, SS_ICON
+    ICON IDI_ADDHW, IDC_KUSH_STATIC_ADDHW, 12, 90, 23, 21, SS_ICON
     LTEXT "Guiden anslut ny hårdvara hjälper dig att installera, avinstallera, reparera, koppla ur, mata ut och konfigurera din hårdvara.", IDC_STATIC, 42, 90, 204, 24
     PUSHBUTTON "&Guiden anslut ny hårdvara...", IDC_HARDWARE_WIZARD, 154, 120, 90, 15
     GROUPBOX "Hårdvaruprofiler", IDC_STATIC, 6, 149, 244, 61
-    ICON IDI_HARDPROF, IDC_STATIC, 12, 160, 23, 21, SS_ICON
+    ICON IDI_HARDPROF, IDC_KUSH_STATIC_HARDPROF, 12, 160, 23, 21, SS_ICON
     LTEXT "Hårdvaruprofiler ger dig möjligheten att konfigurera och lagra olika hårdvarukonfigurationer.", IDC_STATIC, 42, 160, 204, 24
     PUSHBUTTON "&Hårdvaruprofiler...", IDC_HARDWARE_PROFILE, 154, 190, 90, 15
 END
@@ -80,7 +80,7 @@ STYLE DS_SHELLFONT | DS_MODALFRAME | DS_CONTEXTHELP | WS_POPUP | WS_VISIBLE | WS
 CAPTION "Hårdvaruprofiler"
 FONT 8, "MS Shell Dlg"
 BEGIN
-    ICON IDI_HARDPROF, IDC_STATIC, 8, 11, 18, 20, SS_ICON
+    ICON IDI_HARDPROF, IDC_KUSH_STATIC_HARDPROF, 8, 11, 18, 20, SS_ICON
     LTEXT "Du kan ställa in hårdvaruprofiler för olika hårdvarukonfigurationer. Du kan välja vilken profil du vill använda vid start.", IDC_STATIC, 46, 11, 188, 25
     LTEXT "Tillgängliga hårdvaruprofiler:", IDC_STATIC, 8, 41, 120, 8
     LISTBOX IDC_HRDPROFLSTBOX, 8, 52, 215, 54, LBS_NOTIFY
@@ -107,7 +107,7 @@ STYLE DS_SHELLFONT | DS_MODALFRAME | DS_CONTEXTHELP | WS_POPUP | WS_VISIBLE | WS
 CAPTION "General"
 FONT 8, "MS Shell Dlg"
 BEGIN
-    ICON IDI_HARDPROF, IDC_STATIC, 10, 10, 18, 20, SS_ICON
+    ICON IDI_HARDPROF, IDC_KUSH_STATIC_HARDPROF, 10, 10, 18, 20, SS_ICON
     LTEXT "", IDC_HWPPROP_PROFILE, 48, 16, 150, 8
     LTEXT "Dock ID:", IDC_STATIC, 10, 42, 43, 8
     LTEXT "", IDC_HWPPROP_DOCKID, 64, 42, 135, 8
@@ -153,7 +153,7 @@ STYLE DS_SHELLFONT | DS_MODALFRAME | DS_CONTEXTHELP | WS_POPUP | WS_VISIBLE | WS
 CAPTION "Användarprofiler"
 FONT 8, "MS Shell Dlg"
 BEGIN
-    ICON IDI_USERPROF, IDC_STATIC, 6, 11, 16, 16, SS_ICON
+    ICON IDI_USERPROF, IDC_KUSH_STATIC_USERPROF, 6, 11, 16, 16, SS_ICON
     LTEXT "Användarprofiler innehåller skrivbordsinställningar och annan information specifikt för ditt användarkonto. Du kan skapa en ny profil för varje dator du använder, eller så kan du använda en central profil som är lika på alla datorer.", IDC_STATIC, 40, 11, 211, 35
     LTEXT "Profiler lagrade på den här datorn:", IDC_STATIC, 16, 51, 204, 9
     CONTROL "", IDC_USERPROFILE_LIST, "SysListView32", LVS_REPORT | LVS_SINGLESEL |

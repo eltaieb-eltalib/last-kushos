@@ -10,6 +10,7 @@
 #include "precomp.h"
 
 #include <debug.h>
+#include "kush_static_icons.h"
 
 #define PROFILE_NAME_LENGTH 80
 
@@ -101,6 +102,7 @@ CopyProfileDlgProc(
     switch (uMsg)
     {
         case WM_INITDIALOG:
+            KushRefreshSysdmStaticIcons(hwndDlg);
             SetWindowLongPtr(hwndDlg, DWLP_USER, lParam);
             pProfileNames = (PPROFILENAMES)lParam;
 
@@ -222,6 +224,7 @@ RenameProfileDlgProc(
     switch (uMsg)
     {
         case WM_INITDIALOG:
+            KushRefreshSysdmStaticIcons(hwndDlg);
             SetWindowLongPtr(hwndDlg, DWLP_USER, lParam);
             pProfileNames = (PPROFILENAMES)lParam;
 
@@ -405,6 +408,7 @@ HardwareProfilePropertiesDlgProc(
     switch (uMsg)
     {
         case WM_INITDIALOG:
+            KushRefreshSysdmStaticIcons(hwndDlg);
             return TRUE;
 
     }
@@ -457,7 +461,7 @@ HardwareProfileProperties(
     psh.dwFlags = PSH_PROPTITLE | PSH_USEICONID | PSH_USECALLBACK;
     psh.hwndParent = hwndDlg;
     psh.hInstance = hApplet;
-    psh.pszIcon = MAKEINTRESOURCEW(IDI_HARDPROF);
+    psh.pszIcon = MAKEINTRESOURCEW(KushOwnIconId(IDI_HARDPROF));
     psh.pszCaption = pProfileData->pProfiles[pProfileData->dwSelectedProfileIndex].szFriendlyName;
     psh.nPages = 1;
     psh.nStartPage = 0;
@@ -753,6 +757,7 @@ HardProfDlgProc(HWND hwndDlg,
     switch (uMsg)
     {
         case WM_INITDIALOG:
+            KushRefreshSysdmStaticIcons(hwndDlg);
             return OnInitHardProfDialog(hwndDlg);
 
         case WM_DESTROY:

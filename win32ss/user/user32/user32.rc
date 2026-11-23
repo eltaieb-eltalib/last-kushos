@@ -53,6 +53,25 @@ OCR_SIZE CURSOR "resources/ocr_size.cur"
 OCR_ICON CURSOR "resources/ocr_icon.cur"
 OCR_HAND CURSOR "resources/ocr_hand.cur"
 
+
+/* Windows 10/11 Modern Cursor, sunqfuu, upstream MIT declaration.
+ * Source and original notice: media/cursors-modern/. */
+#include "include/kush_cursors.h"
+KUSH_CURSOR_NORMAL CURSOR "pointer.cur"
+KUSH_CURSOR_IBEAM CURSOR "beam.cur"
+KUSH_CURSOR_CROSS CURSOR "precision.cur"
+KUSH_CURSOR_UP CURSOR "alternate.cur"
+KUSH_CURSOR_SIZENWSE CURSOR "dgn1.cur"
+KUSH_CURSOR_SIZENESW CURSOR "dgn2.cur"
+KUSH_CURSOR_SIZEWE CURSOR "horz.cur"
+KUSH_CURSOR_SIZENS CURSOR "vert.cur"
+KUSH_CURSOR_SIZEALL CURSOR "move.cur"
+KUSH_CURSOR_NO CURSOR "unavailable.cur"
+KUSH_CURSOR_HELP CURSOR "help.cur"
+KUSH_CURSOR_HAND CURSOR "link.cur"
+KUSH_CURSOR_WAIT 21 "busy.ani" /* RT_ANICURSOR */
+KUSH_CURSOR_APPSTARTING 21 "working.ani" /* RT_ANICURSOR */
+
 /* Icons */
 
 100 ICON "resources/oic_sample.ico"     /* IDI_APPLICATION */

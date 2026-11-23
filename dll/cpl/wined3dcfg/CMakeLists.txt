@@ -17,3 +17,6 @@ set_module_type(wined3dcfg cpl UNICODE)
 add_importlibs(wined3dcfg user32 comctl32 advapi32 msvcrt kernel32)
 add_pch(wined3dcfg wined3dcfg.h SOURCE)
 add_cd_file(TARGET wined3dcfg DESTINATION reactos/system32 FOR all)
+
+file(GLOB kush_fluent_icon_deps "${CMAKE_CURRENT_SOURCE_DIR}/resources/fluent/*.ico")
+add_rc_deps(wined3dcfg.rc ${kush_fluent_icon_deps})

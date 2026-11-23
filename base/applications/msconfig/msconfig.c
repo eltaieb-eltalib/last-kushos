@@ -8,6 +8,8 @@
  */
 
 #include "precomp.h"
+#include <wingdi.h>
+#include <winnls.h>
 
 #include "toolspage.h"
 #include "srvpage.h"
@@ -25,6 +27,164 @@ HICON hDialogIconBig = NULL;
 HICON hDialogIconSmall = NULL;
 
 void MsConfig_OnTabWndSelChange(void);
+
+/* Presentation only: retain the original dialog controls and command paths. */
+static BOOL bKushSystemConfiguration;
+
+static BOOL
+KushSystemConfigurationEnabled(VOID)
+{
+    const WCHAR *names[] = {L"ClassicSystemConfiguration", L"ClassicWindows"};
+    DWORD layout = 0, value, size, type;
+    LANGID language = GetUserDefaultUILanguage();
+    HIGHCONTRAST hc = {sizeof(hc)};
+    RECT work;
+    HKEY key;
+    HDC dc;
+    INT dpi;
+    UINT i;
+
+    if (PRIMARYLANGID(language) == LANG_ARABIC ||
+        PRIMARYLANGID(language) == LANG_HEBREW ||
+        (GetProcessDefaultLayout(&layout) && (layout & LAYOUT_RTL))) return FALSE;
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Kush\\Shell", 0,
+                      KEY_QUERY_VALUE, &key) == ERROR_SUCCESS)
+    {
+        for (i = 0; i < ARRAYSIZE(names); ++i)
+        {
+            value = 0; size = sizeof(value); type = 0;
+            if (RegQueryValueExW(key, names[i], NULL, &type, (LPBYTE)&value,
+                                &size) == ERROR_SUCCESS && type == REG_DWORD && value)
+            {
+                RegCloseKey(key);
+                return FALSE;
+            }
+        }
+        RegCloseKey(key);
+    }
+    if (SystemParametersInfoW(SPI_GETHIGHCONTRAST, sizeof(hc), &hc, 0) &&
+        (hc.dwFlags & HCF_HIGHCONTRASTON)) return FALSE;
+    dc = GetDC(NULL);
+    if (!dc) return FALSE;
+    dpi = GetDeviceCaps(dc, LOGPIXELSY);
+    ReleaseDC(NULL, dc);
+    if (dpi != 96) return FALSE;
+    return SystemParametersInfoW(SPI_GETWORKAREA, 0, &work, 0) &&
+           work.right - work.left >= 720 && work.bottom - work.top >= 500;
+}
+
+static LRESULT CALLBACK
+KushConfigSurfaceProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp,
+                      UINT_PTR id, DWORD_PTR data)
+{
+    UNREFERENCED_PARAMETER(data);
+    if (msg == WM_ERASEBKGND)
+    {
+        RECT rc;
+        GetClientRect(hwnd, &rc);
+        FillRect((HDC)wp, &rc, (HBRUSH)GetStockObject(WHITE_BRUSH));
+        return 1;
+    }
+    if (msg == WM_CTLCOLORDLG || msg == WM_CTLCOLORSTATIC || msg == WM_CTLCOLORBTN)
+    {
+        SetBkMode((HDC)wp, TRANSPARENT);
+        SetTextColor((HDC)wp, IsWindowEnabled((HWND)lp) ? RGB(40, 48, 56) :
+                     GetSysColor(COLOR_GRAYTEXT));
+        return (LRESULT)GetStockObject(WHITE_BRUSH);
+    }
+    if (msg == WM_NCDESTROY) RemoveWindowSubclass(hwnd, KushConfigSurfaceProc, id);
+    return DefSubclassProc(hwnd, msg, wp, lp);
+}
+
+/* Scale positions and hit areas, not fonts, IDs, tab order or enabled states. */
+static VOID
+KushConfigScale(HWND parent, INT width, INT oldWidth, INT height, INT oldHeight)
+{
+    HWND child;
+    RECT rc;
+    for (child = GetWindow(parent, GW_CHILD); child;
+         child = GetWindow(child, GW_HWNDNEXT))
+    {
+        GetWindowRect(child, &rc);
+        MapWindowPoints(NULL, parent, (POINT *)&rc, 2);
+        KushConfigScale(child, width, oldWidth, height, oldHeight);
+        MoveWindow(child, MulDiv(rc.left, width, oldWidth),
+                   MulDiv(rc.top, height, oldHeight),
+                   MulDiv(rc.right - rc.left, width, oldWidth),
+                   MulDiv(rc.bottom - rc.top, height, oldHeight), FALSE);
+    }
+}
+
+static VOID
+KushConfigList(HWND list, const INT *columns, UINT count)
+{
+    LONG_PTR style;
+    HIMAGELIST rows;
+    RECT rc;
+    INT used = 0;
+    UINT i;
+    if (!list) return;
+    style = GetWindowLongPtr(list, GWL_STYLE) & ~WS_BORDER;
+    SetWindowLongPtr(list, GWL_STYLE, style);
+    style = GetWindowLongPtr(list, GWL_EXSTYLE) & ~(WS_EX_CLIENTEDGE | WS_EX_STATICEDGE);
+    SetWindowLongPtr(list, GWL_EXSTYLE, style);
+    SetWindowPos(list, NULL, 0, 0, 0, 0,
+                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+    ListView_SetBkColor(list, RGB(255, 255, 255));
+    ListView_SetTextBkColor(list, RGB(255, 255, 255));
+    ListView_SetTextColor(list, RGB(40, 48, 56));
+    if (!ListView_GetImageList(list, LVSIL_SMALL))
+    {
+        rows = ImageList_Create(1, 24, ILC_COLOR32, 1, 0);
+        if (rows) ListView_SetImageList(list, rows, LVSIL_SMALL);
+    }
+    GetClientRect(list, &rc);
+    for (i = 0; i < count; ++i)
+    {
+        INT cx = (i + 1 == count) ? max(60, rc.right - used) : columns[i];
+        ListView_SetColumnWidth(list, i, cx);
+        used += cx;
+    }
+}
+
+static VOID
+KushConfigLayout(HWND hwnd)
+{
+    HWND pages[] = {hGeneralPage, hSystemPage, hFreeLdrPage,
+                    hServicesPage, hStartupPage, hToolsPage};
+    const INT serviceColumns[] = {250, 84, 180, 0};
+    const INT startupColumns[] = {180, 220, 0};
+    const INT toolColumns[] = {180, 0};
+    RECT old, frame = {0, 0, 664, 416}, work;
+    HWND tree;
+    UINT i;
+
+    GetClientRect(hwnd, &old);
+    if (!old.right || !old.bottom) return;
+    AdjustWindowRectEx(&frame, GetWindowLongPtr(hwnd, GWL_STYLE), FALSE,
+                      GetWindowLongPtr(hwnd, GWL_EXSTYLE));
+    SystemParametersInfoW(SPI_GETWORKAREA, 0, &work, 0);
+    SetWindowPos(hwnd, NULL,
+                 work.left + ((work.right-work.left) - (frame.right-frame.left))/2,
+                 work.top + ((work.bottom-work.top) - (frame.bottom-frame.top))/2,
+                 frame.right-frame.left, frame.bottom-frame.top,
+                 SWP_NOZORDER | SWP_NOACTIVATE);
+    KushConfigScale(hwnd, 664, old.right, 416, old.bottom);
+    SetWindowSubclass(hwnd, KushConfigSurfaceProc, 1, 0);
+    for (i = 0; i < ARRAYSIZE(pages); ++i)
+        SetWindowSubclass(pages[i], KushConfigSurfaceProc, 1, 0);
+    TabCtrl_SetItemSize(hTabWnd, 0, 30);
+    KushConfigList(hServicesListCtrl, serviceColumns, ARRAYSIZE(serviceColumns));
+    KushConfigList(hStartupListCtrl, startupColumns, ARRAYSIZE(startupColumns));
+    KushConfigList(hToolsListCtrl, toolColumns, ARRAYSIZE(toolColumns));
+    tree = GetDlgItem(hSystemPage, IDC_SYSTEM_TREE);
+    TreeView_SetItemHeight(tree, 26);
+    TreeView_SetBkColor(tree, RGB(255, 255, 255));
+    TreeView_SetTextColor(tree, RGB(40, 48, 56));
+    RedrawWindow(hwnd, NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN);
+}
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Taken from WinSpy++ 1.7
@@ -52,6 +212,8 @@ BOOL EnableDialogTheme(HWND hwnd)
 {
     HMODULE hUXTheme;
     ETDTProc fnEnableThemeDialogTexture;
+
+    if (bKushSystemConfiguration) return TRUE;
 
     hUXTheme = LoadLibrary(_T("uxtheme.dll"));
 
@@ -147,6 +309,7 @@ BOOL OnCreate(HWND hWnd)
     item.pszText = szTemp;
     (void)TabCtrl_InsertItem(hTabWnd, 5, &item);
 
+    if (bKushSystemConfiguration) KushConfigLayout(hWnd);
     MsConfig_OnTabWndSelChange();
 
     // FIXME: We don't support applying anything
@@ -345,6 +508,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
     InitCommonControlsEx(&InitControls);
 
     hInst = hInstance;
+    bKushSystemConfiguration = KushSystemConfigurationEnabled();
 
     DialogBox(hInst, (LPCTSTR)IDD_MSCONFIG_DIALOG, NULL,  MsConfigWndProc);
 

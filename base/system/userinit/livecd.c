@@ -6,6 +6,7 @@
  */
 
 #include "userinit.h"
+#include "livecd_fluent.h"
 
 HWND hList;
 HWND hLocaleList;
@@ -586,9 +587,17 @@ LocaleDlgProc(
     LPARAM lParam)
 {
     PSTATE pState;
+    INT_PTR presentation;
 
     /* Retrieve pointer to the state */
     pState = (PSTATE)GetWindowLongPtrW(hwndDlg, GWLP_USERDATA);
+    if (KushLiveMessage(hwndDlg, pState, uMsg, wParam, lParam, &presentation))
+    {
+        if (uMsg == WM_CTLCOLORDLG || uMsg == WM_CTLCOLORSTATIC)
+            return presentation;
+        SetWindowLongPtrW(hwndDlg, DWLP_MSGRESULT, presentation);
+        return TRUE;
+    }
 
     switch (uMsg)
     {
@@ -597,6 +606,8 @@ LocaleDlgProc(
             /* Save pointer to the state */
             pState = (PSTATE)lParam;
             SetWindowLongPtrW(hwndDlg, GWLP_USERDATA, (DWORD_PTR)pState);
+
+            KushLiveLayout(hwndDlg, pState, TRUE);
 
             /* Center the dialog window */
             CenterWindow(hwndDlg);
@@ -612,6 +623,8 @@ LocaleDlgProc(
         }
 
         case WM_DRAWITEM:
+            if (pState->KushModern && KushLiveDrawButton((LPDRAWITEMSTRUCT)lParam, pState))
+                return TRUE;
             OnDrawItem((LPDRAWITEMSTRUCT)lParam, pState, IDC_LOCALELOGO);
             return TRUE;
 
@@ -722,9 +735,17 @@ StartDlgProc(
     LPARAM lParam)
 {
     PSTATE pState;
+    INT_PTR presentation;
 
     /* Retrieve pointer to the state */
     pState = (PSTATE)GetWindowLongPtrW(hwndDlg, GWLP_USERDATA);
+    if (KushLiveMessage(hwndDlg, pState, uMsg, wParam, lParam, &presentation))
+    {
+        if (uMsg == WM_CTLCOLORDLG || uMsg == WM_CTLCOLORSTATIC)
+            return presentation;
+        SetWindowLongPtrW(hwndDlg, DWLP_MSGRESULT, presentation);
+        return TRUE;
+    }
 
     switch (uMsg)
     {
@@ -733,6 +754,8 @@ StartDlgProc(
             /* Save pointer to the state */
             pState = (PSTATE)lParam;
             SetWindowLongPtrW(hwndDlg, GWLP_USERDATA, (DWORD_PTR)pState);
+
+            KushLiveLayout(hwndDlg, pState, FALSE);
 
             /* Center the dialog window */
             CenterWindow(hwndDlg);
@@ -755,6 +778,8 @@ StartDlgProc(
         }
 
         case WM_DRAWITEM:
+            if (pState->KushModern && KushLiveDrawButton((LPDRAWITEMSTRUCT)lParam, pState))
+                return TRUE;
             OnDrawItem((LPDRAWITEMSTRUCT)lParam, pState, IDC_STARTLOGO);
             return TRUE;
 
@@ -1019,6 +1044,8 @@ RunLiveCD(
     ParseUnattend(UnattendInf, &Unattend);
     pState->Unattend = &Unattend;
 
+    pState->KushModern = KushLiveEnabled();
+    pState->KushFont = NULL;
     InitLogo(&pState->ImageInfo, NULL);
 
     while (pState->NextPage != DONE)
@@ -1047,6 +1074,8 @@ RunLiveCD(
     }
 
     DeleteObject(pState->ImageInfo.hBitmap);
+    if (pState->KushFont) DeleteObject(pState->KushFont);
+    pState->KushFont = NULL;
 }
 
 /* EOF */

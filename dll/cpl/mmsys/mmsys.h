@@ -97,3 +97,5 @@ INT_PTR
 SpeakerVolume(HWND hwndDlg);
 
 #endif /* _MMSYS_H */
+
+#include <kushicons.h>

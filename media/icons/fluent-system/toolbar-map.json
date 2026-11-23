@@ -1,0 +1,237 @@
+[
+  {
+    "slot": 0,
+    "concept": "arrow_left",
+    "source_svg": "arrow_left_24_regular.svg"
+  },
+  {
+    "slot": 1,
+    "concept": "arrow_right",
+    "source_svg": "arrow_right_24_regular.svg"
+  },
+  {
+    "slot": 2,
+    "concept": "star",
+    "source_svg": "star_24_regular.svg"
+  },
+  {
+    "slot": 3,
+    "concept": "star_add",
+    "source_svg": "star_add_24_regular.svg"
+  },
+  {
+    "slot": 4,
+    "concept": "window",
+    "source_svg": "window_24_regular.svg"
+  },
+  {
+    "slot": 5,
+    "concept": "cut",
+    "source_svg": "cut_24_regular.svg"
+  },
+  {
+    "slot": 6,
+    "concept": "copy",
+    "source_svg": "copy_24_regular.svg"
+  },
+  {
+    "slot": 7,
+    "concept": "clipboard_paste",
+    "source_svg": "clipboard_paste_24_regular.svg"
+  },
+  {
+    "slot": 8,
+    "concept": "arrow_undo",
+    "source_svg": "arrow_undo_24_regular.svg"
+  },
+  {
+    "slot": 9,
+    "concept": "arrow_redo",
+    "source_svg": "arrow_redo_24_regular.svg"
+  },
+  {
+    "slot": 10,
+    "concept": "delete",
+    "source_svg": "delete_24_regular.svg"
+  },
+  {
+    "slot": 11,
+    "concept": "document_add",
+    "source_svg": "document_add_24_regular.svg"
+  },
+  {
+    "slot": 12,
+    "concept": "folder_open",
+    "source_svg": "folder_open_24_regular.svg"
+  },
+  {
+    "slot": 13,
+    "concept": "save",
+    "source_svg": "save_24_regular.svg"
+  },
+  {
+    "slot": 14,
+    "concept": "document_search",
+    "source_svg": "document_search_24_regular.svg"
+  },
+  {
+    "slot": 15,
+    "concept": "document_settings",
+    "source_svg": "document_settings_20_regular.svg"
+  },
+  {
+    "slot": 16,
+    "concept": "question_circle",
+    "source_svg": "question_circle_24_regular.svg"
+  },
+  {
+    "slot": 17,
+    "concept": "search",
+    "source_svg": "search_24_regular.svg"
+  },
+  {
+    "slot": 18,
+    "concept": "search",
+    "source_svg": "search_24_regular.svg"
+  },
+  {
+    "slot": 19,
+    "concept": "arrow_upload",
+    "source_svg": "arrow_upload_24_regular.svg"
+  },
+  {
+    "slot": 20,
+    "concept": "board",
+    "source_svg": "board_24_regular.svg"
+  },
+  {
+    "slot": 21,
+    "concept": "list",
+    "source_svg": "list_24_regular.svg"
+  },
+  {
+    "slot": 22,
+    "concept": "grid",
+    "source_svg": "grid_24_regular.svg"
+  },
+  {
+    "slot": 23,
+    "concept": "table",
+    "source_svg": "table_24_regular.svg"
+  },
+  {
+    "slot": 24,
+    "concept": "arrow_download",
+    "source_svg": "arrow_download_24_regular.svg"
+  },
+  {
+    "slot": 25,
+    "concept": "arrow_download",
+    "source_svg": "arrow_download_24_regular.svg"
+  },
+  {
+    "slot": 26,
+    "concept": "arrow_download",
+    "source_svg": "arrow_download_24_regular.svg"
+  },
+  {
+    "slot": 27,
+    "concept": "arrow_download",
+    "source_svg": "arrow_download_24_regular.svg"
+  },
+  {
+    "slot": 28,
+    "concept": "arrow_up",
+    "source_svg": "arrow_up_24_regular.svg"
+  },
+  {
+    "slot": 29,
+    "concept": "plug_connected",
+    "source_svg": "plug_connected_24_regular.svg"
+  },
+  {
+    "slot": 30,
+    "concept": "plug_disconnected",
+    "source_svg": "plug_disconnected_24_regular.svg"
+  },
+  {
+    "slot": 31,
+    "concept": "folder_add",
+    "source_svg": "folder_add_24_regular.svg"
+  },
+  {
+    "slot": 32,
+    "concept": "grid",
+    "source_svg": "grid_24_regular.svg"
+  },
+  {
+    "slot": 33,
+    "concept": "arrow_export",
+    "source_svg": "arrow_export_24_regular.svg"
+  },
+  {
+    "slot": 34,
+    "concept": "arrow_import",
+    "source_svg": "arrow_import_24_regular.svg"
+  },
+  {
+    "slot": 35,
+    "concept": "phone",
+    "source_svg": "phone_24_regular.svg"
+  },
+  {
+    "slot": 36,
+    "concept": "phone",
+    "source_svg": "phone_24_regular.svg"
+  },
+  {
+    "slot": 37,
+    "concept": "board",
+    "source_svg": "board_24_regular.svg"
+  },
+  {
+    "slot": 38,
+    "concept": "grid",
+    "source_svg": "grid_24_regular.svg"
+  },
+  {
+    "slot": 39,
+    "concept": "text_font",
+    "source_svg": "text_font_24_regular.svg"
+  },
+  {
+    "slot": 40,
+    "concept": "table",
+    "source_svg": "table_24_regular.svg"
+  },
+  {
+    "slot": 41,
+    "concept": "folder_arrow_right",
+    "source_svg": "folder_arrow_right_24_regular.svg"
+  },
+  {
+    "slot": 42,
+    "concept": "folder_arrow_left",
+    "source_svg": "folder_arrow_left_24_regular.svg"
+  },
+  {
+    "slot": 43,
+    "concept": "folder",
+    "source_svg": "folder_24_regular.svg"
+  },
+  {
+    "slot": 44,
+    "concept": "folder_arrow_right",
+    "source_svg": "folder_arrow_right_24_regular.svg"
+  },
+  {
+    "slot": 45,
+    "concept": "folder_copy",
+    "source_svg": "copy_24_regular.svg"
+  },
+  {
+    "slot": 46,
+    "concept": "window_settings",
+    "source_svg": "window_settings_20_regular.svg"
+  }
+]

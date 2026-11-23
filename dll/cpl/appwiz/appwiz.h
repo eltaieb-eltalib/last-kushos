@@ -95,3 +95,5 @@ static inline WCHAR *heap_strdupAtoW(const char *str)
 }
 
 #endif /* _APPWIZ_H */
+
+#include <kushicons.h>

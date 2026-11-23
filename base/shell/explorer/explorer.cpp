@@ -170,6 +170,9 @@ StartWithCommandLine(IN HINSTANCE hInstance)
 }
 #endif
 
+VOID KushApplyTypography();
+VOID KushApplyWindowTheme();
+
 static INT
 StartWithDesktop(IN HINSTANCE hInstance)
 {
@@ -188,6 +191,8 @@ StartWithDesktop(IN HINSTANCE hInstance)
     hExplorerInstance = hInstance;
     hProcessHeap = GetProcessHeap();
 
+    KushApplyWindowTheme();
+    KushApplyTypography();
     g_TaskbarSettings.Load();
 
     InitCommonControls();

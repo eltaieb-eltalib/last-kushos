@@ -1,3 +1,4 @@
+/* KUSH_CPL_FLUENT: generated mapping, original IDs preserved. */
 /*
  * PROJECT:     ReactOS Console Configuration DLL
  * LICENSE:     GPL - See COPYING in the top level directory
@@ -19,8 +20,8 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 #define REACTOS_STR_INTERNAL_NAME     "console"
 #define REACTOS_STR_ORIGINAL_FILENAME "console.dll"
 #include <reactos/version.rc>
-
 IDC_CPLICON ICON "res/terminal.ico"
+(IDC_CPLICON + 40000) ICON "resources/fluent/window_console.ico"
 
 #include <reactos/manifest_hosted.rc>
 

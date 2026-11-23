@@ -23,6 +23,9 @@ Implements the navigation band of the cabinet window
 */
 
 #include "precomp.h"
+#include <kushexplorer.h>
+#define KUSH_ICONS_NO_LOAD_MACROS
+#include <kushicons.h>
 #include <commoncontrols.h>
 #include <shlwapi_undoc.h>
 #include <shellapi.h>
@@ -41,6 +44,7 @@ TODO:
 static const GUID THISMODULE_GUID = { 0x60ebab6e, 0x2e4b, 0x42f6, { 0x8a,0xbc,0x80,0x73,0x1c,0xa6,0x42,0x02} };
 
 CAddressBand::CAddressBand()
+    : m_modernExplorer(KushModernExplorer())
 {
     fEditControl = NULL;
     fGoButton = NULL;
@@ -88,7 +92,9 @@ HRESULT STDMETHODCALLTYPE CAddressBand::GetBandInfo(DWORD dwBandID, DWORD dwView
             pdbi->ptMinSize.x = 100;
         else
             pdbi->ptMinSize.x = 150;
-        pdbi->ptMinSize.y = 22;
+        if (m_modernExplorer)
+            pdbi->ptMinSize.x = KushExplorerPixels(m_hWnd, 220);
+        pdbi->ptMinSize.y = m_modernExplorer ? KushExplorerPixels(m_hWnd, 36) : 22;
     }
     if (pdbi->dwMask & DBIM_MAXSIZE)
     {
@@ -106,7 +112,9 @@ HRESULT STDMETHODCALLTYPE CAddressBand::GetBandInfo(DWORD dwBandID, DWORD dwView
             pdbi->ptActual.x = 100;
         else
             pdbi->ptActual.x = 150;
-        pdbi->ptActual.y = 22;
+        if (m_modernExplorer)
+            pdbi->ptActual.x = KushExplorerPixels(m_hWnd, 220);
+        pdbi->ptActual.y = m_modernExplorer ? KushExplorerPixels(m_hWnd, 36) : 22;
     }
     if (pdbi->dwMask & DBIM_TITLE)
     {
@@ -184,6 +192,14 @@ HRESULT STDMETHODCALLTYPE CAddressBand::SetSite(IUnknown *pUnkSite)
     hResult = shellService->SetOwner(fSite);
     if (FAILED_UNEXPECTEDLY(hResult))
         return hResult;
+
+    if (m_modernExplorer)
+    {
+        if (SetPropW(m_hWnd, L"KushCenteredAddress", (HANDLE)1))
+            SendMessage(CB_SETITEMHEIGHT, (WPARAM)-1, KushExplorerPixels(m_hWnd, 28));
+        else
+            m_modernExplorer = FALSE;
+    }
 
     fGoButtonShown = ShouldShowGoButton();
     if (fGoButtonShown)
@@ -625,9 +641,9 @@ void CAddressBand::CreateGoButton()
     HINSTANCE             shellInstance;
 
     shellInstance = _AtlBaseModule.GetResourceInstance();
-    m_himlNormal = ImageList_LoadImageW(shellInstance, MAKEINTRESOURCEW(IDB_GOBUTTON_NORMAL),
+    m_himlNormal = ImageList_LoadImageW(shellInstance, MAKEINTRESOURCEW(KushBitmapResourceId(_AtlBaseModule.GetResourceInstance(), IDB_GOBUTTON_NORMAL)),
                                         20, 0, RGB(255, 0, 255), IMAGE_BITMAP, LR_CREATEDIBSECTION);
-    m_himlHot = ImageList_LoadImageW(shellInstance, MAKEINTRESOURCEW(IDB_GOBUTTON_HOT),
+    m_himlHot = ImageList_LoadImageW(shellInstance, MAKEINTRESOURCEW(KushBitmapResourceId(_AtlBaseModule.GetResourceInstance(), IDB_GOBUTTON_HOT)),
                                      20, 0, RGB(255, 0, 255), IMAGE_BITMAP, LR_CREATEDIBSECTION);
 
     fGoButton = CreateWindowEx(WS_EX_TOOLWINDOW, TOOLBARCLASSNAMEW, 0, WS_CHILD | WS_CLIPSIBLINGS |

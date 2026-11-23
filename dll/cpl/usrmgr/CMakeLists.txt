@@ -25,3 +25,6 @@ target_link_libraries(usrmgr wine)
 add_importlibs(usrmgr advapi32 user32 gdi32 comctl32 netapi32 msvcrt kernel32 ntdll)
 add_pch(usrmgr usrmgr.h SOURCE)
 add_cd_file(TARGET usrmgr DESTINATION reactos/system32 FOR all)
+
+file(GLOB kush_fluent_icon_deps "${CMAKE_CURRENT_SOURCE_DIR}/resources/fluent/*.ico")
+add_rc_deps(usrmgr.rc ${kush_fluent_icon_deps})

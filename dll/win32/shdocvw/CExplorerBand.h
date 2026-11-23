@@ -54,6 +54,7 @@ public:
     END_COM_MAP()
 
 protected:
+    BOOL m_modernExplorer;
     INT _GetRootCsidl() override;
     DWORD _GetTVStyle() override;
     DWORD _GetTVExStyle() override;

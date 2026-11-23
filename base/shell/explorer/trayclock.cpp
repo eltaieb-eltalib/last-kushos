@@ -20,6 +20,7 @@
  */
 
 #include "precomp.h"
+#include "kushstart.h"
 
 /*
  * TrayClockWnd
@@ -609,6 +610,16 @@ LRESULT CTrayClockWnd::DrawBackground(HDC hdc)
 LRESULT CTrayClockWnd::OnEraseBackground(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
     HDC hdc = (HDC) wParam;
+
+    if (!KushTaskbar_IsClassicRequested())
+    {
+        RECT rc;
+        GetClientRect(&rc);
+        HBRUSH brush = CreateSolidBrush(RGB(0xF3, 0xF3, 0xF3));
+        FillRect(hdc, &rc, brush);
+        DeleteObject(brush);
+        return TRUE;
+    }
 
     if (!IsAppThemed())
     {

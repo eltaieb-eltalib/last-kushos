@@ -36,15 +36,15 @@ CAPTION "Hardware"
 FONT 8, "MS Shell Dlg"
 BEGIN
     GROUPBOX "Gestor de dispositivos", IDC_STATIC, 6, 7, 244, 61
-    ICON IDI_DEVMGR, IDC_STATIC, 12, 18, 23, 21, SS_ICON
+    ICON IDI_DEVMGR, IDC_KUSH_STATIC_DEVMGR, 12, 18, 23, 21, SS_ICON
     LTEXT "O Gestor de dispositivos lista todos os dispositivos de hardware instalados no computador. Utilize o ""Gestor de dispositivos"" para alterar as propriedades de cada dispositivo.", IDC_STATIC, 42, 18, 204, 24
     PUSHBUTTON "&Gestor de dispositivos", IDC_HARDWARE_DEVICE_MANAGER, 154, 48, 90, 15
     GROUPBOX "Assistente de Hardware", IDC_STATIC, 6, 79, 244, 61
-    ICON IDI_ADDHW, IDC_STATIC, 12, 90, 23, 21, SS_ICON
+    ICON IDI_ADDHW, IDC_KUSH_STATIC_ADDHW, 12, 90, 23, 21, SS_ICON
     LTEXT "O Assistente de hardware ajuda-o a instalar, desinstalar, reparar, e configurar o hardware.", IDC_STATIC, 42, 90, 204, 24
     PUSHBUTTON "&Assistente de Hardware", IDC_HARDWARE_WIZARD, 154, 120, 90, 15
     GROUPBOX "Perfis de Hardware", IDC_STATIC, 6, 149, 244, 61
-    ICON IDI_HARDPROF, IDC_STATIC, 12, 160, 23, 21, SS_ICON
+    ICON IDI_HARDPROF, IDC_KUSH_STATIC_HARDPROF, 12, 160, 23, 21, SS_ICON
     LTEXT "Os perfis de hardware fornecem uma maneira de configurar e armazenar diferentes configurações de hardware.", IDC_STATIC, 42, 160, 204, 24
     PUSHBUTTON "&Perfis de Hardware", IDC_HARDWARE_PROFILE, 154, 190, 90, 15
 END
@@ -85,7 +85,7 @@ STYLE DS_SHELLFONT | DS_MODALFRAME | DS_CONTEXTHELP | WS_POPUP | WS_VISIBLE | WS
 CAPTION "Perfis de Hardware"
 FONT 8, "MS Shell Dlg"
 BEGIN
-    ICON IDI_HARDPROF, IDC_STATIC, 8, 11, 18, 20, SS_ICON
+    ICON IDI_HARDPROF, IDC_KUSH_STATIC_HARDPROF, 8, 11, 18, 20, SS_ICON
     LTEXT "Pode configurar perfis de hardware para diferentes configurações de hardware. No arranque, pode escolher o perfil que deseja utilizar.", IDC_STATIC, 46, 11, 188, 25
     LTEXT "Perfis de hardware disponíveis:", IDC_STATIC, 8, 41, 120, 8
     LISTBOX IDC_HRDPROFLSTBOX, 8, 52, 215, 54, LBS_NOTIFY
@@ -112,7 +112,7 @@ STYLE DS_SHELLFONT | DS_MODALFRAME | DS_CONTEXTHELP | WS_POPUP | WS_VISIBLE | WS
 CAPTION "Geral"
 FONT 8, "MS Shell Dlg"
 BEGIN
-    ICON IDI_HARDPROF, IDC_STATIC, 10, 10, 18, 20, SS_ICON
+    ICON IDI_HARDPROF, IDC_KUSH_STATIC_HARDPROF, 10, 10, 18, 20, SS_ICON
     LTEXT "", IDC_HWPPROP_PROFILE, 48, 16, 150, 8
     LTEXT "ID da estação de ancoragem:", IDC_STATIC, 10, 35, 130, 8
     LTEXT "", IDC_HWPPROP_DOCKID, 120, 35, 135, 8
@@ -158,7 +158,7 @@ STYLE DS_SHELLFONT | DS_MODALFRAME | DS_CONTEXTHELP | WS_POPUP | WS_VISIBLE | WS
 CAPTION "Perfis de utilizador"
 FONT 8, "MS Shell Dlg"
 BEGIN
-    ICON IDI_USERPROF, IDC_STATIC, 6, 11, 16, 16, SS_ICON
+    ICON IDI_USERPROF, IDC_KUSH_STATIC_USERPROF, 6, 11, 16, 16, SS_ICON
     LTEXT "Os perfis de utilizador contêm definições para o ambiente de trabalho e outras informações relacionadas ao início de sessão. Pode criar um novo perfil, ou seleccionar um perfil do servidor para cada computador que utiliza.", IDC_STATIC, 40, 11, 211, 35
     LTEXT "Perfis armazenados neste computador:", IDC_STATIC, 16, 51, 204, 9
     CONTROL "", IDC_USERPROFILE_LIST, "SysListView32", LVS_REPORT | LVS_SINGLESEL |

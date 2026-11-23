@@ -29,15 +29,15 @@ CAPTION "ハードウェア"
 FONT 9, "MS UI Gothic"
 BEGIN
     GROUPBOX "デバイス マネージャ", IDC_STATIC, 6, 7, 244, 61
-    ICON IDI_DEVMGR, IDC_STATIC, 12, 18, 23, 21, SS_ICON
+    ICON IDI_DEVMGR, IDC_KUSH_STATIC_DEVMGR, 12, 18, 23, 21, SS_ICON
     LTEXT "デバイス マネージャはコンピュータに装着されているすべてのハードウェアを表示します。各デバイスのプロパティを変更するにはデバイス マネージャを使用してください。", IDC_STATIC, 42, 18, 204, 24
     PUSHBUTTON "デバイス マネージャ(&D)...", IDC_HARDWARE_DEVICE_MANAGER, 130, 48, 110, 15
     GROUPBOX "ハードウェア ウィザード", IDC_STATIC, 6, 79, 244, 61
-    ICON IDI_ADDHW, IDC_STATIC, 12, 90, 23, 21, SS_ICON
+    ICON IDI_ADDHW, IDC_KUSH_STATIC_ADDHW, 12, 90, 23, 21, SS_ICON
     LTEXT "ハードウェア ウィザードはハードウェアのインストール、アンインストール、修復、 取り外し、取り出し、設定の手助けをします。", IDC_STATIC, 42, 90, 204, 24
     PUSHBUTTON "ハードウェア ウィザード(&H)...", IDC_HARDWARE_WIZARD, 130, 120, 110, 15
     GROUPBOX "ハードウェア プロファイル", IDC_STATIC, 6, 149, 244, 61
-    ICON IDI_HARDPROF, IDC_STATIC, 12, 160, 23, 21, SS_ICON
+    ICON IDI_HARDPROF, IDC_KUSH_STATIC_HARDPROF, 12, 160, 23, 21, SS_ICON
     LTEXT "ハードウェア プロファイルは別のハードウェアの構成を設定し、格納する方法を提供します。", IDC_STATIC, 42, 160, 204, 24
     PUSHBUTTON "ハードウェア プロファイル(&W)...", IDC_HARDWARE_PROFILE, 130, 190, 110, 15
 END
@@ -78,7 +78,7 @@ STYLE DS_SHELLFONT | DS_MODALFRAME | DS_CONTEXTHELP | WS_POPUP | WS_VISIBLE | WS
 CAPTION "ハードウェア プロファイル"
 FONT 9, "MS UI Gothic"
 BEGIN
-    ICON IDI_HARDPROF, IDC_STATIC, 8, 11, 18, 20, SS_ICON
+    ICON IDI_HARDPROF, IDC_KUSH_STATIC_HARDPROF, 8, 11, 18, 20, SS_ICON
     LTEXT "異なるハードウェア構成に合わせたハードウェア プロファイルをセットアップできます。 起動時に使用するプロファイルを選択できます。", IDC_STATIC, 46, 11, 188, 25
     LTEXT "利用可能なハードウェア プロファイル:", IDC_STATIC, 8, 41, 120, 8
     LISTBOX IDC_HRDPROFLSTBOX, 8, 52, 215, 54, LBS_NOTIFY
@@ -105,7 +105,7 @@ STYLE DS_SHELLFONT | DS_MODALFRAME | DS_CONTEXTHELP | WS_POPUP | WS_VISIBLE | WS
 CAPTION "一般の設定"
 FONT 9, "MS UI Gothic"
 BEGIN
-    ICON IDI_HARDPROF, IDC_STATIC, 10, 10, 18, 20, SS_ICON
+    ICON IDI_HARDPROF, IDC_KUSH_STATIC_HARDPROF, 10, 10, 18, 20, SS_ICON
     LTEXT "", IDC_HWPPROP_PROFILE, 48, 16, 150, 8
     LTEXT "ドックID:", IDC_STATIC, 10, 42, 43, 8
     LTEXT "", IDC_HWPPROP_DOCKID, 64, 42, 135, 8
@@ -151,7 +151,7 @@ STYLE DS_SHELLFONT | DS_MODALFRAME | DS_CONTEXTHELP | WS_POPUP | WS_VISIBLE | WS
 CAPTION "ユーザー プロファイル"
 FONT 9, "MS UI Gothic"
 BEGIN
-    ICON IDI_USERPROF, IDC_STATIC, 6, 11, 16, 16, SS_ICON
+    ICON IDI_USERPROF, IDC_KUSH_STATIC_USERPROF, 6, 11, 16, 16, SS_ICON
     LTEXT "ユーザー プロファイルには、デスクトップの設定と他のログインに関する情報が含まれます。異なるプロファイルを使用する コンピュータごとに作成したり、使用するコンピュータごとに 同じローミング プロファイルを選択することもできます。", IDC_STATIC, 40, 11, 211, 35
     LTEXT "このコンピュータに格納されているプロファイル:", IDC_STATIC, 16, 51, 204, 9
     CONTROL "", IDC_USERPROFILE_LIST, "SysListView32", LVS_REPORT | LVS_SINGLESEL |

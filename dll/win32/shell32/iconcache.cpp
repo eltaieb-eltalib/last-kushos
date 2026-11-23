@@ -10,6 +10,56 @@
 
 WINE_DEFAULT_DEBUG_CHANNEL(shell);
 
+#define KUSH_ICONS_NO_LOAD_MACROS
+#include <kushicons.h>
+
+/* Resolve only opt-in system UI resource backups, never arbitrary file icons. */
+struct KushIconOrdinal { INT wanted, current; UINT id; };
+static BOOL CALLBACK KushFindIconOrdinal(HMODULE module, LPCWSTR type, LPWSTR name, LONG_PTR data)
+{
+    KushIconOrdinal *entry = (KushIconOrdinal*)data;
+    if (entry->current++ != entry->wanted) return TRUE;
+    entry->id = IS_INTRESOURCE(name) ? (UINT)(ULONG_PTR)name : 0;
+    return FALSE;
+}
+static INT KushClassicFileIconIndex(LPCWSTR path, INT index)
+{
+    if (!path || KushClassicIcons() || index == (-2147483647 - 1)) return index;
+    static LPCWSTR names[] = {L"console.cpl", L"access.cpl", L"hotplug.dll", L"input.dll",
+        L"mmsys.cpl", L"powercfg.cpl", L"wined3dcfg.cpl", L"sysdm.cpl", L"openglcfg.cpl",
+        L"appwiz.cpl", L"desk.cpl", L"inetcpl.cpl", L"timedate.cpl", L"joy.cpl",
+        L"telephon.cpl", L"hdwwiz.cpl", L"main.cpl", L"intl.cpl", L"usrmgr.cpl", L"shell32.dll", L"ntobjshex.dll", L"netshell.dll"};
+    WCHAR expanded[MAX_PATH], resolved[MAX_PATH];
+    DWORD count = ExpandEnvironmentStringsW(path, expanded, _countof(expanded));
+    if (!count || count > _countof(expanded)) return index;
+    count = SearchPathW(NULL, expanded, NULL, _countof(resolved), resolved, NULL);
+    if (!count || count >= _countof(resolved)) return index;
+    LPCWSTR name = PathFindFileNameW(resolved);
+    BOOL allowed = FALSE;
+    for (UINT i = 0; i < _countof(names); ++i)
+        if (!lstrcmpiW(name, names[i])) { allowed = TRUE; break; }
+    if (!allowed) return index;
+    WCHAR system[MAX_PATH];
+    if (!GetSystemDirectoryW(system, _countof(system)) || !PathAppendW(system, name) || lstrcmpiW(system, resolved))
+        return index;
+    HMODULE module = LoadLibraryExW(resolved, NULL, LOAD_LIBRARY_AS_DATAFILE);
+    if (!module) return index;
+    UINT resource = index < 0 ? (UINT)-index : 0;
+    if (index >= 0)
+    {
+        KushIconOrdinal ordinal = {index, 0, 0};
+        EnumResourceNamesW(module, MAKEINTRESOURCEW(14), KushFindIconOrdinal, (LONG_PTR)&ordinal);
+        resource = ordinal.id;
+    }
+    UINT backup = resource + KUSH_CLASSIC_ICON_OFFSET;
+    if (resource && resource <= 25535 && FindResourceW(module, MAKEINTRESOURCEW(backup), MAKEINTRESOURCEW(14)))
+        index = -(INT)backup;
+    FreeLibrary(module);
+    return index;
+}
+
+
+
 /********************** THE ICON CACHE ********************************/
 
 #define INVALID_INDEX -1
@@ -473,6 +523,7 @@ static INT SIC_LoadIcon (LPCWSTR sSourceFile, INT dwSourceIndex, DWORD dwFlags)
  */
 INT SIC_GetIconIndex (LPCWSTR sSourceFile, INT dwSourceIndex, DWORD dwFlags )
 {
+    dwSourceIndex = KushClassicFileIconIndex(sSourceFile, dwSourceIndex);
     SIC_ENTRY sice;
     INT ret, index = INVALID_INDEX;
     WCHAR path[MAX_PATH];
@@ -870,6 +921,8 @@ UINT WINAPI ExtractIconExW(LPCWSTR lpszFile, INT nIconIndex, HICON * phiconLarge
 #endif
 
     TRACE("%s %i %p %p %i\n", debugstr_w(lpszFile), nIconIndex, phiconLarge, phiconSmall, nIcons);
+    if (nIcons && (phiconLarge || phiconSmall))
+        nIconIndex = KushClassicFileIconIndex(lpszFile, nIconIndex);
     ret = PrivateExtractIconExW(lpszFile, nIconIndex, phiconLarge, phiconSmall, nIcons);
 
     /* PrivateExtractIconExW() may return -1 if the provided file is not a valid PE image file or the said
@@ -1022,6 +1075,7 @@ HRESULT WINAPI SHDefExtractIconW(LPCWSTR pszIconFile, int iIndex, UINT uFlags,
     if (!nIconSize)
         nIconSize = MAKELONG(GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CXSMICON));
 
+    iIndex = KushClassicFileIconIndex(pszIconFile, iIndex);
     ret = PrivateExtractIconsW(pszIconFile, iIndex, nIconSize, nIconSize, hIcons, NULL, 2, LR_DEFAULTCOLOR);
     /* FIXME: deal with uFlags parameter which contains GIL_ flags */
     if (ret == 0xFFFFFFFF)

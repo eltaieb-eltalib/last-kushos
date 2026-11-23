@@ -12,6 +12,41 @@
 
 #define IDM_GO_COMMAND  3001
 
+static BOOL KushRegeditPrepare(HWND window)
+{
+    HIGHCONTRASTW contrast = {sizeof(contrast)};
+    HKEY key;
+    HDC dc;
+    BOOL dpi;
+    RECT work;
+    const WCHAR *names[] = {L"ClassicRegistryEditor", L"ClassicWindows"};
+    UINT i;
+    if (GetWindowLongPtrW(window, GWL_EXSTYLE) & WS_EX_LAYOUTRTL) return FALSE;
+    if (!SystemParametersInfoW(SPI_GETHIGHCONTRAST, sizeof(contrast), &contrast, 0) ||
+        (contrast.dwFlags & HCF_HIGHCONTRASTON)) return FALSE;
+    dc = GetDC(window);
+    if (!dc) return FALSE;
+    dpi = GetDeviceCaps(dc, LOGPIXELSX) == 96 && GetDeviceCaps(dc, LOGPIXELSY) == 96;
+    ReleaseDC(window, dc);
+    if (!dpi || !SystemParametersInfoW(SPI_GETWORKAREA, 0, &work, 0) ||
+        work.right - work.left < 740 || work.bottom - work.top < 480) return FALSE;
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Kush\\Shell", 0, KEY_QUERY_VALUE, &key) == ERROR_SUCCESS)
+    {
+        for (i = 0; i < ARRAYSIZE(names); ++i)
+        {
+            DWORD value = 0, type = 0, size = sizeof(value);
+            if (RegQueryValueExW(key, names[i], NULL, &type, (BYTE *)&value, &size) == ERROR_SUCCESS &&
+                type == REG_DWORD && size == sizeof(value) && value)
+            {
+                RegCloseKey(key);
+                return FALSE;
+            }
+        }
+        RegCloseKey(key);
+    }
+    return TRUE;
+}
+
 ChildWnd* g_pChildWnd;
 static int last_split = -1;
 HBITMAP SizingPattern;
@@ -111,21 +146,21 @@ void ResizeWnd(int cx, int cy)
 
     /* Use the Go-button height for the address toolbar height */
     SendMessageW(g_pChildWnd->hAddressToolBarWnd, TB_GETITEMRECT, 1, (LPARAM)&rb);
-    nToolHeight = rb.bottom - rb.top;
+    nToolHeight = g_KushRegedit ? 36 : rb.bottom - rb.top;
 
     /* Resize the separator containing the address bar */
     tbInfo.cbSize = sizeof(tbInfo);
     tbInfo.dwMask = TBIF_BYINDEX | TBIF_SIZE;
-    tbInfo.cx = rt.right - rt.left - (rb.right - rb.left);
+    tbInfo.cx = max(0, rt.right - rt.left - (rb.right - rb.left) - (g_KushRegedit ? 8 : 0));
     SendMessageW(g_pChildWnd->hAddressToolBarWnd, TB_SETBUTTONINFO, 0, (LPARAM)&tbInfo);
     //SendMessageW(g_pChildWnd->hAddressToolBarWnd, TB_AUTOSIZE, 0, 0);
     /* Resize the address bar */
     SendMessageW(g_pChildWnd->hAddressToolBarWnd, TB_GETITEMRECT, 0, (LPARAM)&re);
     SetWindowPos(g_pChildWnd->hAddressBarWnd, NULL,
-                 re.left,
-                 re.top + cyEdge,
-                 re.right - re.left,
-                 /*re.bottom - re.top*/nToolHeight - 2 * cyEdge,
+                 re.left + (g_KushRegedit ? 8 : 0),
+                 g_KushRegedit ? 6 : re.top + cyEdge,
+                 max(0, re.right - re.left - (g_KushRegedit ? 12 : 0)),
+                 g_KushRegedit ? 24 : nToolHeight - 2 * cyEdge,
                  uFlags);
 
     cy = 0;
@@ -419,7 +454,8 @@ LRESULT CALLBACK ChildWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
         if (!g_pChildWnd) return 0;
 
         wcsncpy(g_pChildWnd->szPath, buffer, MAX_PATH);
-        g_pChildWnd->nSplitPos = 190;
+        g_KushRegedit = KushRegeditPrepare(hWnd);
+        g_pChildWnd->nSplitPos = g_KushRegedit ? 264 : 190;
         g_pChildWnd->hWnd = hWnd;
 
         /* The horizontal line above the toolbar is hidden with the CCS_NODIVIDER style */
@@ -440,6 +476,8 @@ LRESULT CALLBACK ChildWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
         SendMessageW(g_pChildWnd->hAddressToolBarWnd, TB_SETMAXTEXTROWS, 1, 0);
         SendMessageW(g_pChildWnd->hAddressToolBarWnd, TB_BUTTONSTRUCTSIZE, (WPARAM)sizeof(tbButtons[0]), 0);
         SendMessageW(g_pChildWnd->hAddressToolBarWnd, TB_ADDBUTTONSW, (WPARAM)_countof(tbButtons), (LPARAM)&tbButtons);
+        if (g_KushRegedit)
+            SendMessageW(g_pChildWnd->hAddressToolBarWnd, TB_SETBUTTONSIZE, 0, MAKELPARAM(48, 36));
 
         /* ES_AUTOHSCROLL style enables horizontal scrolling and shrinking */
         style = WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_AUTOHSCROLL;

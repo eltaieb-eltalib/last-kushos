@@ -10,6 +10,7 @@
 
 #define NDEBUG
 #include <debug.h>
+#include <kushicons.h>
 
 // globals
 HINSTANCE hApplet = 0;
@@ -417,7 +418,7 @@ CPlApplet(
             {
                 CPLINFO *CPlInfo = (CPLINFO*)lParam2;
                 CPlInfo->lData = 0;
-                CPlInfo->idIcon = Applets[i].idIcon;
+                CPlInfo->idIcon = KushOwnIconId(Applets[i].idIcon);
                 CPlInfo->idName = Applets[i].idName;
                 CPlInfo->idInfo = Applets[i].idDescription;
             }

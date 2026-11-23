@@ -643,14 +643,27 @@ HWND CreateListView(HWND hwndParent, HMENU id, INT cx)
 
     /* Get the dimensions of the parent window's client area, and create the list view control. */
     GetClientRect(hwndParent, &rcClient);
-    hwndLV = CreateWindowExW(WS_EX_CLIENTEDGE, WC_LISTVIEW, L"List View",
+    hwndLV = CreateWindowExW(g_KushRegedit ? 0 : WS_EX_CLIENTEDGE, WC_LISTVIEW, L"List View",
                              WS_VISIBLE | WS_CHILD | WS_TABSTOP | LVS_REPORT | LVS_EDITLABELS | LVS_SHOWSELALWAYS,
                              0, 0, rcClient.right, rcClient.bottom,
                              hwndParent, id, hInst, NULL);
     if (!hwndLV) return NULL;
+    if (g_KushRegedit)
+    {
+        ListView_SetBkColor(hwndLV, RGB(255, 255, 255));
+        ListView_SetTextBkColor(hwndLV, RGB(255, 255, 255));
+        ListView_SetTextColor(hwndLV, RGB(32, 38, 46));
+        ListView_SetExtendedListViewStyleEx(hwndLV, LVS_EX_FULLROWSELECT, LVS_EX_FULLROWSELECT);
+    }
 
     /* Initialize the image list, and add items to the control. */
     if (!CreateListColumns(hwndLV, cx)) goto fail;
+    if (g_KushRegedit)
+    {
+        ListView_SetColumnWidth(hwndLV, 0, 190);
+        ListView_SetColumnWidth(hwndLV, 1, 100);
+        ListView_SetColumnWidth(hwndLV, 2, 180);
+    }
     if (!InitListViewImageLists(hwndLV)) goto fail;
 
     return hwndLV;

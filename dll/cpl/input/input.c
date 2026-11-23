@@ -91,7 +91,7 @@ SystemApplet(HWND hwnd, UINT uMsg, LPARAM lParam1, LPARAM lParam2)
     header.dwFlags     = PSH_PROPSHEETPAGE | PSH_USEICONID | PSH_USECALLBACK;
     header.hwndParent  = hwnd;
     header.hInstance   = hApplet;
-    header.pszIcon     = MAKEINTRESOURCEW(IDI_CPLSYSTEM);
+    header.pszIcon     = MAKEINTRESOURCEW(KushOwnIconId(IDI_CPLSYSTEM));
     header.pszCaption  = MAKEINTRESOURCEW(IDS_CPLSYSTEMNAME);
     header.nPages      = ARRAYSIZE(page);
     header.nStartPage  = 0;
@@ -128,7 +128,7 @@ CPlApplet(HWND hwndCPl, UINT uMsg, LPARAM lParam1, LPARAM lParam2)
             {
                 CPlInfo = (CPLINFO*)lParam2;
                 CPlInfo->lData = 0;
-                CPlInfo->idIcon = Applets[i].idIcon;
+                CPlInfo->idIcon = KushOwnIconId(Applets[i].idIcon);
                 CPlInfo->idName = Applets[i].idName;
                 CPlInfo->idInfo = Applets[i].idDescription;
             }

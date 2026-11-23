@@ -1,0 +1,30 @@
+[
+  {
+    "variant": "production",
+    "order": "top",
+    "returncode": 0,
+    "stdout": "pixels=4 1,2,3,4",
+    "passed": true
+  },
+  {
+    "variant": "production",
+    "order": "bottom",
+    "returncode": 0,
+    "stdout": "pixels=4 3,4,1,2",
+    "passed": true
+  },
+  {
+    "variant": "unsigned-control",
+    "order": "top",
+    "returncode": 0,
+    "stdout": "pixels=4 1,2,3,4",
+    "passed": true
+  },
+  {
+    "variant": "unsigned-control",
+    "order": "bottom",
+    "returncode": -11,
+    "stdout": "",
+    "passed": true
+  }
+]

@@ -1,3 +1,4 @@
+include_directories(${REACTOS_SOURCE_DIR}/media/cursors-modern)
 
 spec2def(user32.dll user32.spec ADD_IMPORTLIB)
 

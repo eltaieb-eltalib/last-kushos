@@ -14,6 +14,7 @@ public:
 
     BEGIN_MSG_MAP(CToolSettingsWindow)
         MESSAGE_HANDLER(WM_CREATE, OnCreate)
+        MESSAGE_HANDLER(WM_ERASEBKGND, OnEraseBkgnd)
         MESSAGE_HANDLER(WM_VSCROLL, OnVScroll)
         MESSAGE_HANDLER(WM_PAINT, OnPaint)
         MESSAGE_HANDLER(WM_LBUTTONDOWN, OnLButtonDown)
@@ -40,6 +41,11 @@ private:
     VOID drawBox(HDC hdc, LPCRECT prc);
     VOID drawAirBrush(HDC hdc, LPCRECT prc);
     VOID calculateTwoBoxes(CRect& rect1, CRect& rect2);
+
+    LRESULT OnEraseBkgnd(UINT, WPARAM wParam, LPARAM, BOOL& bHandled)
+    {
+        return KushPaintErase(m_hWnd, (HDC)wParam, bHandled);
+    }
 
     LRESULT OnCreate(UINT nMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
     LRESULT OnDestroy(UINT nMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);

@@ -147,3 +147,7 @@ add_importlibs(shell32 advapi32 gdi32 user32 comctl32 comdlg32 shlwapi shcore ms
 add_dependencies(shell32 stdole2) # shell32_shldisp.tlb needs stdole2.tlb
 add_pch(shell32 precomp.h "${PCH_SKIP_SOURCE}")
 add_cd_file(TARGET shell32 DESTINATION reactos/system32 FOR all)
+
+# Track the included icon table and generated Kush artwork explicitly.
+file(GLOB kush_shell_icon_deps "${CMAKE_CURRENT_SOURCE_DIR}/res/icons/kush/*.ico")
+add_rc_deps(shell32.rc "${CMAKE_CURRENT_SOURCE_DIR}/icon_res.rc" ${kush_shell_icon_deps})

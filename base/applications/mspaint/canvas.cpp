@@ -291,7 +291,10 @@ BOOL CCanvasWindow::DoDraw(HDC hDC, RECT& rcClient, RECT& rcPaint)
     HGDIOBJ hbm0Old = ::SelectObject(hdcMem0, hbmCache1);
 
     // Fill the background on hdcMem0
-    ::FillRect(hdcMem0, &rcCanvasDraw, (HBRUSH)(COLOR_APPWORKSPACE + 1));
+    if (g_KushPaint)
+        KushPaintFill(hdcMem0, &rcCanvasDraw, RGB(238, 242, 247));
+    else
+        ::FillRect(hdcMem0, &rcCanvasDraw, (HBRUSH)(COLOR_APPWORKSPACE + 1));
 
     // Draw the sizeboxes if necessary
     RECT rcBase = GetBaseRect();

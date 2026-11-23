@@ -13,6 +13,7 @@
 #include <winnls.h>
 
 #include <debug.h>
+#include "kush_static_icons.h"
 
 typedef struct _PROFILEDATA
 {
@@ -81,6 +82,7 @@ UserProfileTypeDlgProc(
     switch (uMsg)
     {
         case WM_INITDIALOG:
+            KushRefreshSysdmStaticIcons(hwndDlg);
             OnProfileTypeInit(hwndDlg, (PPROFILEDATA)lParam);
             return TRUE;
 
@@ -205,6 +207,7 @@ CopyUserProfileDlgProc(
     switch (uMsg)
     {
         case WM_INITDIALOG:
+            KushRefreshSysdmStaticIcons(hwndDlg);
             return TRUE;
 
         case WM_DESTROY:
@@ -815,6 +818,7 @@ UserProfileDlgProc(HWND hwndDlg,
     switch (uMsg)
     {
         case WM_INITDIALOG:
+            KushRefreshSysdmStaticIcons(hwndDlg);
             OnInitUserProfileDialog(hwndDlg);
             return TRUE;
 

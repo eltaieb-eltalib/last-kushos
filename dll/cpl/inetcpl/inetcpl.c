@@ -151,7 +151,7 @@ static void display_cpl_sheets(HWND parent)
     psh.dwFlags = PSH_PROPSHEETPAGE | PSH_USEICONID | PSH_USECALLBACK;
     psh.hwndParent = parent;
     psh.hInstance = hcpl;
-    psh.u.pszIcon = MAKEINTRESOURCEW(ICO_MAIN);
+    psh.u.pszIcon = MAKEINTRESOURCEW(KushOwnIconId(ICO_MAIN));
     psh.pszCaption = MAKEINTRESOURCEW(IDS_CPL_NAME);
     psh.nPages = id;
     psh.u3.ppsp = psp;
@@ -194,7 +194,7 @@ LONG CALLBACK CPlApplet(HWND hWnd, UINT command, LPARAM lParam1, LPARAM lParam2)
         {
             CPLINFO *appletInfo = (CPLINFO *) lParam2;
 
-            appletInfo->idIcon = ICO_MAIN;
+            appletInfo->idIcon = KushOwnIconId(ICO_MAIN);
             appletInfo->idName = IDS_CPL_NAME;
             appletInfo->idInfo = IDS_CPL_INFO;
             appletInfo->lData = 0;

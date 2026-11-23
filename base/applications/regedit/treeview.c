@@ -745,11 +745,19 @@ HWND CreateTreeView(HWND hwndParent, LPWSTR pHostName, HMENU id)
 
     /* Get the dimensions of the parent window's client area, and create the tree view control.  */
     GetClientRect(hwndParent, &rcClient);
-    hwndTV = CreateWindowExW(WS_EX_CLIENTEDGE, WC_TREEVIEW, NULL,
-                            WS_VISIBLE | WS_CHILD | WS_TABSTOP | TVS_HASLINES | TVS_HASBUTTONS | TVS_LINESATROOT | TVS_EDITLABELS | TVS_SHOWSELALWAYS,
+    hwndTV = CreateWindowExW(g_KushRegedit ? 0 : WS_EX_CLIENTEDGE, WC_TREEVIEW, NULL,
+                            WS_VISIBLE | WS_CHILD | WS_TABSTOP | TVS_HASBUTTONS | TVS_LINESATROOT | TVS_EDITLABELS | TVS_SHOWSELALWAYS |
+                            (g_KushRegedit ? 0 : TVS_HASLINES),
                             0, 0, rcClient.right, rcClient.bottom,
                             hwndParent, id, hInst, NULL);
     if (!hwndTV) return NULL;
+    if (g_KushRegedit)
+    {
+        TreeView_SetItemHeight(hwndTV, 28);
+        TreeView_SetIndent(hwndTV, 20);
+        TreeView_SetBkColor(hwndTV, RGB(255, 255, 255));
+        TreeView_SetTextColor(hwndTV, RGB(32, 38, 46));
+    }
 
     /* Initialize the image list, and add items to the control.  */
     if (!InitTreeViewImageLists(hwndTV) || !InitTreeViewItems(hwndTV, pHostName))

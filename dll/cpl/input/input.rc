@@ -1,3 +1,4 @@
+/* KUSH_CPL_FLUENT: generated mapping, original IDs preserved. */
 #include <windef.h>
 #include <winuser.h>
 #include <commctrl.h>
@@ -11,9 +12,10 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 #define REACTOS_STR_INTERNAL_NAME     "input"
 #define REACTOS_STR_ORIGINAL_FILENAME "input.dll"
 #include <reactos/version.rc>
-
 IDI_CPLSYSTEM ICON "resources/keyboard-shortcuts.ico"
+(IDI_CPLSYSTEM + 40000) ICON "resources/fluent/keyboard.ico"
 IDI_KEYBOARD ICON "resources/keyboard.ico"
+(IDI_KEYBOARD + 40000) ICON "resources/fluent/keyboard.ico"
 IDI_DOT ICON "resources/dot.ico"
 
 #include <reactos/manifest_hosted.rc>

@@ -23,6 +23,9 @@ HWND      hStatusWnd;
 HICON     hSmIcon;
 HICON     hBgIcon;
 SETTINGS  Settings;
+BOOL KushCharacterMap;
+
+#include "kush_ui.h"
 
 static
 VOID
@@ -380,6 +383,16 @@ ChangeView(HWND hWnd)
     if ((yPos + Height) > DeskTopHeight)
         yPos = DeskTopHeight - Height;
 
+    if (KushCharacterMap)
+    {
+        RECT work;
+        if (KushCharmapWorkArea(hWnd, &work))
+        {
+            xPos = max(work.left, min(xPos, work.right - (LONG)Width));
+            yPos = max(work.top, min(yPos, work.bottom - (LONG)Height));
+        }
+    }
+
     MoveWindow(hWnd,
                xPos, yPos,
                Width, Height,
@@ -396,6 +409,12 @@ CharMapDlgProc(HWND hDlg,
 {
     switch(Message)
     {
+        case WM_CTLCOLORDLG:
+        case WM_CTLCOLORSTATIC:
+        case WM_CTLCOLORBTN:
+            if (KushCharacterMap) return KushCharmapBackground((HDC)wParam);
+            return FALSE;
+
         case WM_INITDIALOG:
         {
             DWORD evMask;
@@ -484,6 +503,12 @@ AdvancedDlgProc(HWND hDlg,
 {
     switch(Message)
     {
+        case WM_CTLCOLORDLG:
+        case WM_CTLCOLORSTATIC:
+        case WM_CTLCOLORBTN:
+            if (KushCharacterMap) return KushCharmapBackground((HDC)wParam);
+            return FALSE;
+
         case WM_INITDIALOG:
             return TRUE;
 
@@ -521,6 +546,8 @@ PanelOnCreate(HWND hWnd, WPARAM wParam, LPARAM lParam)
     HMENU hSysMenu;
     WCHAR lpAboutText[256];
 
+    KushCharacterMap = KushCharmapEnabled(hWnd);
+
     hCharmapDlg = CreateDialog(hInstance,
                                MAKEINTRESOURCE(IDD_CHARMAP),
                                hWnd,
@@ -553,6 +580,7 @@ PanelOnCreate(HWND hWnd, WPARAM wParam, LPARAM lParam)
     // Set the status bar for multiple parts output
     SendMessage(hStatusWnd, SB_SIMPLE, (WPARAM)FALSE, (LPARAM)0);
 
+    KushCharmapPrepare(hWnd);
     ChangeView(hWnd);
 
     hSysMenu = GetSystemMenu(hWnd, FALSE);
@@ -581,6 +609,16 @@ PanelWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     case WM_CLOSE:
         DestroyWindow(hWnd);
         return 0;
+
+    case WM_ERASEBKGND:
+        if (KushCharacterMap)
+        {
+            RECT client;
+            GetClientRect(hWnd, &client);
+            FillRect((HDC)wParam, &client, GetStockObject(WHITE_BRUSH));
+            return 1;
+        }
+        break;
 
     case WM_SIZE:
         SendMessage(hStatusWnd, msg, wParam, lParam);

@@ -581,9 +581,11 @@ FindFirstFileExA(IN LPCSTR lpFileName,
     WIN32_FIND_DATAW FindFileDataW;
     LPWIN32_FIND_DATAA lpFindFileDataA = (LPWIN32_FIND_DATAA)lpFindFileData;
 
+    /* LARGE_FETCH is a query-buffer hint, not a different search mode.
+     * FindNextFileW already batches entries in the 16 KiB search buffer. */
     if ((fInfoLevelId != FindExInfoStandard && fInfoLevelId != FindExInfoBasic) ||
         fSearchOp == FindExSearchLimitToDevices ||
-        dwAdditionalFlags & ~FIND_FIRST_EX_CASE_SENSITIVE /* only supported flag for now */)
+        dwAdditionalFlags & ~(FIND_FIRST_EX_CASE_SENSITIVE | FIND_FIRST_EX_LARGE_FETCH))
     {
         SetLastError(fSearchOp == FindExSearchLimitToDevices
                                 ? ERROR_NOT_SUPPORTED
@@ -657,9 +659,11 @@ FindFirstFileExW(IN LPCWSTR lpFileName,
 
     TRACE("FindFirstFileExW(lpFileName %S)\n", lpFileName);
 
+    /* LARGE_FETCH is a query-buffer hint, not a different search mode.
+     * FindNextFileW already batches entries in the 16 KiB search buffer. */
     if ((fInfoLevelId != FindExInfoStandard && fInfoLevelId != FindExInfoBasic) ||
         fSearchOp == FindExSearchLimitToDevices ||
-        dwAdditionalFlags & ~FIND_FIRST_EX_CASE_SENSITIVE /* only supported flag for now */)
+        dwAdditionalFlags & ~(FIND_FIRST_EX_CASE_SENSITIVE | FIND_FIRST_EX_LARGE_FETCH))
     {
         SetLastError(fSearchOp == FindExSearchLimitToDevices
                                 ? ERROR_NOT_SUPPORTED

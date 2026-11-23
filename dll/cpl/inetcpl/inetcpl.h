@@ -101,3 +101,5 @@ INT_PTR CALLBACK security_dlgproc(HWND, UINT, WPARAM, LPARAM) DECLSPEC_HIDDEN;
 #define IDC_EDIT_PROXY_PORT     5202
 
 #endif
+
+#include <kushicons.h>

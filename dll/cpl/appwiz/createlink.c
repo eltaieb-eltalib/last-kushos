@@ -617,7 +617,7 @@ ShowCreateShortcutWizard(HWND hwndCPl, LPCWSTR szPath)
     psh.dwSize = sizeof(PROPSHEETHEADER);
     psh.dwFlags = PSH_WIZARD97 | PSH_WATERMARK | PSH_USEICONID | PSH_USECALLBACK;
     psh.hInstance = hApplet;
-    psh.pszIcon = MAKEINTRESOURCEW(IDI_APPINETICO);
+    psh.pszIcon = MAKEINTRESOURCEW(KushOwnIconId(IDI_APPINETICO));
     psh.hwndParent = NULL;
     psh.nPages = nPages;
     psh.nStartPage = 0;

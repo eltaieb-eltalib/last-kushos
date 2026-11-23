@@ -27,5 +27,8 @@ add_pch(sysdm precomp.h SOURCE)
 
 set_module_type(sysdm cpl UNICODE)
 target_link_libraries(sysdm udmihelp uuid)
-add_importlibs(sysdm advapi32 setupapi user32 gdi32 comctl32 comdlg32 msimg32 shell32 shlwapi ole32 powrprof msvcrt kernel32 ntdll)
+add_importlibs(sysdm advapi32 setupapi user32 gdi32 comctl32 comdlg32 msimg32 shell32 shlwapi uxtheme ole32 powrprof msvcrt kernel32 ntdll)
 add_cd_file(TARGET sysdm DESTINATION reactos/system32 FOR all)
+
+file(GLOB kush_fluent_icon_deps "${CMAKE_CURRENT_SOURCE_DIR}/resources/fluent/*.ico")
+add_rc_deps(sysdm.rc ${kush_fluent_icon_deps})

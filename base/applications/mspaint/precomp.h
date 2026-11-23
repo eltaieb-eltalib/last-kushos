@@ -96,6 +96,7 @@ inline void Swap(T& a, T& b)
 
 /* LOCAL INCLUDES ***************************************************/
 
+#include "kush_ui.h"
 #include "resource.h"
 #include "drawing.h"
 #include "dib.h"

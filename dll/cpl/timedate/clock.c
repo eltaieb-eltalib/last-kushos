@@ -55,6 +55,7 @@ DrawClock(HDC hdc, PCLOCKDATA pClockData)
      POINT pt[3];
      HBRUSH hBrushOld;
      HPEN hPenOld = NULL;
+     COLORREF oldPenColor = GetDCPenColor(hdc);
 
      /* Grey brush to fill the dots */
      hBrushOld = SelectObject(hdc, pClockData->hGreyBrush);
@@ -83,7 +84,8 @@ DrawClock(HDC hdc, PCLOCKDATA pClockData)
           else
           {
               pt[2].x = pt[2].y = 16;
-              SelectObject(hdc, GetStockObject(BLACK_PEN));
+              SelectObject(hdc, GetStockObject(KushDateTimeModern() ? DC_PEN : BLACK_PEN));
+              if (KushDateTimeModern()) SetDCPenColor(hdc, RGB(77, 92, 104));
           }
 
           pt[0].x -= pt[2].x / 2;
@@ -97,6 +99,7 @@ DrawClock(HDC hdc, PCLOCKDATA pClockData)
 
      SelectObject(hdc, hBrushOld);
      SelectObject(hdc, hPenOld);
+     SetDCPenColor(hdc, oldPenColor);
      return Radius;
 }
 
@@ -111,10 +114,17 @@ DrawHands(HDC hdc, SYSTEMTIME * pst, BOOL fChange, INT Radius)
      {{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, (INT) Radius*0.89}} };
      INT i, iAngle[3];
      POINT ptTemp[3][5];
+     COLORREF oldPenColor = GetDCPenColor(hdc);
+     COLORREF oldBrushColor = GetDCBrushColor(hdc);
 
      /* Black pen for outline, white brush for fill */
-     SelectObject(hdc, GetStockObject(BLACK_PEN));
-     SelectObject(hdc, GetStockObject(WHITE_BRUSH));
+     SelectObject(hdc, GetStockObject(KushDateTimeModern() ? DC_PEN : BLACK_PEN));
+     SelectObject(hdc, GetStockObject(KushDateTimeModern() ? DC_BRUSH : WHITE_BRUSH));
+     if (KushDateTimeModern())
+     {
+         SetDCPenColor(hdc, RGB(13, 115, 119));
+         SetDCBrushColor(hdc, RGB(13, 115, 119));
+     }
 
      iAngle[0] = (pst->wHour * 30) % 360 + pst->wMinute / 2;
      iAngle[1] = pst->wMinute * 6;
@@ -128,6 +138,8 @@ DrawHands(HDC hdc, SYSTEMTIME * pst, BOOL fChange, INT Radius)
 
           Polygon(hdc, ptTemp[i], 5);
      }
+     SetDCPenColor(hdc, oldPenColor);
+     SetDCBrushColor(hdc, oldBrushColor);
 }
 
 
@@ -149,8 +161,8 @@ ClockWndProc(HWND hwnd,
             pClockData = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(CLOCKDATA));
             SetWindowLongPtrW(hwnd, GWLP_USERDATA, (LONG_PTR)pClockData);
 
-            pClockData->hGreyPen = CreatePen(PS_SOLID, 1, RGB(128, 128, 128));
-            pClockData->hGreyBrush = CreateSolidBrush(RGB(128, 128, 128));
+            pClockData->hGreyPen = CreatePen(PS_SOLID, 1, KushDateTimeModern() ? RGB(184, 197, 205) : RGB(128, 128, 128));
+            pClockData->hGreyBrush = CreateSolidBrush(KushDateTimeModern() ? RGB(184, 197, 205) : RGB(128, 128, 128));
 
             GetLocalTime(&pClockData->stCurrent);
             pClockData->stPrevious = pClockData->stCurrent;

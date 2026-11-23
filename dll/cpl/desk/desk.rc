@@ -1,3 +1,4 @@
+/* KUSH_CPL_FLUENT: generated mapping, original IDs preserved. */
 #include <windef.h>
 #include <winuser.h>
 #include <commctrl.h>
@@ -11,9 +12,10 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 #define REACTOS_STR_INTERNAL_NAME     "desk"
 #define REACTOS_STR_ORIGINAL_FILENAME "desk.cpl"
 #include <reactos/version.rc>
-
 IDC_DESK_ICON ICON "resources/applet.ico"
+(IDC_DESK_ICON + 40000) ICON "resources/fluent/desktop.ico"
 IDC_DESK_ICON2 ICON "resources/applet.ico"
+(IDC_DESK_ICON2 + 40000) ICON "resources/fluent/desktop.ico"
 
 IDC_MONITOR BITMAP "resources/monitor.bmp"
 

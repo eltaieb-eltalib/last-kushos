@@ -7,6 +7,7 @@
 
 #include "precomp.h"
 #include <shellfolderutils.h>
+#include <kushicons.h>
 
 #define MAX_PROPERTY_SHEET_PAGE (10)
 
@@ -602,7 +603,7 @@ ShowNetConnectionProperties(
         pinfo.dwFlags = PSH_NOCONTEXTHELP | PSH_PROPTITLE | PSH_NOAPPLYNOW |
                         PSH_USEICONID | PSH_USECALLBACK;
         pinfo.hInstance = netshell_hInstance;
-        pinfo.pszIcon = MAKEINTRESOURCEW(IDI_SHELL_NETWORK_FOLDER);
+        pinfo.pszIcon = MAKEINTRESOURCEW(KushOwnIconId(IDI_SHELL_NETWORK_FOLDER));
         pinfo.phpage = hppages;
         pinfo.hwndParent = hwnd;
         pinfo.pfnCallback = PropSheetProc;

@@ -22,3 +22,6 @@ set_module_type(mmsys cpl UNICODE)
 add_importlibs(mmsys user32 comctl32 devmgr gdi32 winmm advapi32 shell32 setupapi shlwapi comdlg32 msvcrt kernel32 ntdll)
 add_pch(mmsys mmsys.h SOURCE)
 add_cd_file(TARGET mmsys DESTINATION reactos/system32 FOR all)
+
+file(GLOB kush_fluent_icon_deps "${CMAKE_CURRENT_SOURCE_DIR}/resources/fluent/*.ico")
+add_rc_deps(mmsys.rc ${kush_fluent_icon_deps})

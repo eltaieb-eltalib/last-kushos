@@ -16,6 +16,7 @@ public:
     BEGIN_MSG_MAP(CMainWindow)
         MESSAGE_HANDLER(WM_DROPFILES, OnDropFiles)
         MESSAGE_HANDLER(WM_CREATE, OnCreate)
+        MESSAGE_HANDLER(WM_ERASEBKGND, OnEraseBkgnd)
         MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
         MESSAGE_HANDLER(WM_CLOSE, OnClose)
         MESSAGE_HANDLER(WM_INITMENUPOPUP, OnInitMenuPopup)
@@ -42,6 +43,11 @@ private:
     HMENU m_hMenu;
 
     LRESULT OnDropFiles(UINT nMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
+    LRESULT OnEraseBkgnd(UINT, WPARAM wParam, LPARAM, BOOL& bHandled)
+    {
+        return KushPaintErase(m_hWnd, (HDC)wParam, bHandled);
+    }
+
     LRESULT OnCreate(UINT nMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
     LRESULT OnDestroy(UINT nMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
     LRESULT OnClose(UINT nMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);

@@ -45,3 +45,5 @@ typedef struct _WINED3D_SETTINGS{
 } WINED3D_SETTINGS, *PWINED3D_SETTINGS;
 
 #endif /* _WINED3DCFG_PCH_ */
+
+#include <kushicons.h>

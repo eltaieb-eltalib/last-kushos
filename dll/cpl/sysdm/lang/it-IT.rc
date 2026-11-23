@@ -29,15 +29,15 @@ CAPTION "Hardware"
 FONT 8, "MS Shell Dlg"
 BEGIN
     GROUPBOX "Gestione dispositivi", IDC_STATIC, 6, 7, 244, 61
-    ICON IDI_DEVMGR, IDC_STATIC, 12, 18, 23, 21, SS_ICON
+    ICON IDI_DEVMGR, IDC_KUSH_STATIC_DEVMGR, 12, 18, 23, 21, SS_ICON
     LTEXT "Gestione dispositivi elenca tutti i dispositivi installati nel computer. Usate la gestione dispositivi per modificare le impostazioni di un dispositivo.", IDC_STATIC, 42, 18, 204, 24
     PUSHBUTTON "&Gestione dispositivi...", IDC_HARDWARE_DEVICE_MANAGER, 154, 48, 90, 14
     GROUPBOX "Procedura Guidata Hardware", IDC_STATIC, 6, 79, 244, 61
-    ICON IDI_ADDHW, IDC_STATIC, 12, 90, 23, 21, SS_ICON
+    ICON IDI_ADDHW, IDC_KUSH_STATIC_ADDHW, 12, 90, 23, 21, SS_ICON
     LTEXT "Procedura Guidata Hardware aiuta ad installare, disinstallare, ripristinare, scollegare, estrarre e configurare l'hardware.", IDC_STATIC, 42, 90, 204, 24
     PUSHBUTTON "&Hardware Wizard...", IDC_HARDWARE_WIZARD, 154, 120, 90, 14
     GROUPBOX "Profili Hardware", IDC_STATIC, 6, 149, 244, 61
-    ICON IDI_HARDPROF, IDC_STATIC, 12, 160, 23, 21, SS_ICON
+    ICON IDI_HARDPROF, IDC_KUSH_STATIC_HARDPROF, 12, 160, 23, 21, SS_ICON
     LTEXT "Profili Hardware mette a disposizione un modo per definire e memorizzare diverse configurazioni hardware.", IDC_STATIC, 42, 160, 204, 24
     PUSHBUTTON "&Profili Hardware...", IDC_HARDWARE_PROFILE, 154, 190, 90, 14
 END
@@ -78,7 +78,7 @@ STYLE DS_SHELLFONT | DS_MODALFRAME | DS_CONTEXTHELP | WS_POPUP | WS_VISIBLE | WS
 CAPTION "Profili Hardware"
 FONT 8, "MS Shell Dlg"
 BEGIN
-    ICON IDI_HARDPROF, IDC_STATIC, 8, 11, 18, 20, SS_ICON
+    ICON IDI_HARDPROF, IDC_KUSH_STATIC_HARDPROF, 8, 11, 18, 20, SS_ICON
     LTEXT "Profili Hardware mette a disposizione un modo per definire e memorizzare diverse configurazioni hardware. All'avvio del computer è possibile scegliere quale usare.", IDC_STATIC, 46, 11, 188, 25
     LTEXT "Profili Hardware disponibili:", IDC_STATIC, 8, 41, 120, 8
     LISTBOX IDC_HRDPROFLSTBOX, 8, 52, 215, 54, LBS_NOTIFY
@@ -105,7 +105,7 @@ STYLE DS_SHELLFONT | DS_MODALFRAME | DS_CONTEXTHELP | WS_POPUP | WS_VISIBLE | WS
 CAPTION "General"
 FONT 8, "MS Shell Dlg"
 BEGIN
-    ICON IDI_HARDPROF, IDC_STATIC, 10, 10, 18, 20, SS_ICON
+    ICON IDI_HARDPROF, IDC_KUSH_STATIC_HARDPROF, 10, 10, 18, 20, SS_ICON
     LTEXT "", IDC_HWPPROP_PROFILE, 48, 16, 150, 8
     LTEXT "Dock ID:", IDC_STATIC, 10, 42, 43, 8
     LTEXT "", IDC_HWPPROP_DOCKID, 64, 42, 135, 8
@@ -151,7 +151,7 @@ STYLE DS_SHELLFONT | DS_MODALFRAME | DS_CONTEXTHELP | WS_POPUP | WS_VISIBLE | WS
 CAPTION "Profili Utente"
 FONT 8, "MS Shell Dlg"
 BEGIN
-    ICON IDI_USERPROF, IDC_STATIC, 6, 11, 16, 16, SS_ICON
+    ICON IDI_USERPROF, IDC_KUSH_STATIC_USERPROF, 6, 11, 16, 16, SS_ICON
     LTEXT "I profili utente contengono impostazioni per il desktop e altre informazioni relative al login. Su ogni computer che usate si può trovare un profilo diverso, oppure potete selezionare un profilo roaming che sia lo stesso su tutti i computer che usate.", IDC_STATIC, 40, 11, 204, 35
     LTEXT "Profili memorizzati su questo computer:", IDC_STATIC, 16, 51, 204, 9
     CONTROL "", IDC_USERPROFILE_LIST, "SysListView32", LVS_REPORT | LVS_SINGLESEL |

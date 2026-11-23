@@ -57,3 +57,5 @@ BOOL
 UserProperties(HWND hwndDlg);
 
 #endif /* _USRMGR_H */
+
+#include <kushicons.h>

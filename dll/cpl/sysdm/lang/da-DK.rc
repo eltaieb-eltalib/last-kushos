@@ -29,15 +29,15 @@ CAPTION "Hardware"
 FONT 8, "MS Shell Dlg"
 BEGIN
     GROUPBOX "Enhedshåntering", IDC_STATIC, 6, 7, 244, 61
-    ICON IDI_DEVMGR, IDC_STATIC, 12, 18, 23, 21, SS_ICON
+    ICON IDI_DEVMGR, IDC_KUSH_STATIC_DEVMGR, 12, 18, 23, 21, SS_ICON
     LTEXT "Enhedshåntering viser alle dine hardware enheder installeret på din computer. Brug Enhedshåntering til at skifte indstillinger for alle Hardware Enheder.", IDC_STATIC, 42, 18, 204, 24
     PUSHBUTTON "&Enhedshåntering...", IDC_HARDWARE_DEVICE_MANAGER, 154, 48, 90, 15
     GROUPBOX "Hardware Guide", IDC_STATIC, 6, 79, 244, 61
-    ICON IDI_ADDHW, IDC_STATIC, 12, 90, 23, 21, SS_ICON
+    ICON IDI_ADDHW, IDC_KUSH_STATIC_ADDHW, 12, 90, 23, 21, SS_ICON
     LTEXT "Hardware Guiden hjælper dig med at Installer, Afinstaller, Reparerer, Afmontere, Fjerne, og konfigurer din hardware.", IDC_STATIC, 42, 90, 204, 24
     PUSHBUTTON "&Hardware Guide...", IDC_HARDWARE_WIZARD, 154, 120, 90, 15
     GROUPBOX "Hardware Profiler", IDC_STATIC, 6, 149, 244, 61
-    ICON IDI_HARDPROF, IDC_STATIC, 12, 160, 23, 21, SS_ICON
+    ICON IDI_HARDPROF, IDC_KUSH_STATIC_HARDPROF, 12, 160, 23, 21, SS_ICON
     LTEXT "Hardware Profiler Giver dig en mulighed for at sætte og gemme forskellinge hardware indstillinger.", IDC_STATIC, 42, 160, 204, 24
     PUSHBUTTON "Hard&ware Profiler...", IDC_HARDWARE_PROFILE, 154, 190, 90, 15
 END
@@ -78,7 +78,7 @@ STYLE DS_SHELLFONT | DS_MODALFRAME | DS_CONTEXTHELP | WS_POPUP | WS_VISIBLE | WS
 CAPTION "Hardware Profiler"
 FONT 8, "MS Shell Dlg"
 BEGIN
-    ICON IDI_HARDPROF, IDC_STATIC, 8, 11, 18, 20, SS_ICON
+    ICON IDI_HARDPROF, IDC_KUSH_STATIC_HARDPROF, 8, 11, 18, 20, SS_ICON
     LTEXT "You can set up hardware profiles for different hardware configurations. At startup, you can choose the profile you want to use.", IDC_STATIC, 46, 11, 188, 25
     LTEXT "Available hardware profiles:", IDC_STATIC, 8, 41, 120, 8
     LISTBOX IDC_HRDPROFLSTBOX, 8, 52, 215, 54, LBS_NOTIFY
@@ -105,7 +105,7 @@ STYLE DS_SHELLFONT | DS_MODALFRAME | DS_CONTEXTHELP | WS_POPUP | WS_VISIBLE | WS
 CAPTION "General"
 FONT 8, "MS Shell Dlg"
 BEGIN
-    ICON IDI_HARDPROF, IDC_STATIC, 10, 10, 18, 20, SS_ICON
+    ICON IDI_HARDPROF, IDC_KUSH_STATIC_HARDPROF, 10, 10, 18, 20, SS_ICON
     LTEXT "", IDC_HWPPROP_PROFILE, 48, 16, 150, 8
     LTEXT "Dock ID:", IDC_STATIC, 10, 42, 43, 8
     LTEXT "", IDC_HWPPROP_DOCKID, 64, 42, 135, 8
@@ -151,7 +151,7 @@ STYLE DS_SHELLFONT | DS_MODALFRAME | DS_CONTEXTHELP | WS_POPUP | WS_VISIBLE | WS
 CAPTION "Bruger Profiler"
 FONT 8, "MS Shell Dlg"
 BEGIN
-    ICON IDI_USERPROF, IDC_STATIC, 6, 11, 16, 16, SS_ICON
+    ICON IDI_USERPROF, IDC_KUSH_STATIC_USERPROF, 6, 11, 16, 16, SS_ICON
     LTEXT "Bruger Profiler indeholde skrivebords indstillinger og andre informationer relateret til dit login. En Anden bruger profil bliver oprette på alle computere du logger på, eller du kan vælge en Roaming profil some er den samme på alle computer du logger på.", IDC_STATIC, 40, 11, 211, 35
     LTEXT "Bruger Profiler gemt på denne computer:", IDC_STATIC, 16, 51, 204, 9
     CONTROL "", IDC_USERPROFILE_LIST, "SysListView32", LVS_REPORT | LVS_SINGLESEL |

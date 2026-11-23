@@ -47,3 +47,5 @@ INT_PTR CALLBACK HibernateDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM
 INT_PTR CALLBACK PowerMeterDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 #endif /* _POWERCFG_H */
+
+#include <kushicons.h>

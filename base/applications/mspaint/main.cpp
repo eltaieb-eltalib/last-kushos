@@ -21,6 +21,62 @@ BOOL g_isAFile = FALSE;
 BOOL g_imageSaved = FALSE;
 BOOL g_showGrid = FALSE;
 HWND g_hStatusBar = NULL;
+BOOL g_KushPaint = FALSE;
+SIZE g_KushPaintMinimum = {330, 360};
+
+static BOOL KushPaintPrepare(HWND window)
+{
+    if (GetWindowLongPtrW(window, GWL_EXSTYLE) & WS_EX_LAYOUTRTL) return FALSE;
+    HIGHCONTRASTW contrast = {sizeof(contrast)};
+    if (!SystemParametersInfoW(SPI_GETHIGHCONTRAST, sizeof(contrast), &contrast, 0) ||
+        (contrast.dwFlags & HCF_HIGHCONTRASTON)) return FALSE;
+    HDC dc = GetDC(window);
+    if (!dc) return FALSE;
+    BOOL normalDpi = GetDeviceCaps(dc, LOGPIXELSX) == 96 && GetDeviceCaps(dc, LOGPIXELSY) == 96;
+    ReleaseDC(window, dc);
+    if (!normalDpi) return FALSE;
+    CRegKey key;
+    if (key.Open(HKEY_CURRENT_USER, L"Software\\Kush\\Shell", KEY_QUERY_VALUE) == ERROR_SUCCESS)
+    {
+        DWORD value = 0;
+        if (key.QueryDWORDValue(L"ClassicPaint", value) == ERROR_SUCCESS && value) return FALSE;
+        value = 0;
+        if (key.QueryDWORDValue(L"ClassicWindows", value) == ERROR_SUCCESS && value) return FALSE;
+    }
+    MONITORINFO monitor = {sizeof(monitor)};
+    if (!GetMonitorInfoW(MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST), &monitor)) return FALSE;
+    // The tool settings retain their original140px height. Reserve room below all8rows.
+    RECT minimum = {0, 0, 620, 423 + max(40, GetSystemMetrics(SM_CYMENU) + 12)};
+    if (!AdjustWindowRectEx(&minimum, GetWindowLongPtrW(window, GWL_STYLE), TRUE,
+                           GetWindowLongPtrW(window, GWL_EXSTYLE))) return FALSE;
+    SIZE size = {max(640L, minimum.right - minimum.left), max(528L, minimum.bottom - minimum.top)};
+    RECT work = monitor.rcWork, frame;
+    if (size.cx > work.right - work.left || size.cy > work.bottom - work.top ||
+        !GetWindowRect(window, &frame)) return FALSE;
+    LONG width = min(work.right - work.left, max(size.cx, frame.right - frame.left));
+    LONG height = min(work.bottom - work.top, max(size.cy, frame.bottom - frame.top));
+    LONG x = max(work.left, min(frame.left, work.right - width));
+    LONG y = max(work.top, min(frame.top, work.bottom - height));
+    if (!SetWindowPos(window, NULL, x, y, width, height, SWP_NOACTIVATE | SWP_NOZORDER)) return FALSE;
+    g_KushPaintMinimum = size;
+    return TRUE;
+}
+
+static VOID KushPaintClampShownWindow(HWND window)
+{
+    if (!g_KushPaint || IsIconic(window) || IsZoomed(window)) return;
+    MONITORINFO monitor = {sizeof(monitor)};
+    RECT frame;
+    if (!GetMonitorInfoW(MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST), &monitor) ||
+        !GetWindowRect(window, &frame)) return;
+    RECT work = monitor.rcWork;
+    LONG width = min(frame.right - frame.left, work.right - work.left);
+    LONG height = min(frame.bottom - frame.top, work.bottom - work.top);
+    LONG gap = min(8L, max(0L, work.bottom - work.top - height));
+    LONG x = max(work.left, min(frame.left, work.right - width));
+    LONG y = max(work.top, min(frame.top, work.bottom - height - gap));
+    SetWindowPos(window, NULL, x, y, width, height, SWP_NOACTIVATE | SWP_NOZORDER);
+}
 
 CMainWindow mainWindow;
 
@@ -546,6 +602,7 @@ LRESULT CMainWindow::OnCreate(UINT nMsg, WPARAM wParam, LPARAM lParam, BOOL& bHa
     // Loading and setting the window menu from resource
     m_hMenu = ::LoadMenuW(g_hinstExe, MAKEINTRESOURCEW(ID_MENU));
     SetMenu(m_hMenu);
+    g_KushPaint = KushPaintPrepare(m_hWnd);
 
     // Create the status bar
     DWORD style = SBARS_SIZEGRIP | WS_CHILD | (registrySettings.ShowStatusBar ? WS_VISIBLE : 0);
@@ -781,7 +838,20 @@ LRESULT CMainWindow::OnSize(UINT nMsg, WPARAM wParam, LPARAM lParam, BOOL& bHand
 LRESULT CMainWindow::OnGetMinMaxInfo(UINT nMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
     MINMAXINFO *mm = (MINMAXINFO*)lParam;
-    mm->ptMinTrackSize = { 330, 360 };
+    if (g_KushPaint)
+    {
+        mm->ptMinTrackSize = { g_KushPaintMinimum.cx, g_KushPaintMinimum.cy };
+        MONITORINFO monitor = {sizeof(monitor)};
+        if (GetMonitorInfoW(MonitorFromWindow(m_hWnd, MONITOR_DEFAULTTONEAREST), &monitor))
+        {
+            mm->ptMaxPosition.x = monitor.rcWork.left - monitor.rcMonitor.left;
+            mm->ptMaxPosition.y = monitor.rcWork.top - monitor.rcMonitor.top;
+            mm->ptMaxSize.x = monitor.rcWork.right - monitor.rcWork.left;
+            mm->ptMaxSize.y = monitor.rcWork.bottom - monitor.rcWork.top;
+        }
+    }
+    else
+        mm->ptMinTrackSize = { 330, 360 };
     return 0;
 }
 
@@ -1370,6 +1440,7 @@ wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, INT nCm
 
     // Make the window visible on the screen
     mainWindow.ShowWindow(registrySettings.WindowPlacement.showCmd);
+    KushPaintClampShownWindow(mainWindow);
 
     // Load the access keys
     HACCEL hAccel = ::LoadAcceleratorsW(hInstance, MAKEINTRESOURCEW(800));

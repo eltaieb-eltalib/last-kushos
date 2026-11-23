@@ -55,6 +55,9 @@ typedef struct
 {
     LPOPENFILENAMEW ofnInfos;
     BOOL unicode;
+    BOOL kush_style; /* Cached presentation only; custom templates stay native. */
+    BOOL kush_icons;
+    HIMAGELIST kush_toolbar_images;
     LPWSTR initdir;
     LPWSTR filename;
     LPCWSTR title;
@@ -166,3 +169,5 @@ extern int     FILEDLG95_LOOKIN_SelectItem(HWND hwnd,LPITEMIDLIST pidl);
 extern LRESULT SendCustomDlgNotificationMessage(HWND hwndParentDlg, UINT uCode);
 
 #endif /*SHBROWSER_H*/
+
+#define IDB_KUSH_FILE_TOOLBAR 61001

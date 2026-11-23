@@ -26,3 +26,5 @@
 #include "inetcpl.h"
 
 #endif /* !_INETCPL_PRECOMP_H_ */
+
+#include <kushicons.h>

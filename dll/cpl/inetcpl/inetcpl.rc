@@ -1,3 +1,4 @@
+/* KUSH_CPL_FLUENT: generated mapping, original IDs preserved. */
 /*
  * Internet control panel applet
  *
@@ -116,9 +117,16 @@
 
 /* @makedep: inetcpl.ico */
 ICO_MAIN ICON "resources/inetcpl.ico"
+(ICO_MAIN + 40000) ICON "resources/fluent/globe.ico"
 ICO_INTERNET ICON "resources/inetcpl.ico"
+(ICO_INTERNET + 40000) ICON "resources/fluent/globe.ico"
 ICO_CERTIFICATES ICON "resources/certificates.ico"
+(ICO_CERTIFICATES + 40000) ICON "resources/fluent/certificate.ico"
 ICO_RESTRICTED ICON "resources/restricted.ico"
+(ICO_RESTRICTED + 40000) ICON "resources/fluent/prohibited.ico"
 ICO_HISTORY ICON "resources/history.ico"
+(ICO_HISTORY + 40000) ICON "resources/fluent/history.ico"
 ICO_TRUSTED ICON "resources/trusted.ico"
+(ICO_TRUSTED + 40000) ICON "resources/fluent/shield_checkmark.ico"
 ICO_HOME ICON "resources/home.ico"
+(ICO_HOME + 40000) ICON "resources/fluent/home.ico"

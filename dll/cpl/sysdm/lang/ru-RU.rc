@@ -29,15 +29,15 @@ CAPTION "Оборудование"
 FONT 8, "MS Shell Dlg"
 BEGIN
     GROUPBOX "Диспетчер устройств", IDC_STATIC, 6, 7, 244, 61
-    ICON IDI_DEVMGR, IDC_STATIC, 12, 18, 23, 21, SS_ICON
+    ICON IDI_DEVMGR, IDC_KUSH_STATIC_DEVMGR, 12, 18, 23, 21, SS_ICON
     LTEXT "Диспетчер устройств приводит список всего установленного оборудования на данном компьютере и позволяет изменить свойства любого устройства.", IDC_STATIC, 42, 18, 204, 24
     PUSHBUTTON "&Диспетчер устройств...", IDC_HARDWARE_DEVICE_MANAGER, 144, 48, 100, 14
     GROUPBOX "Мастер оборудования", IDC_STATIC, 6, 79, 244, 61
-    ICON IDI_ADDHW, IDC_STATIC, 12, 90, 23, 21, SS_ICON
+    ICON IDI_ADDHW, IDC_KUSH_STATIC_ADDHW, 12, 90, 23, 21, SS_ICON
     LTEXT "Мастер оборудования помогает установить, востановить, отключить или извлечь любое устройство, а также настроить его.", IDC_STATIC, 42, 90, 204, 24
     PUSHBUTTON "&Мастер оборудования...", IDC_HARDWARE_WIZARD, 144, 120, 100, 14
     GROUPBOX "Профили оборудования", IDC_STATIC, 6, 149, 244, 61
-    ICON IDI_HARDPROF, IDC_STATIC, 12, 160, 23, 21, SS_ICON
+    ICON IDI_HARDPROF, IDC_KUSH_STATIC_HARDPROF, 12, 160, 23, 21, SS_ICON
     LTEXT "Профили оборудования помогают устанавливать и хранить различные конфигурации оборудования.", IDC_STATIC, 42, 160, 204, 24
     PUSHBUTTON "&Профили оборудования...", IDC_HARDWARE_PROFILE, 144, 190, 100, 14
 END
@@ -78,7 +78,7 @@ STYLE DS_SHELLFONT | DS_MODALFRAME | DS_CONTEXTHELP | WS_POPUP | WS_VISIBLE | WS
 CAPTION "Профили оборудования"
 FONT 8, "MS Shell Dlg"
 BEGIN
-    ICON IDI_HARDPROF, IDC_STATIC, 8, 11, 18, 20, SS_ICON
+    ICON IDI_HARDPROF, IDC_KUSH_STATIC_HARDPROF, 8, 11, 18, 20, SS_ICON
     LTEXT "Можно создать несколько профилей для различных конфигураций оборудования и выбрать нужный при загрузке системы.", IDC_STATIC, 46, 11, 188, 25
     LTEXT "Доступные профили оборудования:", IDC_STATIC, 8, 41, 120, 8
     LISTBOX IDC_HRDPROFLSTBOX, 8, 52, 215, 54, LBS_NOTIFY
@@ -105,7 +105,7 @@ STYLE DS_SHELLFONT | DS_MODALFRAME | DS_CONTEXTHELP | WS_POPUP | WS_VISIBLE | WS
 CAPTION "Общие"
 FONT 8, "MS Shell Dlg"
 BEGIN
-    ICON IDI_HARDPROF, IDC_STATIC, 10, 10, 18, 20, SS_ICON
+    ICON IDI_HARDPROF, IDC_KUSH_STATIC_HARDPROF, 10, 10, 18, 20, SS_ICON
     LTEXT "", IDC_HWPPROP_PROFILE, 48, 16, 150, 8
     LTEXT "Стыковочный узел:", IDC_STATIC, 10, 42, 100, 8
     LTEXT "", IDC_HWPPROP_DOCKID, 104, 42, 95, 8
@@ -151,7 +151,7 @@ STYLE DS_SHELLFONT | DS_MODALFRAME | DS_CONTEXTHELP | WS_POPUP | WS_VISIBLE | WS
 CAPTION "Профили пользователей"
 FONT 8, "MS Shell Dlg"
 BEGIN
-    ICON IDI_USERPROF, IDC_STATIC, 6, 11, 16, 16, SS_ICON
+    ICON IDI_USERPROF, IDC_KUSH_STATIC_USERPROF, 6, 11, 16, 16, SS_ICON
     LTEXT "Профиль пользователя содержит настройки рабочего стола и другие сведения, используемые при входе в систему. Можно создать различные профили на разных компьютерах для одного пользователя или использовать один общий профиль.", IDC_STATIC, 40, 6, 204, 44
     LTEXT "Профили, хранящиеся на этом компьютере:", IDC_STATIC, 16, 51, 204, 9
     CONTROL "", IDC_USERPROFILE_LIST, "SysListView32", LVS_REPORT | LVS_SINGLESEL |

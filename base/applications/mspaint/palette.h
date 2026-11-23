@@ -7,7 +7,7 @@
 
 #pragma once
 
-#define CXY_COLORBOX   16 /* width / height of a normal color box */
+#define CXY_COLORBOX   (g_KushPaint ? 18 : 16) /* presentation metrics */
 #define CXY_BIGBOX     (CXY_COLORBOX * 2) /* width / height of the big box */
 #define CY_PALETTE     (8 + CXY_BIGBOX + 8)
 

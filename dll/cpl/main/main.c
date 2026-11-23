@@ -102,7 +102,7 @@ CPlApplet(HWND hwndCpl,
             {
                 CPLINFO *CPlInfo = (CPLINFO*)lParam2;
                 CPlInfo->lData = lParam1;
-                CPlInfo->idIcon = Applets[i].idIcon;
+                CPlInfo->idIcon = KushOwnIconId(Applets[i].idIcon);
                 CPlInfo->idName = Applets[i].idName;
                 CPlInfo->idInfo = Applets[i].idDescription;
             }

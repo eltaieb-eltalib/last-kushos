@@ -1,0 +1,233 @@
+[
+  {
+    "module": "shell32",
+    "resource": "IDI_SHELL_CDROM",
+    "original": "res/icons/kush/sh-disc.ico",
+    "fluent": "cd",
+    "svg": [
+      "cd_16_filled.svg"
+    ],
+    "fluent_offset": 40000
+  },
+  {
+    "module": "shell32",
+    "resource": "IDI_SHELL_PRINTER2",
+    "original": "res/icons/138.ico",
+    "fluent": "print",
+    "svg": [
+      "print_48_filled.svg"
+    ],
+    "fluent_offset": 40000
+  },
+  {
+    "module": "shell32",
+    "resource": "IDI_SHELL_5_12_FLOPPY",
+    "original": "res/icons/6.ico",
+    "fluent": "save",
+    "svg": [
+      "save_32_filled.svg"
+    ],
+    "fluent_offset": 40000
+  },
+  {
+    "module": "shell32",
+    "resource": "IDI_SHELL_3_14_FLOPPY",
+    "original": "res/icons/7.ico",
+    "fluent": "save",
+    "svg": [
+      "save_32_filled.svg"
+    ],
+    "fluent_offset": 40000
+  },
+  {
+    "module": "shell32",
+    "resource": "IDI_SHELL_RAMDISK",
+    "original": "res/icons/13.ico",
+    "fluent": "ram",
+    "svg": [
+      "ram_20_filled.svg"
+    ],
+    "fluent_offset": 40000
+  },
+  {
+    "module": "shell32",
+    "resource": "IDI_SHELL_PRINTER",
+    "original": "res/icons/17.ico",
+    "fluent": "print",
+    "svg": [
+      "print_48_filled.svg"
+    ],
+    "fluent_offset": 40000
+  },
+  {
+    "module": "shell32",
+    "resource": "IDI_SHELL_PRINTERS_FOLDER",
+    "original": "res/icons/38.ico",
+    "fluent": "print",
+    "svg": [
+      "print_48_filled.svg"
+    ],
+    "fluent_offset": 40000
+  },
+  {
+    "module": "shell32",
+    "resource": "IDI_SHELL_FONTS_FOLDER",
+    "original": "res/icons/39.ico",
+    "fluent": "text_font",
+    "svg": [
+      "text_font_24_filled.svg"
+    ],
+    "fluent_offset": 40000
+  },
+  {
+    "module": "shell32",
+    "resource": "IDI_SHELL_CONTROL_PANEL2",
+    "original": "res/icons/36.ico",
+    "fluent": "settings",
+    "svg": [
+      "settings_48_color.svg"
+    ],
+    "fluent_offset": 40000
+  },
+  {
+    "module": "shell32",
+    "resource": "IDI_SHELL_CONTROL_PANEL3",
+    "original": "res/icons/137.ico",
+    "fluent": "settings",
+    "svg": [
+      "settings_48_color.svg"
+    ],
+    "fluent_offset": 40000
+  },
+  {
+    "module": "shell32",
+    "resource": "IDI_SHELL_TSKBAR_STARTMENU",
+    "original": "res/icons/40.ico",
+    "fluent": "window_apps",
+    "svg": [
+      "window_apps_48_filled.svg"
+    ],
+    "fluent_offset": 40000
+  },
+  {
+    "module": "shell32",
+    "resource": "IDI_SHELL_NETWORK_CONNECTIONS",
+    "original": "res/icons/175.ico",
+    "fluent": "plug_connected",
+    "svg": [
+      "plug_connected_48_filled.svg"
+    ],
+    "fluent_offset": 40000
+  },
+  {
+    "module": "shell32",
+    "resource": "IDI_SHELL_NETWORK_CONNECTIONS2",
+    "original": "res/icons/257.ico",
+    "fluent": "plug_connected",
+    "svg": [
+      "plug_connected_48_filled.svg"
+    ],
+    "fluent_offset": 40000
+  },
+  {
+    "module": "shell32",
+    "resource": "IDI_SHELL_FOLDER_OPTIONS",
+    "original": "res/icons/210.ico",
+    "fluent": "folder_settings",
+    "svg": [
+      "folder_48_filled.svg",
+      "settings_48_color.svg"
+    ],
+    "fluent_offset": 40000
+  },
+  {
+    "module": "ntobjshex",
+    "resource": "IDI_NTOBJECTFOLDER",
+    "original": "resources/1.ico",
+    "fluent": "cube_tree",
+    "svg": [
+      "cube_tree_24_filled.svg"
+    ],
+    "fluent_offset": 40000
+  },
+  {
+    "module": "ntobjshex",
+    "resource": "IDI_NTOBJECTDIR",
+    "original": "resources/2.ico",
+    "fluent": "folder",
+    "svg": [
+      "folder_48_filled.svg"
+    ],
+    "fluent_offset": 40000
+  },
+  {
+    "module": "ntobjshex",
+    "resource": "IDI_NTOBJECTDIROPEN",
+    "original": "resources/3.ico",
+    "fluent": "folder_open",
+    "svg": [
+      "folder_open_24_filled.svg"
+    ],
+    "fluent_offset": 40000
+  },
+  {
+    "module": "ntobjshex",
+    "resource": "IDI_NTOBJECTITEM",
+    "original": "resources/4.ico",
+    "fluent": "document",
+    "svg": [
+      "document_48_color.svg"
+    ],
+    "fluent_offset": 40000
+  },
+  {
+    "module": "ntobjshex",
+    "resource": "IDI_NTOBJECTDEVICE",
+    "original": "resources/5.ico",
+    "fluent": "desktop_tower",
+    "svg": [
+      "desktop_tower_24_filled.svg"
+    ],
+    "fluent_offset": 40000
+  },
+  {
+    "module": "ntobjshex",
+    "resource": "IDI_NTOBJECTPORT",
+    "original": "resources/6.ico",
+    "fluent": "plug_connected",
+    "svg": [
+      "plug_connected_48_filled.svg"
+    ],
+    "fluent_offset": 40000
+  },
+  {
+    "module": "ntobjshex",
+    "resource": "IDI_REGISTRYKEY",
+    "original": "resources/7.ico",
+    "fluent": "database",
+    "svg": [
+      "database_48_color.svg"
+    ],
+    "fluent_offset": 40000
+  },
+  {
+    "module": "ntobjshex",
+    "resource": "IDI_REGISTRYVALUE",
+    "original": "resources/8.ico",
+    "fluent": "document_text",
+    "svg": [
+      "document_text_48_color.svg"
+    ],
+    "fluent_offset": 40000
+  },
+  {
+    "module": "netshell",
+    "resource": "IDI_SHELL_NETWORK_FOLDER",
+    "original": "res/netshell.ico",
+    "fluent": "network_adapter",
+    "svg": [
+      "network_adapter_16_filled.svg"
+    ],
+    "fluent_offset": 40000
+  }
+]

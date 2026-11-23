@@ -37,6 +37,75 @@ RECT PrevWindowPos;
 
 static DWORD GetDeviceMode(HWND hwnd);
 
+/* Presentation only. Playback, device selection and command IDs stay native. */
+static BOOL bKushMediaPlayer = FALSE;
+static BOOL bKushViewTransition = FALSE;
+static DWORD dwNativeButtonSize;
+#define KUSH_MEDIA_WIDTH 560
+#define KUSH_MEDIA_MIN_WIDTH 480
+#define KUSH_MEDIA_HEIGHT 160
+
+static BOOL
+KushMediaPlayerEnabled(VOID)
+{
+    HKEY key;
+    DWORD value, size, type;
+    HIGHCONTRAST hc = {sizeof(hc)};
+    HDC dc;
+    INT dpi;
+    RECT work;
+    const WCHAR *names[] = {L"ClassicMediaPlayer", L"ClassicWindows"};
+    UINT i;
+    DWORD layout = 0;
+    LANGID language = GetUserDefaultUILanguage();
+
+    if (PRIMARYLANGID(language) == LANG_ARABIC ||
+        PRIMARYLANGID(language) == LANG_HEBREW ||
+        (GetProcessDefaultLayout(&layout) && (layout & LAYOUT_RTL))) return FALSE;
+
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Kush\\Shell", 0,
+                      KEY_QUERY_VALUE, &key) == ERROR_SUCCESS)
+    {
+        for (i = 0; i < ARRAYSIZE(names); ++i)
+        {
+            value = 0; size = sizeof(value); type = 0;
+            if (RegQueryValueExW(key, names[i], NULL, &type, (LPBYTE)&value,
+                                &size) == ERROR_SUCCESS && type == REG_DWORD && value)
+            {
+                RegCloseKey(key);
+                return FALSE;
+            }
+        }
+        RegCloseKey(key);
+    }
+    if (SystemParametersInfoW(SPI_GETHIGHCONTRAST, sizeof(hc), &hc, 0) &&
+        (hc.dwFlags & HCF_HIGHCONTRASTON)) return FALSE;
+    if (GetSystemMetrics(SM_MIDEASTENABLED)) return FALSE;
+    dc = GetDC(NULL);
+    if (!dc) return FALSE;
+    dpi = GetDeviceCaps(dc, LOGPIXELSY);
+    ReleaseDC(NULL, dc);
+    if (dpi != 96) return FALSE;
+    if (!SystemParametersInfoW(SPI_GETWORKAREA, 0, &work, 0) ||
+        work.right - work.left < KUSH_MEDIA_MIN_WIDTH ||
+        work.bottom - work.top < KUSH_MEDIA_HEIGHT + 40) return FALSE;
+    return TRUE;
+}
+
+static VOID
+KushMediaToolbarMetrics(BOOL modern)
+{
+    LONG_PTR style;
+    if (!hToolBar || !hTimeDisplay || !dwNativeButtonSize) return;
+    SendMessage(hToolBar, TB_SETBUTTONSIZE, 0,
+                modern ? MAKELPARAM(36, 36) : dwNativeButtonSize);
+    style = GetWindowLongPtr(hTimeDisplay, GWL_STYLE);
+    if (modern) style = (style & ~SS_SUNKEN) | SS_CENTERIMAGE;
+    else style = (style | SS_SUNKEN) & ~SS_CENTERIMAGE;
+    SetWindowLongPtr(hTimeDisplay, GWL_STYLE, style);
+}
+
+
 /* ToolBar Buttons */
 static const TBBUTTON Buttons[] =
 {   /* iBitmap,        idCommand,    fsState,         fsStyle,     bReserved[2], dwData, iString */
@@ -284,6 +353,22 @@ SetImageList(HWND hwnd)
                                               (LPARAM)hImageList));
 }
 
+static LRESULT CALLBACK
+KushMediaToolbarProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp,
+                     UINT_PTR id, DWORD_PTR data)
+{
+    UNREFERENCED_PARAMETER(data);
+    if (msg == WM_CTLCOLORSTATIC && bKushMediaPlayer &&
+        !bIsSingleWindow && !bKushViewTransition && (HWND)lp == hTimeDisplay)
+    {
+        SetTextColor((HDC)wp, RGB(13, 115, 119));
+        SetBkColor((HDC)wp, RGB(255, 255, 255));
+        return (LRESULT)GetStockObject(WHITE_BRUSH);
+    }
+    if (msg == WM_NCDESTROY) RemoveWindowSubclass(hwnd, KushMediaToolbarProc, id);
+    return DefSubclassProc(hwnd, msg, wp, lp);
+}
+
 static VOID
 ShowMCIError(HWND hwnd, MCIERROR mciError)
 {
@@ -365,10 +450,13 @@ InitControls(HWND hwnd)
 
     SetImageList(hwnd);
     SendMessage(hToolBar, TB_ADDBUTTONS, NumButtons, (LPARAM)Buttons);
+    dwNativeButtonSize = (DWORD)SendMessage(hToolBar, TB_GETBUTTONSIZE, 0, 0);
+    KushMediaToolbarMetrics(bKushMediaPlayer);
+    if (bKushMediaPlayer) SetWindowSubclass(hToolBar, KushMediaToolbarProc, 1, 0);
 }
 
 static VOID
-SwitchViewMode(HWND hwnd)
+SwitchViewModeNative(HWND hwnd)
 {
     MCIERROR mciError;
     MCI_DGV_RECT_PARMS mciVideoRect;
@@ -433,6 +521,25 @@ SwitchViewMode(HWND hwnd)
 
         MoveWindow(hwnd, PrevWindowPos.left, PrevWindowPos.top, PrevWindowPos.right - PrevWindowPos.left, PrevWindowPos.bottom - PrevWindowPos.top, TRUE);
     }
+}
+
+/* Keep the original compact layout while the video window is reparented. */
+static VOID
+SwitchViewMode(HWND hwnd)
+{
+    RECT rc;
+    if (!bKushMediaPlayer)
+    {
+        SwitchViewModeNative(hwnd);
+        return;
+    }
+    bKushViewTransition = TRUE;
+    KushMediaToolbarMetrics(FALSE);
+    SendMessage(hToolBar, TB_AUTOSIZE, 0, 0);
+    SwitchViewModeNative(hwnd);
+    bKushViewTransition = FALSE;
+    if (GetClientRect(hwnd, &rc))
+        SendMessage(hwnd, WM_SIZE, 0, MAKELPARAM(rc.right, rc.bottom));
 }
 
 static DWORD
@@ -1214,6 +1321,16 @@ MainWndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
             break;
         }
 
+        case WM_ERASEBKGND:
+            if (bKushMediaPlayer && !bIsSingleWindow && !bKushViewTransition)
+            {
+                RECT rc;
+                GetClientRect(hwnd, &rc);
+                FillRect((HDC)wParam, &rc, (HBRUSH)GetStockObject(WHITE_BRUSH));
+                return 1;
+            }
+            break;
+
         case WM_DROPFILES:
         {
             HDROP drophandle;
@@ -1242,6 +1359,29 @@ MainWndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
         case WM_NOTIFY:
         {
             LPNMHDR pnmhdr = (LPNMHDR)lParam;
+
+            if (bKushMediaPlayer && !bIsSingleWindow && !bKushViewTransition &&
+                pnmhdr->hwndFrom == hTrackBar && pnmhdr->code == NM_CUSTOMDRAW)
+            {
+                LPNMCUSTOMDRAW draw = (LPNMCUSTOMDRAW)lParam;
+                if (draw->dwDrawStage == CDDS_PREPAINT) return CDRF_NOTIFYITEMDRAW;
+                if (draw->dwDrawStage == CDDS_ITEMPREPAINT)
+                {
+                    if (draw->dwItemSpec == TBCD_TICS) return CDRF_SKIPDEFAULT;
+                    if (draw->dwItemSpec == TBCD_CHANNEL)
+                    {
+                        RECT channel = draw->rc;
+                        INT saved = SaveDC(draw->hdc);
+                        FillRect(draw->hdc, &channel, (HBRUSH)GetStockObject(WHITE_BRUSH));
+                        channel.top = (channel.top + channel.bottom) / 2 - 2;
+                        channel.bottom = channel.top + 4;
+                        SetDCBrushColor(draw->hdc, RGB(220, 230, 232));
+                        FillRect(draw->hdc, &channel, (HBRUSH)GetStockObject(DC_BRUSH));
+                        RestoreDC(draw->hdc, saved);
+                        return CDRF_SKIPDEFAULT;
+                    }
+                }
+            }
 
             switch (pnmhdr->code)
             {
@@ -1289,11 +1429,13 @@ MainWndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 
             if (!bIsSingleWindow)
             {
-                if (pRect->right - pRect->left < MAIN_WINDOW_MIN_WIDTH)
-                    pRect->right = pRect->left + MAIN_WINDOW_MIN_WIDTH;
+                INT minWidth = bKushMediaPlayer ? KUSH_MEDIA_MIN_WIDTH : MAIN_WINDOW_MIN_WIDTH;
+                INT height = bKushMediaPlayer ? KUSH_MEDIA_HEIGHT : MAIN_WINDOW_HEIGHT;
+                if (pRect->right - pRect->left < minWidth)
+                    pRect->right = pRect->left + minWidth;
 
-                if (pRect->bottom - pRect->top != MAIN_WINDOW_HEIGHT)
-                    pRect->bottom = pRect->top + MAIN_WINDOW_HEIGHT;
+                if (pRect->bottom - pRect->top != height)
+                    pRect->bottom = pRect->top + height;
             }
             return TRUE;
         }
@@ -1304,7 +1446,16 @@ MainWndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 
             if (hToolBar && hTrackBar)
             {
+                BOOL modern = bKushMediaPlayer && !bIsSingleWindow &&
+                              !bKushViewTransition && GetParent(hTrackBar) == hwnd;
+                KushMediaToolbarMetrics(modern);
                 SendMessage(hToolBar, TB_AUTOSIZE, 0, 0);
+                if (modern)
+                {
+                    MoveWindow(hTimeDisplay, LOWORD(lParam) - 152, 5, 140, 28, TRUE);
+                    MoveWindow(hTrackBar, 16, 14, max(1, LOWORD(lParam) - 32), 28, TRUE);
+                    return 0;
+                }
                 SendMessage(hToolBar, TB_GETITEMRECT, 1, (LPARAM)&Rect);
                 MoveWindow(hTimeDisplay, LOWORD(lParam) - 140, 4, 135, 18, TRUE);
 
@@ -1482,6 +1633,8 @@ _tWinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPTSTR lpCmdLine, INT nCmdShow)
             break;
     }
 
+    bKushMediaPlayer = KushMediaPlayerEnabled();
+
     LoadString(hInstance, IDS_APPTITLE, szAppTitle, ARRAYSIZE(szAppTitle));
 
     WndClass.cbSize            = sizeof(WndClass);
@@ -1505,8 +1658,8 @@ _tWinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPTSTR lpCmdLine, INT nCmdShow)
                         WS_SYSMENU | WS_MINIMIZEBOX | WS_THICKFRAME | WS_OVERLAPPED | WS_CAPTION | WS_CLIPCHILDREN,
                         CW_USEDEFAULT,
                         CW_USEDEFAULT,
-                        350,
-                        MAIN_WINDOW_HEIGHT,
+                        bKushMediaPlayer ? KUSH_MEDIA_WIDTH : 350,
+                        bKushMediaPlayer ? KUSH_MEDIA_HEIGHT : MAIN_WINDOW_HEIGHT,
                         NULL,
                         NULL,
                         hInstance,

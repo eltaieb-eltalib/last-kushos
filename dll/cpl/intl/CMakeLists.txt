@@ -27,3 +27,6 @@ set_module_type(intl cpl UNICODE)
 add_importlibs(intl user32 comctl32 advapi32 setupapi shlwapi shell32 msvcrt kernel32 ntdll)
 add_pch(intl intl.h SOURCE)
 add_cd_file(TARGET intl DESTINATION reactos/system32 FOR all)
+
+file(GLOB kush_fluent_icon_deps "${CMAKE_CURRENT_SOURCE_DIR}/resources/fluent/*.ico")
+add_rc_deps(intl.rc ${kush_fluent_icon_deps})

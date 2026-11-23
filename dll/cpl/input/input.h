@@ -87,3 +87,5 @@ DWORDfromString(const WCHAR *pszString)
 VOID GetSystemLibraryPath(LPWSTR pszPath, INT cchPath, LPCWSTR pszFileName);
 
 #endif /* _INPUT_H */
+
+#include <kushicons.h>

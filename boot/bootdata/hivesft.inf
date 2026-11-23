@@ -731,6 +731,8 @@ HKLM,"SOFTWARE\Microsoft\Windows NT\CurrentVersion\FontLink",,0x00000012
 HKLM,"SOFTWARE\Microsoft\Windows NT\CurrentVersion\FontLink","FontLinkControl",0x00010001,0x00000000
 HKLM,"SOFTWARE\Microsoft\Windows NT\CurrentVersion\FontLink","FontLinkDefaultChar",0x00010001,0x000030FB
 HKLM,"SOFTWARE\Microsoft\Windows NT\CurrentVersion\FontLink\SystemLink",,0x00000012
+; Kush Fluent: keep Arabic available when Inter is selected.
+HKLM,"SOFTWARE\Microsoft\Windows NT\CurrentVersion\FontLink\SystemLink","Inter",0x00010000,"NotoSansArabic-Regular.ttf,Noto Sans Arabic"
 
 ; FontLink (Latin to others)
 HKLM,"SOFTWARE\Microsoft\Windows NT\CurrentVersion\FontLink\SystemLink","Tahoma",0x00010000,\

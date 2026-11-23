@@ -194,7 +194,7 @@ Applet(HWND hwnd, UINT uMsg, LPARAM wParam, LPARAM lParam)
     psh.dwFlags =  PSH_PROPSHEETPAGE | PSH_USEICONID | PSH_USECALLBACK;
     psh.hwndParent = hwnd;
     psh.hInstance = hApplet;
-    psh.pszIcon = MAKEINTRESOURCEW(IDC_CPLICON);
+    psh.pszIcon = MAKEINTRESOURCEW(KushOwnIconId(IDC_CPLICON));
     psh.pszCaption = MAKEINTRESOURCEW(IDS_CPLNAME);
     psh.nPages = 0;
     psh.nStartPage = 0;
@@ -247,7 +247,7 @@ CPlApplet(HWND hwndCpl,
             {
                 CPLINFO *CPlInfo = (CPLINFO*)lParam2;
                 CPlInfo->lData = 0;
-                CPlInfo->idIcon = Applets[i].idIcon;
+                CPlInfo->idIcon = KushOwnIconId(Applets[i].idIcon);
                 CPlInfo->idName = Applets[i].idName;
                 CPlInfo->idInfo = Applets[i].idDescription;
             }

@@ -8,6 +8,8 @@ list(APPEND SOURCE
     appbar.cpp
     desktop.cpp
     explorer.cpp
+    kushstart.cpp
+    kushtypography.cpp
     mediabtns.cpp
     notifyiconscust.cpp
     rshell.cpp

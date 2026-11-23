@@ -24,3 +24,6 @@ set_target_properties(console PROPERTIES SUFFIX ".dll")
 target_link_libraries(console concfg)
 add_importlibs(console advapi32 user32 gdi32 comctl32 msvcrt kernel32 ntdll)
 add_cd_file(TARGET console DESTINATION reactos/system32 FOR all)
+
+file(GLOB kush_fluent_icon_deps "${CMAKE_CURRENT_SOURCE_DIR}/resources/fluent/*.ico")
+add_rc_deps(console.rc ${kush_fluent_icon_deps})

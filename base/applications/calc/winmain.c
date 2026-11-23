@@ -1251,6 +1251,8 @@ static void run_lpar(calc_number_t *c)
     exec_infix2postfix(c, RPN_OPERATOR_PARENT);
 }
 
+#include "kush_fluent.h"
+
 static LRESULT CALLBACK SubclassButtonProc(HWND hWnd, WPARAM wp, LPARAM lp)
 {
     LPDRAWITEMSTRUCT dis = (LPDRAWITEMSTRUCT)lp;
@@ -1259,6 +1261,9 @@ static LRESULT CALLBACK SubclassButtonProc(HWND hWnd, WPARAM wp, LPARAM lp)
     int              dx, dy, len;
     SIZE             size;
     POINT            pt;
+
+    if (KushCalcModern && dis->CtlType == ODT_BUTTON)
+        return KushCalcDrawButton(dis);
 
     if(dis->CtlType == ODT_BUTTON)
     {
@@ -1437,6 +1442,7 @@ static INT_PTR CALLBACK DlgMainProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
         EnableMenuItem(GetMenu(hWnd), IDM_HELP_HELP, MF_BYCOMMAND | MF_GRAYED);
 #endif
         calc.hWnd=hWnd;
+        KushCalcInit(hWnd);
         /* Enumerate children and apply hover function */
         BtnCount = 0;
         EnumChildWindows(hWnd, EnumChildProc, (LPARAM)&BtnCount);
@@ -1484,8 +1490,19 @@ static INT_PTR CALLBACK DlgMainProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
             if (calc.y_coord+h > sh) calc.y_coord = sh - h;
             MoveWindow(hWnd, calc.x_coord, calc.y_coord, w, h, FALSE);
         }
+        KushCalcClamp(hWnd);
+        break;
+    case WM_CTLCOLORDLG:
+        if (KushCalcModern) return (INT_PTR)KushCalcBackground;
         break;
     case WM_CTLCOLORSTATIC:
+        if (KushCalcModern)
+        {
+            BOOL output = (HWND)lp == GetDlgItem(hWnd, IDC_TEXT_OUTPUT);
+            SetTextColor((HDC)wp, RGB(31,44,54));
+            SetBkColor((HDC)wp, output ? RGB(255,255,255) : RGB(246,248,250));
+            return (INT_PTR)(output ? GetStockObject(WHITE_BRUSH) : KushCalcBackground);
+        }
         if ((HWND)lp == GetDlgItem(hWnd, IDC_TEXT_OUTPUT))
             return (LRESULT)GetStockObject(WHITE_BRUSH);
         break;
@@ -1896,6 +1913,7 @@ static INT_PTR CALLBACK DlgMainProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
         return TRUE;
 
     case WM_DESTROY:
+        KushCalcCleanup(hWnd);
         /* Get (x,y) position of the calculator */
         GetWindowRect(hWnd, &rc);
         calc.x_coord = rc.left;

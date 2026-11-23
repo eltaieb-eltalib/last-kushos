@@ -21,6 +21,7 @@
 
 #include "precomp.h"
 #include <commoncontrols.h>
+#include "kushstart.h"
 
 static const WCHAR szTrayNotifyWndClass[] = L"TrayNotifyWnd";
 
@@ -76,6 +77,16 @@ public:
             TrayTheme = OpenThemeData(m_hWnd, L"TrayNotify");
         else
             TrayTheme = NULL;
+
+        if (!KushTaskbar_IsClassicRequested())
+        {
+            SetWindowExStyle(m_hWnd, WS_EX_STATICEDGE, 0);
+            ZeroMemory(&ContentMargin, sizeof(ContentMargin));
+            SetWindowPos(NULL, 0, 0, 0, 0,
+                         SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOMOVE |
+                         SWP_NOSIZE | SWP_NOZORDER);
+            return TRUE;
+        }
 
         if (TrayTheme)
         {
@@ -370,6 +381,17 @@ public:
     {
         HDC hdc = (HDC) wParam;
 
+        /* Kush Fluent: flat light tray background matching the taskbar */
+        if (!KushTaskbar_IsClassicRequested())
+        {
+            RECT rcFlat;
+            GetClientRect(&rcFlat);
+            HBRUSH hFlat = CreateSolidBrush(RGB(0xF3, 0xF3, 0xF3));
+            FillRect(hdc, &rcFlat, hFlat);
+            DeleteObject(hFlat);
+            return 1;
+        }
+
         if (!TrayTheme)
         {
             bHandled = FALSE;
@@ -519,7 +541,9 @@ public:
     HRESULT Initialize(IN HWND hwndParent)
     {
         const DWORD dwStyle = WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
-        Create(hwndParent, 0, NULL, dwStyle, WS_EX_STATICEDGE);
+        /* Kush Fluent: flat tray area, no sunken static edge */
+        Create(hwndParent, 0, NULL, dwStyle,
+               KushTaskbar_IsClassicRequested() ? WS_EX_STATICEDGE : 0);
         return m_hWnd ? S_OK : E_FAIL;
     }
 

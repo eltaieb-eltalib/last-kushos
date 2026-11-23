@@ -1,3 +1,4 @@
+add_subdirectory(cursors-modern)
 
 add_subdirectory(fonts)
 add_subdirectory(inf)

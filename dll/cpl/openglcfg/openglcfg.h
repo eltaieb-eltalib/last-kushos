@@ -28,3 +28,5 @@ INT_PTR CALLBACK GeneralPageProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM 
 extern HINSTANCE hApplet;
 
 #endif /* _OPENGLCFG_PCH_ */
+
+#include <kushicons.h>

@@ -8,6 +8,7 @@
  */
 
 #include "precomp.h"
+#include "kushstart.h"
 #include <commoncontrols.h>
 #include <uxtheme.h>
 
@@ -318,6 +319,34 @@ VOID CTrayShowDesktopButton::OnDraw(HDC hdc, LPRECT prc)
     RECT rc = { prc->left, prc->top, prc->right, prc->bottom };
     LPRECT lpRc = &rc;
     HBRUSH hbrBackground = NULL;
+
+    /* Kush Fluent: a quiet end-of-taskbar strip, keeping the existing
+     * click target and tooltip. Preserve the accessible high-contrast
+     * renderer and the ClassicTaskbar fallback below. */
+    if (!KushTaskbar_IsClassicRequested() && !m_highContrastMode)
+    {
+        COLORREF color = m_bPressed ? RGB(0xDD, 0xDD, 0xDD) :
+                         m_bHovering ? RGB(0xE8, 0xE8, 0xE8) :
+                                       RGB(0xF3, 0xF3, 0xF3);
+        HBRUSH brush = CreateSolidBrush(color);
+        FillRect(hdc, &rc, brush);
+        DeleteObject(brush);
+        HPEN pen = CreatePen(PS_SOLID, 1, RGB(0xCC, 0xCC, 0xCC));
+        HPEN oldPen = (HPEN)SelectObject(hdc, pen);
+        if (m_bHorizontal)
+        {
+            MoveToEx(hdc, rc.left + 1, rc.top + 6, NULL);
+            LineTo(hdc, rc.left + 1, rc.bottom - 6);
+        }
+        else
+        {
+            MoveToEx(hdc, rc.left + 6, rc.top + 1, NULL);
+            LineTo(hdc, rc.right - 6, rc.top + 1);
+        }
+        SelectObject(hdc, oldPen);
+        DeleteObject(pen);
+        return;
+    }
 
     if (m_hTheme)
     {

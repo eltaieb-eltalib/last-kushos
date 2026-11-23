@@ -102,6 +102,7 @@ PerformancePageWndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     switch (message)
     {
         case WM_DESTROY:
+            Graph_FreeKushStyle();
             GraphCtrl_Dispose(&PerformancePageCpuUsageHistoryGraph);
             GraphCtrl_Dispose(&PerformancePageMemUsageHistoryGraph);
 #ifdef RUN_PERF_PAGE
@@ -113,6 +114,8 @@ PerformancePageWndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         {
             BOOL bGraph;
             TM_FORMAT fmt;
+
+            Graph_InitKushStyle(hDlg);
 
             /* Save the width and height */
             GetClientRect(hDlg, &rc);
@@ -159,6 +162,24 @@ PerformancePageWndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
             fmt.clrPlot0 = RGB(0, 255, 0);
             fmt.clrPlot1 = RGB(255, 0, 0);
             fmt.GridCellWidth = fmt.GridCellHeight = 12;
+            if (Graph_UseKushStyle())
+            {
+                HWND graphs[] = { hCpuUsageGraph, hMemUsageGraph,
+                    hPerformancePageCpuUsageHistoryGraph, hPerformancePageMemUsageHistoryGraph };
+                UINT i;
+                fmt.clrBack = RGB(255, 255, 255);
+                fmt.clrGrid = RGB(229, 236, 241);
+                fmt.clrPlot0 = RGB(13, 115, 119);
+                fmt.clrPlot1 = RGB(217, 119, 6);
+                fmt.GridCellWidth = fmt.GridCellHeight = 24;
+                for (i = 0; i < ARRAYSIZE(graphs); ++i)
+                {
+                    SetWindowLongPtrW(graphs[i], GWL_EXSTYLE,
+                        GetWindowLongPtrW(graphs[i], GWL_EXSTYLE) & ~WS_EX_CLIENTEDGE);
+                    SetWindowPos(graphs[i], NULL, 0, 0, 0, 0,
+                        SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+                }
+            }
             fmt.DrawSecondaryPlot = TaskManagerSettings.ShowKernelTimes;
             bGraph = GraphCtrl_Create(&PerformancePageCpuUsageHistoryGraph, hPerformancePageCpuUsageHistoryGraph, hDlg, &fmt);
             if (!bGraph)
@@ -169,6 +190,11 @@ PerformancePageWndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
             fmt.clrPlot0 = RGB(255, 255, 0);
             fmt.clrPlot1 = RGB(100, 255, 255);
+            if (Graph_UseKushStyle())
+            {
+                fmt.clrPlot0 = RGB(37, 99, 235);
+                fmt.clrPlot1 = RGB(13, 115, 119);
+            }
             fmt.DrawSecondaryPlot = TRUE;
             bGraph = GraphCtrl_Create(&PerformancePageMemUsageHistoryGraph, hPerformancePageMemUsageHistoryGraph, hDlg, &fmt);
             if (!bGraph)

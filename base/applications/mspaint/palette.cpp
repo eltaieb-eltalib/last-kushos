@@ -9,8 +9,8 @@
 #include "precomp.h"
 
 /* The private metrics */
-#define CXY_SELECTEDBOX     15 /* width / height of a selected color box */
-#define X_MARGIN 4 /* horizontal margin */
+#define CXY_SELECTEDBOX     (g_KushPaint ? 17 : 15)
+#define X_MARGIN (g_KushPaint ? 8 : 4)
 #define Y_MARGIN ((rcClient.bottom / 2) - CXY_COLORBOX) /* center position minus one color box */
 #define X_COLORBOX_OFFSET   (X_MARGIN + CXY_BIGBOX + X_MARGIN)
 #define COLOR_COUNT         28
@@ -34,6 +34,15 @@ CPaletteWindow::~CPaletteWindow()
 static VOID drawColorBox(HDC hDC, LPCRECT prc, HBRUSH hbr, UINT nBorder)
 {
     RECT rc = *prc;
+    if (g_KushPaint)
+    {
+        KushPaintFill(hDC, &rc, RGB(255, 255, 255));
+        InflateRect(&rc, -1, -1);
+        KushPaintFill(hDC, &rc, RGB(200, 209, 219));
+        InflateRect(&rc, -1, -1);
+        ::FillRect(hDC, &rc, hbr);
+        return;
+    }
     ::FillRect(hDC, &rc, (HBRUSH)(COLOR_3DFACE + 1));
     ::DrawEdge(hDC, &rc, nBorder, BF_RECT | BF_ADJUST);
     ::FillRect(hDC, &rc, hbr);
@@ -87,11 +96,21 @@ LRESULT CPaletteWindow::OnPaint(UINT nMsg, WPARAM wParam, LPARAM lParam, BOOL& b
     HGDIOBJ hbmOld = ::SelectObject(hMemDC, m_hbmCached);
 
     /* Fill the background (since WM_ERASEBKGND handling is disabled) */
-    ::FillRect(hMemDC, &rcClient, (HBRUSH)(COLOR_3DFACE + 1));
+    if (g_KushPaint)
+        KushPaintFill(hMemDC, &rcClient, RGB(255, 255, 255));
+    else
+        ::FillRect(hMemDC, &rcClient, (HBRUSH)(COLOR_3DFACE + 1));
 
     /* Draw the big box that contains the black box and the white box */
     rc = { X_MARGIN, Y_MARGIN, X_MARGIN + CXY_BIGBOX, Y_MARGIN + CXY_BIGBOX };
-    ::DrawEdge(hMemDC, &rc, EDGE_SUNKEN, BF_RECT | BF_ADJUST);
+    if (g_KushPaint)
+    {
+        KushPaintFill(hMemDC, &rc, RGB(219, 225, 231));
+        InflateRect(&rc, -1, -1);
+        KushPaintFill(hMemDC, &rc, RGB(255, 255, 255));
+    }
+    else
+        ::DrawEdge(hMemDC, &rc, EDGE_SUNKEN, BF_RECT | BF_ADJUST);
     COLORREF rgbLight = ::GetSysColor(COLOR_3DHIGHLIGHT);
     for (INT y = rc.top; y < rc.bottom; ++y)
     {

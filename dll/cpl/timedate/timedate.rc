@@ -1,3 +1,4 @@
+/* KUSH_CPL_FLUENT: generated mapping, original IDs preserved. */
 #include <windef.h>
 #include <winuser.h>
 #include <commctrl.h>
@@ -11,8 +12,8 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 #define REACTOS_STR_INTERNAL_NAME     "timedate"
 #define REACTOS_STR_ORIGINAL_FILENAME "timedate.cpl"
 #include <reactos/version.rc>
-
 IDC_CPLICON ICON "resources/applet.ico"
+(IDC_CPLICON + 40000) ICON "resources/fluent/calendar_clock.ico"
 IDC_WORLD BITMAP "resources/world.bmp"
 
 #include <reactos/manifest_hosted.rc>

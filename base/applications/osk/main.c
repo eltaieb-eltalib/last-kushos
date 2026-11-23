@@ -22,6 +22,8 @@ OSK_KEYLEDINDICATOR LedKey[] =
     {VK_SCROLL, IDC_LED_SCROLL, 0x0146, FALSE}
 };
 
+#include "kush_layout.h"
+
 /* FUNCTIONS ******************************************************************/
 
 /***********************************************************************
@@ -189,7 +191,7 @@ LRESULT OSK_SetKeys(int reason)
     UINT uVirtKey;
     POINT LedPos;
     SIZE LedSize;
-    int i, yPad;
+    int i, yPad, width, height;
 
     /* Get key states before doing anything */
     if (!GetKeyboardState(bKeyStates))
@@ -286,14 +288,19 @@ LRESULT OSK_SetKeys(int reason)
 
             /* Add additional padding for caption and menu */
             yPad = GetSystemMetrics(SM_CYSIZE) + GetSystemMetrics(SM_CYMENU);
+            /* Native fallback uses the original outer-size formula. */
+            width = Globals.Keyboard->Size.cx;
+            height = Globals.Keyboard->Size.cy + yPad;
+            KushOskWindowSize(Globals.hMainWnd, &width, &height);
             /* Size window according to layout */
             SetWindowPos(Globals.hMainWnd,
                          (Globals.bAlwaysOnTop ? HWND_TOPMOST : HWND_NOTOPMOST),
                          0,
                          0,
-                         Globals.Keyboard->Size.cx,
-                         Globals.Keyboard->Size.cy + yPad,
+                         width,
+                         height,
                          SWP_NOMOVE);
+            if (reason != SETKEYS_INIT) KushOskClamp(Globals.hMainWnd);
             
             /* Create LEDs */
             LedPos  = Globals.Keyboard->LedStart;
@@ -374,6 +381,7 @@ LRESULT OSK_Create(HWND hwnd)
 
     /* Save handle */
     Globals.hMainWnd = hwnd;
+    KushOskLayout = KushOskLayoutEnabled(hwnd);
 
     /* Init Font */
     lf.lfHeight = Globals.FontHeight;
@@ -456,6 +464,8 @@ LRESULT OSK_Create(HWND hwnd)
         CheckMenuItem(GetMenu(hwnd), IDM_ON_TOP, MF_BYCOMMAND | MF_UNCHECKED);
         SetWindowPos(hwnd, HWND_NOTOPMOST, Globals.PosX, Globals.PosY, 0, 0, SWP_NOSIZE);
     }
+
+    KushOskClamp(hwnd);
 
     /* Create a green brush for leds */
     Globals.hBrushGreenLed = CreateSolidBrush(RGB(0, 255, 0));

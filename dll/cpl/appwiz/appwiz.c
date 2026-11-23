@@ -55,7 +55,7 @@ CPlApplet(HWND hwndCPl, UINT uMsg, LPARAM lParam1, LPARAM lParam2)
         case CPL_INQUIRE:
             CPlInfo = (CPLINFO*)lParam2;
             CPlInfo->lData = 0;
-            CPlInfo->idIcon = IDI_CPLSYSTEM;
+            CPlInfo->idIcon = KushOwnIconId(IDI_CPLSYSTEM);
             CPlInfo->idName = IDS_CPLSYSTEMNAME;
             CPlInfo->idInfo = IDS_CPLSYSTEMDESCRIPTION;
             break;

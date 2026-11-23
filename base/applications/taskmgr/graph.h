@@ -19,6 +19,11 @@ extern "C" {
 
 extern WNDPROC OldGraphWndProc;
 
+/* Presentation state is cached once per Performance page, not during paint. */
+void Graph_InitKushStyle(HWND dialog);
+void Graph_FreeKushStyle(void);
+BOOL Graph_UseKushStyle(void);
+
 INT_PTR CALLBACK Graph_WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 

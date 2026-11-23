@@ -1,0 +1,10 @@
+Windows 10/11 Modern Cursor
+Publisher/credit: sunqfuu
+Source: https://github.com/sunqfuu/Windows-10-11-Modern-Cursor
+Revision: 3aed65fbc3fb9e8cc7e62c3d4d231194e4a878dc
+Release archive: v.1.0.2
+Selected variant: light, regular size, default animation color.
+License: MIT, as declared by upstream README (archived unchanged in UPSTREAM_README.md).
+Upstream does not include a separate license notice. No different copyright ownership is asserted here.
+The CUR and ANI files are unmodified. No upstream installation script is executed.
+Kush currently displays a representative static ANI frame for the two busy roles, because the inherited screen-pointer animation path is incomplete. Original ANI files are kept intact.

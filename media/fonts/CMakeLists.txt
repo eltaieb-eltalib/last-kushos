@@ -54,6 +54,14 @@ list(APPEND FONT_FILES
     trebucbi.ttf
     trebucit.ttf
     UniVGA16.ttf
+    Inter-Regular.ttf
+    Inter-Medium.ttf
+    Inter-SemiBold.ttf
+    Inter-Bold.ttf
+    NotoSansArabic-Regular.ttf
+    NotoSansArabic-Medium.ttf
+    NotoSansArabic-SemiBold.ttf
+    NotoSansArabic-Bold.ttf
     verdanab.ttf
     verdanaz.ttf
     verdanai.ttf

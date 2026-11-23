@@ -15,6 +15,7 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 #include <reactos/version.rc>
 
 IDI_SHELL_NETWORK_FOLDER ICON "res/netshell.ico"
+(IDI_SHELL_NETWORK_FOLDER + 40000) ICON "res/shell-network_adapter.ico"
 IDI_NET_ERROR ICON "res/neterror.ico"
 IDI_NET_IDLE ICON "res/netidle.ico"
 IDI_NET_OFF ICON "res/netoff.ico"

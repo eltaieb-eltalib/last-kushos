@@ -705,7 +705,7 @@ MmSysApplet(HWND hwnd,
     psh.dwFlags =  PSH_PROPSHEETPAGE | PSH_PROPTITLE | PSH_USEICONID | PSH_USECALLBACK;
     psh.hwndParent = hwnd;
     psh.hInstance = hApplet;
-    psh.pszIcon = MAKEINTRESOURCEW(IDI_CPLICON);
+    psh.pszIcon = MAKEINTRESOURCEW(KushOwnIconId(IDI_CPLICON));
     psh.pszCaption = MAKEINTRESOURCEW(IDS_CPLNAME);
     psh.nPages = _countof(psp);
     psh.nStartPage = 0;
@@ -760,7 +760,7 @@ CPlApplet(HWND hwndCpl,
             {
                 CPLINFO *CPlInfo = (CPLINFO*)lParam2;
                 CPlInfo->lData = 0;
-                CPlInfo->idIcon = Applets[i].idIcon;
+                CPlInfo->idIcon = KushOwnIconId(Applets[i].idIcon);
                 CPlInfo->idName = Applets[i].idName;
                 CPlInfo->idInfo = Applets[i].idDescription;
             }
@@ -801,7 +801,7 @@ ShowAudioPropertySheet(HWND hwnd,
     psh.dwFlags = PSH_PROPSHEETPAGE | PSH_PROPTITLE | PSH_USEICONID | PSH_USECALLBACK;
     psh.hwndParent = hwnd;
     psh.hInstance = hInstance;
-    psh.pszIcon = MAKEINTRESOURCEW(IDI_CPLICON);
+    psh.pszIcon = MAKEINTRESOURCEW(KushOwnIconId(IDI_CPLICON));
     psh.pszCaption = MAKEINTRESOURCEW(IDS_CPLNAME);
     psh.nPages = _countof(psp);
     psh.nStartPage = 0;
@@ -828,7 +828,7 @@ ShowFullControlPanel(HWND hwnd,
     psh.dwFlags = PSH_PROPSHEETPAGE | PSH_PROPTITLE | PSH_USEICONID | PSH_USECALLBACK;
     psh.hwndParent = hwnd;
     psh.hInstance = hInstance;
-    psh.pszIcon = MAKEINTRESOURCEW(IDI_CPLICON);
+    psh.pszIcon = MAKEINTRESOURCEW(KushOwnIconId(IDI_CPLICON));
     psh.pszCaption = MAKEINTRESOURCEW(IDS_CPLNAME);
     psh.nPages = _countof(psp);
     psh.nStartPage = 0;

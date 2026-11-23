@@ -245,6 +245,9 @@ ObReferenceFileObjectForWrite(IN HANDLE Handle,
                         &DesiredAccess)))
         {
             Status = STATUS_OBJECT_TYPE_MISMATCH;
+
+            /* A failed type check still owns the handle entry lock. */
+            ExUnlockHandleTableEntry(HandleTable, HandleEntry);
         }
         else
         {

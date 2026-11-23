@@ -29,15 +29,15 @@ CAPTION "Υλικό"
 FONT 8, "MS Shell Dlg"
 BEGIN
     GROUPBOX "Διαχείριση Συσκευών", IDC_STATIC, 6, 7, 244, 63
-    ICON IDI_DEVMGR, IDC_STATIC, 12, 18, 23, 21, SS_ICON
+    ICON IDI_DEVMGR, IDC_KUSH_STATIC_DEVMGR, 12, 18, 23, 21, SS_ICON
     LTEXT "Η Διαχείριση Συσκευών προβάλλει μια λίστα με όλες τις συσκευές που είναι εγκατεστημένες στον υπολογιστή σας. Μπορείτε να χρησιμοποιήσετε τη Διαχείριση Συσκευών για να αλλάξετε τις ιδιότητες για κάθε συσκευή.", IDC_STATIC, 42, 16, 204, 33
     PUSHBUTTON "&Διαχείριση Συσκευών...", IDC_HARDWARE_DEVICE_MANAGER, 148, 51, 98, 15
     GROUPBOX "Οδηγός προσθήκης υλικού", IDC_STATIC, 6, 79, 244, 61
-    ICON IDI_ADDHW, IDC_STATIC, 12, 90, 23, 21, SS_ICON
+    ICON IDI_ADDHW, IDC_KUSH_STATIC_ADDHW, 12, 90, 23, 21, SS_ICON
     LTEXT "Ο Οδηγός προσθήκης υλικού σας βοηθά να εγκαταστήσετε, απεγκαταστήσετε, επιδιώρθώσετε και να ρυθμίσετε υλικό.", IDC_STATIC, 42, 92, 204, 24
     PUSHBUTTON "&Οδηγός προσθήκης υλικού...", IDC_HARDWARE_WIZARD, 148, 120, 98, 15
     GROUPBOX "Προφίλ υλικού", IDC_STATIC, 6, 149, 244, 61
-    ICON IDI_HARDPROF, IDC_STATIC, 12, 160, 23, 21, SS_ICON
+    ICON IDI_HARDPROF, IDC_KUSH_STATIC_HARDPROF, 12, 160, 23, 21, SS_ICON
     LTEXT "Τα προφίλ υλικού σάς δίνουν τη δυνατότητα να εγκαταστήσετε και να αποθηκεύσετε ρυθμίσεις για διαφορετικές συσκευές.", IDC_STATIC, 42, 160, 204, 24
     PUSHBUTTON "&Προφίλ υλικού...", IDC_HARDWARE_PROFILE, 148, 190, 98, 15
 END
@@ -78,7 +78,7 @@ STYLE DS_SHELLFONT | DS_MODALFRAME | DS_CONTEXTHELP | WS_POPUP | WS_VISIBLE | WS
 CAPTION "Προφίλ υλικού"
 FONT 8, "MS Shell Dlg"
 BEGIN
-    ICON IDI_HARDPROF, IDC_STATIC, 8, 11, 18, 20, SS_ICON
+    ICON IDI_HARDPROF, IDC_KUSH_STATIC_HARDPROF, 8, 11, 18, 20, SS_ICON
     LTEXT "Μπορείτε να εγκαταστήσετε προφίλ για διαφορετικές παραμέτρους υλικού. Κατά την εκκίνηση, μπορείτε να επιλέξετε το προφίλ το οποίο θέλετε να χρησιμοποιήσετε.", IDC_STATIC, 46, 11, 188, 25
     LTEXT "Διαθέσιμα προφίλ &υλικού:", IDC_STATIC, 8, 41, 120, 8
     LISTBOX IDC_HRDPROFLSTBOX, 8, 52, 215, 54, LBS_NOTIFY
@@ -105,7 +105,7 @@ STYLE DS_SHELLFONT | DS_MODALFRAME | DS_CONTEXTHELP | WS_POPUP | WS_VISIBLE | WS
 CAPTION "General"
 FONT 8, "MS Shell Dlg"
 BEGIN
-    ICON IDI_HARDPROF, IDC_STATIC, 10, 10, 18, 20, SS_ICON
+    ICON IDI_HARDPROF, IDC_KUSH_STATIC_HARDPROF, 10, 10, 18, 20, SS_ICON
     LTEXT "", IDC_HWPPROP_PROFILE, 48, 16, 150, 8
     LTEXT "Dock ID:", IDC_STATIC, 10, 42, 43, 8
     LTEXT "", IDC_HWPPROP_DOCKID, 64, 42, 135, 8
@@ -151,7 +151,7 @@ STYLE DS_SHELLFONT | DS_MODALFRAME | DS_CONTEXTHELP | WS_POPUP | WS_VISIBLE | WS
 CAPTION "Προφίλ χρηστών"
 FONT 8, "MS Shell Dlg"
 BEGIN
-    ICON IDI_USERPROF, IDC_STATIC, 6, 11, 16, 16, SS_ICON
+    ICON IDI_USERPROF, IDC_KUSH_STATIC_USERPROF, 6, 11, 16, 16, SS_ICON
     LTEXT "Στο προφίλ χρήστη αποθηκεύονται ρυθμίσεις επιφάνειας εργασίας και άλλες πληροφορίες του λογαριασμού σας. Μπορείτε να επιλέξετε προφίλ περιαγωγής, αν θέλετε να συνδέεστε σε αυτό απο πολλαπλούς υπολογιστές.", IDC_STATIC, 40, 11, 211, 35
     LTEXT "Απο&θηκευμένα προφίλ σε αυτόν τον υπολογιστή:", IDC_STATIC, 16, 51, 204, 9
     CONTROL "", IDC_USERPROFILE_LIST, "SysListView32", LVS_REPORT | LVS_SINGLESEL |

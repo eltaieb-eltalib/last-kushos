@@ -15,9 +15,19 @@ Wallpapers
 | Polarlicht.jpg                | CC0-1.0      | Public domain                                 | https://jira.reactos.org/browse/CORE-8446              |
 | Silhouette.png                | CC-BY-4.0    | Jake Collins (polar@ever3st.com)              | https://ever3st.com/Graphics/Loot/                     |
 | Silhouette Dark.png           | CC-BY-4.0    | Jake Collins (polar@ever3st.com)              | https://ever3st.com/Graphics/Loot/                     |
+| Kush-Flow.bmp                 | Original     | Kush project (generated)                      | tools/design/gen_wallpaper.py in this repository        |
+| Kush-Flow-Dark.bmp            | Original     | Kush project (generated)                      | tools/design/gen_wallpaper.py in this repository        |
+| Kush-Meroe.bmp                | Original     | Kush project (generated)                      | tools/design/gen_wallpaper.py in this repository        |
+| Kush-Nile.bmp                 | Original     | Kush project (generated)                      | tools/design/gen_wallpaper.py in this repository        |
+| Kush-Nubian.bmp               | Original     | Kush project (generated)                      | tools/design/gen_wallpaper.py in this repository        |
+| Kush-Temple.bmp               | Original     | Kush project (generated)                      | tools/design/gen_wallpaper.py in this repository        |
 |-------------------------------|--------------|-----------------------------------------------|--------------------------------------------------------|
 
 Note: Nebula was inspired from concept art by community member taisayshello.
+
+The Kush-* wallpapers are original works generated procedurally by
+tools/design/gen_wallpaper.py (numpy/PIL, fixed seed, no external image input).
+They are not derived from Microsoft or any other third-party artwork.
 
 You can download other wallpapers from the "ReactOS Standard Wallpapers" package in the ReactOS Application Manager.
 

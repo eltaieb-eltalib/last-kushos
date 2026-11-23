@@ -71,3 +71,5 @@ INT_PTR CALLBACK MousePageProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lP
 INT_PTR CALLBACK SoundPageProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 #endif /* _ACCESS_H */
+
+#include <kushicons.h>

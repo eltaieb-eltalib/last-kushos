@@ -7,6 +7,7 @@
  */
 
 #include "precomp.h"
+#include "kushstart.h"
 #include <commoncontrols.h>
 #include <cfgmgr32.h>
 #include <regstr.h>
@@ -221,6 +222,19 @@ public:
 
         Size.cy = max(Size.cy, GetSystemMetrics(SM_CYCAPTION));
 
+        /* Kush Fluent (phase 7): icon-only button on the 48px bar. The
+         * themed ideal size collapses to nearly zero with an empty
+         * caption, so size it from the start icon itself. */
+        if (!KushTaskbar_IsClassicRequested() && m_ImageList != NULL)
+        {
+            int cxIcon = 0, cyIcon = 0;
+            ImageList_GetIconSize(m_ImageList, &cxIcon, &cyIcon);
+            if (cxIcon > 0)
+                Size.cx = cxIcon + 20;
+            if (cyIcon > 0)
+                Size.cy = max(Size.cy, cyIcon + 12);
+        }
+
         /* Save the size of the start button */
         m_Size = Size;
     }
@@ -241,6 +255,32 @@ public:
         SetFont(m_Font, FALSE);
     }
 
+    /* Kush Fluent (phase 7): flat owner-drawn tile matching the light
+     * taskbar, replacing the classic raised themed frame. Icon centered. */
+    VOID DrawItem(LPDRAWITEMSTRUCT dis)
+    {
+        RECT rc = dis->rcItem;
+        BOOL bPressed = (dis->itemState & ODS_SELECTED) != 0;
+        COLORREF clrBg = bPressed ? RGB(0xE2, 0xE2, 0xE2) : RGB(0xF3, 0xF3, 0xF3);
+        HBRUSH hbr = CreateSolidBrush(clrBg);
+        HPEN hpen = CreatePen(PS_SOLID, 1, bPressed ? RGB(0xC8, 0xC8, 0xC8) : clrBg);
+        HGDIOBJ hOldBr = SelectObject(dis->hDC, hbr);
+        HGDIOBJ hOldPen = SelectObject(dis->hDC, hpen);
+        RoundRect(dis->hDC, rc.left + 1, rc.top + 1, rc.right - 1, rc.bottom - 1, 8, 8);
+        SelectObject(dis->hDC, hOldPen);
+        SelectObject(dis->hDC, hOldBr);
+        DeleteObject(hpen);
+        DeleteObject(hbr);
+        if (m_ImageList != NULL)
+        {
+            int cxIcon = 0, cyIcon = 0;
+            ImageList_GetIconSize(m_ImageList, &cxIcon, &cyIcon);
+            int x = rc.left + ((rc.right - rc.left) - cxIcon) / 2;
+            int y = rc.top + ((rc.bottom - rc.top) - cyIcon) / 2;
+            ImageList_Draw(m_ImageList, 0, dis->hDC, x, y, ILD_TRANSPARENT);
+        }
+    }
+
     VOID Initialize()
     {
         // HACK & FIXME: CORE-18016
@@ -248,13 +288,30 @@ public:
         m_hWnd = NULL;
         SubclassWindow(hWnd);
 
-        SetWindowTheme(m_hWnd, L"Start", NULL);
-
-        m_ImageList = ImageList_LoadImageW(hExplorerInstance,
-                                           MAKEINTRESOURCEW(IDB_START),
-                                           0, 0, 0,
-                                           IMAGE_BITMAP,
-                                           LR_LOADTRANSPARENT | LR_CREATEDIBSECTION);
+        if (KushTaskbar_IsClassicRequested())
+        {
+            SetWindowTheme(m_hWnd, L"Start", NULL);
+            m_ImageList = ImageList_LoadImageW(hExplorerInstance,
+                                               MAKEINTRESOURCEW(IDB_START),
+                                               0, 0, 0,
+                                               IMAGE_BITMAP,
+                                               LR_LOADTRANSPARENT | LR_CREATEDIBSECTION);
+        }
+        else
+        {
+            /* Kush Fluent (phase 7): the centered Start button carries the
+             * teal Fluent mark icon, not the legacy bitmap. The icon is a
+             * BMP-entry ICO so the XP-era loader accepts it. Strip the
+             * theme so ReactOS does not paint the themed Start frame over
+             * our owner-drawn tile. */
+            SetWindowTheme(m_hWnd, L"", L"");
+            m_ImageList = ImageList_Create(24, 24, ILC_COLOR32 | ILC_MASK, 1, 1);
+            HICON hStartIcon = (HICON)LoadImageW(hExplorerInstance,
+                                                 MAKEINTRESOURCEW(IDI_KUSH_START),
+                                                 IMAGE_ICON, 24, 24, LR_DEFAULTCOLOR);
+            if (m_ImageList != NULL && hStartIcon != NULL)
+                ImageList_ReplaceIcon(m_ImageList, -1, hStartIcon);
+        }
 
         BUTTON_IMAGELIST bil = {m_ImageList, {1,1,1,1}, BUTTON_IMAGELIST_ALIGN_LEFT};
         SendMessageW(BCM_SETIMAGELIST, 0, (LPARAM) &bil);
@@ -272,7 +329,15 @@ public:
             wcscpy(szStartCaption, L"Start");
         }
 
+        /* Kush Fluent (phase 7): icon-only Start button unless classic. */
+        if (!KushTaskbar_IsClassicRequested())
+            szStartCaption[0] = L'\0';
+
         DWORD dwStyle = WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | BS_PUSHBUTTON | BS_LEFT | BS_VCENTER;
+
+        /* Kush Fluent (phase 7): owner-drawn flat tile unless classic. */
+        if (!KushTaskbar_IsClassicRequested())
+            dwStyle |= BS_OWNERDRAW;
 
         // HACK & FIXME: CORE-18016
         m_hWnd = CreateWindowEx(
@@ -297,12 +362,69 @@ public:
         if (uMsg == WM_KEYUP && wParam != VK_SPACE)
             return 0;
 
+        DbgPrint("KUSH-DBG start button: click -> TWM_OPENSTARTMENU\n");
         GetParent().PostMessage(TWM_OPENSTARTMENU);
+        return 0;
+    }
+
+    /* Kush Fluent (phase 7): bypass the themed/classic paint entirely -
+     * ReactOS keeps painting its themed Start frame regardless of
+     * SetWindowTheme, so we paint the tile ourselves in WM_PAINT. */
+    LRESULT OnPaint(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+    {
+        if (KushTaskbar_IsClassicRequested())
+        {
+            bHandled = FALSE;
+            return 0;
+        }
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(&ps);
+        RECT rc;
+        GetClientRect(&rc);
+        /* cover the whole client rect first so no themed frame pixels
+         * survive at the edges */
+        {
+            HBRUSH hBg = CreateSolidBrush(RGB(0xF3, 0xF3, 0xF3));
+            FillRect(hdc, &rc, hBg);
+            DeleteObject(hBg);
+        }
+        DRAWITEMSTRUCT dis;
+        ZeroMemory(&dis, sizeof(dis));
+        dis.hDC = hdc;
+        dis.rcItem = rc;
+        dis.itemState = (SendMessage(BM_GETSTATE, 0, 0) & BST_PUSHED) ? ODS_SELECTED : 0;
+        DrawItem(&dis);
+        EndPaint(&ps);
+        return 0;
+    }
+
+    LRESULT OnEraseBkgnd(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+    {
+        if (KushTaskbar_IsClassicRequested())
+        {
+            bHandled = FALSE;
+            return 0;
+        }
+        return 1;
+    }
+
+    LRESULT OnNcPaint(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+    {
+        /* Kush Fluent (phase 7): ReactOS themed buttons draw their frame in
+         * WM_NCPAINT - swallow it so no themed border appears. */
+        if (KushTaskbar_IsClassicRequested())
+        {
+            bHandled = FALSE;
+            return 0;
+        }
         return 0;
     }
 
     BEGIN_MSG_MAP(CStartButton)
         MESSAGE_HANDLER(WM_LBUTTONDOWN, OnLButtonDown)
+        MESSAGE_HANDLER(WM_PAINT, OnPaint)
+        MESSAGE_HANDLER(WM_ERASEBKGND, OnEraseBkgnd)
+        MESSAGE_HANDLER(WM_NCPAINT, OnNcPaint)
     END_MSG_MAP()
 };
 
@@ -484,6 +606,40 @@ public:
 
         /* Display the ReactOS Shutdown Dialog */
         ExitWindowsDialog(m_hWnd);
+
+        /* Kush Fluent fix: cancelling the shutdown dialog could leave the
+         * tray window disabled (the msgina dim window owns the dialog), which
+         * killed all taskbar mouse input while keyboard Start still worked.
+         * Re-enable defensively and log what state we found. */
+        {
+            BOOL bEnabled = ::IsWindowEnabled(m_hWnd);
+            BOOL bBtnEnabled = ::IsWindowEnabled(m_StartButton.m_hWnd);
+            BOOL bBtnVisible = ::IsWindowVisible(m_StartButton.m_hWnd);
+            RECT rcBtn;
+            m_StartButton.GetWindowRect(&rcBtn);
+            POINT ptC = { (rcBtn.left + rcBtn.right) / 2, (rcBtn.top + rcBtn.bottom) / 2 };
+            HWND hAt = ::WindowFromPoint(ptC);
+            WCHAR szCls[64] = {0};
+            if (hAt)
+                GetClassNameW(hAt, szCls, _countof(szCls) - 1);
+            DbgPrint("KUSH-DBG DoExitWindows: tray en=%d btn en=%d vis=%d rc=(%ld,%ld,%ld,%ld) wfp=%p cls=%S\n",
+                     bEnabled, bBtnEnabled, bBtnVisible,
+                     rcBtn.left, rcBtn.top, rcBtn.right, rcBtn.bottom, (PVOID)hAt, szCls);
+            if (!bEnabled)
+                ::EnableWindow(m_hWnd, TRUE);
+            if (!bBtnEnabled)
+                ::EnableWindow(m_StartButton.m_hWnd, TRUE);
+            /* Kush Fluent fix: the fullscreen dim/shutdown dialog disturbs
+             * the appbar z-order and layout, leaving the Start button hidden
+             * or displaced so taskbar clicks land on the desktop (proven by
+             * the WindowFromPoint probe). Restore layout, visibility and the
+             * topmost band explicitly. */
+            if (!bBtnVisible)
+                m_StartButton.ShowWindow(SW_SHOW);
+            AlignControls(NULL);
+            ::SetWindowPos(m_hWnd, HWND_TOPMOST, 0, 0, 0, 0,
+                           SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+        }
 
         /*
          * If the user presses CTRL+ALT+SHIFT while exiting
@@ -745,6 +901,7 @@ public:
 
     VOID HideStartMenu()
     {
+        KushStart_Hide();
         m_StartMenuPopup->OnSelect(MPOS_CANCELLEVEL);
     }
 
@@ -1532,6 +1689,20 @@ GetPrimaryScreenRect:
             }
 
 ChangePos:
+            /* Kush Fluent (phase 7): enforce the 48px minimum height for
+             * horizontal taskbars here, after every other sizing path has
+             * run (registry load, rebar fit, appbar negotiation). */
+            if (!KushTaskbar_IsClassicRequested() &&
+                (m_Position == ABE_BOTTOM || m_Position == ABE_TOP))
+            {
+                if (rcTray.bottom - rcTray.top < 48)
+                {
+                    if (m_Position == ABE_BOTTOM)
+                        rcTray.top = rcTray.bottom - 48;
+                    else
+                        rcTray.bottom = rcTray.top + 48;
+                }
+            }
             m_TraySize.cx = rcTray.right - rcTray.left;
             m_TraySize.cy = rcTray.bottom - rcTray.top;
 
@@ -1712,6 +1883,14 @@ ChangePos:
         if (WndSize.cy < g_TaskbarSettings.sr.Size.cy)
             WndSize.cy = g_TaskbarSettings.sr.Size.cy;
 
+        /* Kush Fluent (phase 7): 48px taskbar on horizontal edges. */
+        if (!KushTaskbar_IsClassicRequested() &&
+            (m_Position == ABE_BOTTOM || m_Position == ABE_TOP))
+        {
+            if (WndSize.cy < 48)
+                WndSize.cy = 48;
+        }
+
         /* Save the calculated size */
         m_TraySize = WndSize;
 
@@ -1779,12 +1958,42 @@ ChangePos:
             StartSize.cy = HIWORD(size) + (m_Theme ? GetSystemMetrics(SM_CYEDGE) : 0);
         }
 
+        /* Kush Fluent (phase 7): center the Start button + task buttons as
+         * one group (Windows-11-like, original implementation). Needs the
+         * tray-notify width early; disabled with ClassicTaskbar=1. */
+        LONG xStart = 0;
+        LONG idealRebarW = -1; /* <0 keeps the classic left-aligned layout */
+        if (Horizontal && !KushTaskbar_IsClassicRequested() && hwndTaskToolbar &&
+            m_TrayNotify != NULL)
+        {
+            SIZE szNotify = { 0, rcClient.bottom };
+            LONG lNotifyW = 0;
+            if (SendMessage(m_TrayNotify, TNWM_GETMINIMUMSIZE, (WPARAM)Horizontal, (LPARAM)&szNotify))
+                lNotifyW = szNotify.cx;
+            /* task buttons expand to fill their band (taskswnd.cpp), so the
+             * centered group width uses each button's maximum width */
+            int nButtons = (int)SendMessageW(hwndTaskToolbar, TB_BUTTONCOUNT, 0, 0);
+            LONG lTasksW = nButtons *
+                ((KushTaskbar_UseCompactTasks() ? 56 : GetSystemMetrics(SM_CXMINIMIZED)) + 4);
+            LONG lGroupW = StartSize.cx + GetSystemMetrics(SM_CXSIZEFRAME) + lTasksW;
+            /* Center over the FULL taskbar width (Windows-11-like); fall
+             * back to the classic left layout when the group would reach
+             * the tray notification area. */
+            if (lGroupW < rcClient.right - lNotifyW)
+            {
+                xStart = (rcClient.right - lGroupW) / 2;
+                if (xStart < 0)
+                    xStart = 0;
+                idealRebarW = lTasksW;
+            }
+        }
+
         if (m_StartButton.m_hWnd != NULL)
         {
             /* Resize and reposition the button */
             dwp = m_StartButton.DeferWindowPos(dwp,
                                                NULL,
-                                               0,
+                                               xStart,
                                                0,
                                                StartSize.cx,
                                                StartSize.cy,
@@ -1845,8 +2054,8 @@ ChangePos:
 
             if (Horizontal)
             {
-                ptRebar.x = StartSize.cx + GetSystemMetrics(SM_CXSIZEFRAME);
-                szRebar.cx = ptTrayNotify.x - ptRebar.x;
+                ptRebar.x = xStart + StartSize.cx + GetSystemMetrics(SM_CXSIZEFRAME);
+                szRebar.cx = (idealRebarW >= 0) ? idealRebarW : (ptTrayNotify.x - ptRebar.x);
                 szRebar.cy = rcClient.bottom;
             }
             else
@@ -1919,6 +2128,22 @@ ChangePos:
     }
 
     void PopupStartMenu()
+    {
+        /* Kush Fluent: the new centered Start handles the request unless the
+         * user asked for the classic menu (HKCU\\Software\\Kush\\Shell
+         * ClassicStartMenu=1). Falls back to the classic menu on failure. */
+        if (!KushStart_IsClassicRequested())
+        {
+            if (KushStart_Toggle(m_hWnd))
+            {
+                m_StartButton.SendMessageW(BM_SETSTATE, KushStart_IsOpen() ? TRUE : FALSE, 0);
+                return;
+            }
+        }
+        PopupClassicStartMenu();
+    }
+
+    void PopupClassicStartMenu()
     {
         if (m_StartMenuPopup != NULL)
         {
@@ -2357,6 +2582,39 @@ ChangePos:
      *    ##### message handling #####
      */
 
+    /* Kush: apply the stored desktop wallpaper at shell startup.
+       ReactOS never calls SPI_SETDESKWALLPAPER with the stored registry
+       value when a session starts, so gspv.hbmWallpaper stays NULL and the
+       desktop paints solid. Load HKCU\Control Panel\Desktop\Wallpaper,
+       expand %%SystemRoot%% etc., and apply it with fWinIni = 0 so the
+       REG_EXPAND_SZ registry value is left untouched.
+       Kill switch: HKCU\Software\Kush\Shell\NoWallpaperFix (DWORD != 0). */
+    static VOID KushApplyStoredWallpaper()
+    {
+        DWORD dwValue = 0, cbSize = sizeof(dwValue);
+        if (SHGetValueW(HKEY_CURRENT_USER, L"Software\\Kush\\Shell",
+                        L"NoWallpaperFix", NULL, &dwValue, &cbSize) == ERROR_SUCCESS &&
+            dwValue != 0)
+            return;
+
+        WCHAR awcRaw[MAX_PATH] = { 0 };
+        DWORD cbRaw = sizeof(awcRaw);
+        if (SHGetValueW(HKEY_CURRENT_USER, L"Control Panel\\Desktop",
+                        L"Wallpaper", NULL, awcRaw, &cbRaw) != ERROR_SUCCESS ||
+            awcRaw[0] == 0)
+            return;
+
+        WCHAR awcPath[MAX_PATH];
+        if (!ExpandEnvironmentStringsW(awcRaw, awcPath, _countof(awcPath)) ||
+            GetFileAttributesW(awcPath) == INVALID_FILE_ATTRIBUTES)
+            return;
+
+        if (SystemParametersInfoW(SPI_SETDESKWALLPAPER, 0, awcPath, 0))
+            DbgPrint("KUSH-DBG KushApplyStoredWallpaper: applied %S\n", awcPath);
+        else
+            DbgPrint("KUSH-DBG KushApplyStoredWallpaper: SPI failed for %S\n", awcPath);
+    }
+
     LRESULT OnCreate(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
     {
         HRESULT hRet;
@@ -2506,6 +2764,8 @@ ChangePos:
 
         m_WinMMDevChgMsg = RegisterWindowMessageW(L"winmm_devicechange");
 
+        KushApplyStoredWallpaper();
+
         return TRUE;
     }
 
@@ -2581,6 +2841,32 @@ ChangePos:
     {
         HDC hdc = (HDC) wParam;
 
+        /* Kush Fluent (phase 7): light taskbar. Static Acrylic blur lands
+         * with phase 5a; this is the flat light base. */
+        if (!KushTaskbar_IsClassicRequested())
+        {
+            RECT rc;
+            GetClientRect(&rc);
+            HBRUSH hB = CreateSolidBrush(RGB(0xF3, 0xF3, 0xF3));
+            FillRect(hdc, &rc, hB);
+            DeleteObject(hB);
+            HPEN hP = CreatePen(PS_SOLID, 1, RGB(0xD4, 0xD4, 0xD4));
+            HPEN hOldP = (HPEN)SelectObject(hdc, hP);
+            if (m_Position == ABE_BOTTOM)
+            {
+                MoveToEx(hdc, rc.left, rc.top, NULL);
+                LineTo(hdc, rc.right, rc.top);
+            }
+            else if (m_Position == ABE_TOP)
+            {
+                MoveToEx(hdc, rc.left, rc.bottom - 1, NULL);
+                LineTo(hdc, rc.right, rc.bottom - 1);
+            }
+            SelectObject(hdc, hOldP);
+            DeleteObject(hP);
+            return 0;
+        }
+
         if (!m_Theme)
         {
             bHandled = FALSE;
@@ -2633,6 +2919,27 @@ ChangePos:
     {
         DefWindowProc(uMsg, wParam, lParam);
         bHandled = TRUE;
+
+        /* Kush Fluent (phase 7): flatten the classic raised edge the
+         * WS_EX_WINDOWEDGE frame draws across the taskbar top - overpaint
+         * it with the bar color. The show-desktop button keeps its NC
+         * drawing below. */
+        if (!KushTaskbar_IsClassicRequested())
+        {
+            HDC hdcNc = GetWindowDC();
+            if (hdcNc)
+            {
+                RECT rcW;
+                GetWindowRect(&rcW);
+                RECT rcTop = { 0, 0, rcW.right - rcW.left, 4 };
+                HBRUSH hFlat = CreateSolidBrush(RGB(0xF3, 0xF3, 0xF3));
+                FillRect(hdcNc, &rcTop, hFlat);
+                DeleteObject(hFlat);
+                ReleaseDC(hdcNc);
+            }
+            DrawShowDesktopButton();
+            return 0;
+        }
 
         if (!m_Theme || g_TaskbarSettings.bLock)
         {
@@ -3110,6 +3417,14 @@ HandleTrayContextMenu:
     LRESULT OnOpenStartMenu(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
     {
         HWND hwndStartMenu;
+
+        DbgPrint("KUSH-DBG OnOpenStartMenu: kushOpen=%d\n", KushStart_IsOpen());
+        if (KushStart_IsOpen())
+        {
+            HideStartMenu();
+            return TRUE;
+        }
+
         HRESULT hr = IUnknown_GetWindow(m_StartMenuPopup, &hwndStartMenu);
         if (FAILED_UNEXPECTEDLY(hr))
             return FALSE;
@@ -3119,6 +3434,27 @@ HandleTrayContextMenu:
         else
             PopupStartMenu();
 
+        return TRUE;
+    }
+
+    LRESULT OnOpenClassicStartMenu(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+    {
+        /* "All apps" in the Kush Fluent Start opens the classic menu. */
+        PopupClassicStartMenu();
+        return TRUE;
+    }
+
+    LRESULT OnKushStartClosed(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+    {
+        m_StartButton.SendMessageW(BM_SETSTATE, FALSE, 0);
+        return TRUE;
+    }
+
+    LRESULT OnKushRealign(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+    {
+        /* Kush Fluent (phase 7): the task band asks for a realign when its
+         * button count changes so the centered group tracks the buttons. */
+        AlignControls(NULL);
         return TRUE;
     }
 
@@ -3474,6 +3810,17 @@ HandleTrayContextMenu:
 
     DECLARE_WND_CLASS_EX(L"Shell_TrayWnd", CS_DBLCLKS, COLOR_3DFACE)
 
+    LRESULT OnDrawItem(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+    {
+        if (wParam == IDC_STARTBTN && !KushTaskbar_IsClassicRequested())
+        {
+            m_StartButton.DrawItem((LPDRAWITEMSTRUCT) lParam);
+            return TRUE;
+        }
+        bHandled = FALSE;
+        return 0;
+    }
+
     BEGIN_MSG_MAP(CTrayWindow)
         if (m_StartMenuBand != NULL)
         {
@@ -3512,6 +3859,7 @@ HandleTrayContextMenu:
         MESSAGE_HANDLER(WM_NCPAINT, OnNcPaint)
         MESSAGE_HANDLER(WM_NCACTIVATE, OnNcActivate)
         MESSAGE_HANDLER(WM_CTLCOLORBTN, OnCtlColorBtn)
+        MESSAGE_HANDLER(WM_DRAWITEM, OnDrawItem)
         MESSAGE_HANDLER(WM_SYSCOLORCHANGE, OnSysColorChange)
         MESSAGE_HANDLER(WM_MOVING, OnMoving)
         MESSAGE_HANDLER(WM_SIZING, OnSizing)
@@ -3537,6 +3885,9 @@ HandleTrayContextMenu:
         MESSAGE_HANDLER(m_WinMMDevChgMsg, OnWinMMDeviceChange)
         MESSAGE_HANDLER(TWM_SETTINGSCHANGED, OnTaskbarSettingsChanged)
         MESSAGE_HANDLER(TWM_OPENSTARTMENU, OnOpenStartMenu)
+        MESSAGE_HANDLER(TWM_OPENCLASSICSTARTMENU, OnOpenClassicStartMenu)
+        MESSAGE_HANDLER(TWM_KUSHSTARTCLOSED, OnKushStartClosed)
+        MESSAGE_HANDLER(TWM_KUSHREALIGN, OnKushRealign)
         MESSAGE_HANDLER(TWM_DOEXITWINDOWS, OnDoExitWindows)
         MESSAGE_HANDLER(TWM_GETTASKSWITCH, OnGetTaskSwitch)
         MESSAGE_HANDLER(TWM_SETZORDER, OnSetZOrder)

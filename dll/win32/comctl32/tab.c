@@ -60,6 +60,7 @@
 #include "winbase.h"
 #include "wingdi.h"
 #include "winuser.h"
+#include "winreg.h"
 #include "winnls.h"
 #include "commctrl.h"
 #include "comctl32.h"
@@ -103,6 +104,7 @@ typedef struct
   USHORT     uHItemPadding_s; /* Set amount of horizontal padding, in pixels */
   USHORT     uVItemPadding_s; /* Set amount of vertical padding, in pixels */
   HFONT      hFont;           /* handle to the current font */
+  HFONT      hKushThemeFont;  /* cached presentation font, not caller-owned */
   HCURSOR    hcurArrow;       /* handle to the current cursor */
   HIMAGELIST himl;            /* handle to an image list (may be 0) */
   HWND       hwndToolTip;     /* handle to tab's tooltip */
@@ -125,6 +127,42 @@ typedef struct
 
   HDPA       items;           /* dynamic array of TAB_ITEM* pointers */
 } TAB_INFO;
+
+/* KushFluent paints tab text with its theme font, while the inherited layout
+ * measured the caller font. Cache the same font for measurement and centering.
+ * Restrict this presentation fix to ordinary KushFluent tabs; explicit owner
+ * drawing, vertical tabs and button tabs keep their existing paths. */
+static void TAB_KushRefreshFont(TAB_INFO *infoPtr)
+{
+    WCHAR path[MAX_PATH];
+    LPCWSTR leaf, cursor;
+    HKEY key;
+    DWORD classic = 0, type = 0, size = sizeof(classic);
+    LOGFONTW font;
+    HDC dc;
+    if (infoPtr->hKushThemeFont) DeleteObject(infoPtr->hKushThemeFont);
+    infoPtr->hKushThemeFont = NULL;
+    if (infoPtr->dwStyle & (TCS_OWNERDRAWFIXED | TCS_VERTICAL | TCS_BUTTONS)) return;
+    if (!GetWindowTheme(infoPtr->hwnd) ||
+        FAILED(GetCurrentThemeName(path, MAX_PATH, NULL, 0, NULL, 0))) return;
+    leaf = path;
+    for (cursor = path; *cursor; ++cursor)
+        if (*cursor == L'\\' || *cursor == L'/') leaf = cursor + 1;
+    if (lstrcmpiW(leaf, L"kushfluent.msstyles")) return;
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Kush\\Shell", 0, KEY_QUERY_VALUE, &key) == ERROR_SUCCESS)
+    {
+        LONG status = RegQueryValueExW(key, L"ClassicTabs", NULL, &type, (BYTE*)&classic, &size);
+        RegCloseKey(key);
+        if (status == ERROR_SUCCESS && type == REG_DWORD && size == sizeof(classic) && classic) return;
+    }
+    dc = GetDC(infoPtr->hwnd);
+    if (dc)
+    {
+        if (SUCCEEDED(GetThemeFont(GetWindowTheme(infoPtr->hwnd), dc, TABP_TABITEM, TIS_NORMAL, TMT_FONT, &font)))
+            infoPtr->hKushThemeFont = CreateFontIndirectW(&font);
+        ReleaseDC(infoPtr->hwnd, dc);
+    }
+}
 
 /******************************************************************************
  * Positioning constants
@@ -1134,7 +1172,8 @@ static void TAB_SetItemBounds (TAB_INFO *infoPtr)
    */
   hdc = GetDC(infoPtr->hwnd);
 
-  hFont = infoPtr->hFont ? infoPtr->hFont : GetStockObject (SYSTEM_FONT);
+  hFont = infoPtr->hKushThemeFont ? infoPtr->hKushThemeFont :
+      (infoPtr->hFont ? infoPtr->hFont : GetStockObject (SYSTEM_FONT));
   hOldFont = SelectObject (hdc, hFont);
 
   /*
@@ -1695,7 +1734,7 @@ HTHEME    theme = GetWindowTheme (infoPtr->hwnd);
    */
   htextPen = CreatePen( PS_SOLID, 1, comctl32_color.clrBtnText );
   holdPen  = SelectObject(hdc, htextPen);
-  hOldFont = SelectObject(hdc, infoPtr->hFont);
+  hOldFont = SelectObject(hdc, infoPtr->hKushThemeFont ? infoPtr->hKushThemeFont : infoPtr->hFont);
 
   /*
    * Setup for text output
@@ -2928,6 +2967,7 @@ static inline LRESULT TAB_SetFont (TAB_INFO *infoPtr, HFONT hNewFont)
   TRACE("(%p,%p)\n", infoPtr, hNewFont);
 
   infoPtr->hFont = hNewFont;
+  TAB_KushRefreshFont(infoPtr);
 
   TAB_SetItemBounds(infoPtr);
 
@@ -3026,6 +3066,7 @@ static LRESULT TAB_Create (HWND hwnd, LPARAM lParam)
   infoPtr->uHItemPadding_s = 6;
   infoPtr->uVItemPadding_s = 3;
   infoPtr->hFont           = 0;
+  infoPtr->hKushThemeFont  = NULL;
   infoPtr->items           = DPA_Create(8);
   infoPtr->hcurArrow       = LoadCursorW (0, (LPWSTR)IDC_ARROW);
   infoPtr->iSelected       = -1;
@@ -3076,13 +3117,14 @@ static LRESULT TAB_Create (HWND hwnd, LPARAM lParam)
   }
 
   OpenThemeData (infoPtr->hwnd, themeClass);
+  TAB_KushRefreshFont(infoPtr);
   
   /*
    * We need to get text information so we need a DC and we need to select
    * a font.
    */
   hdc = GetDC(hwnd);
-  hOldFont = SelectObject (hdc, GetStockObject (SYSTEM_FONT));
+  hOldFont = SelectObject (hdc, infoPtr->hKushThemeFont ? infoPtr->hKushThemeFont : GetStockObject (SYSTEM_FONT));
 
   /* Use the system font to determine the initial height of a tab. */
   GetTextMetricsW(hdc, &fontMetrics);
@@ -3138,6 +3180,7 @@ TAB_Destroy (TAB_INFO *infoPtr)
   if (infoPtr->iHotTracked >= 0)
     KillTimer(infoPtr->hwnd, TAB_HOTTRACK_TIMER);
 
+  if (infoPtr->hKushThemeFont) DeleteObject(infoPtr->hKushThemeFont);
   CloseThemeData (GetWindowTheme (infoPtr->hwnd));
 
   Free (infoPtr);
@@ -3145,11 +3188,14 @@ TAB_Destroy (TAB_INFO *infoPtr)
 }
 
 /* update theme after a WM_THEMECHANGED message */
-static LRESULT theme_changed(const TAB_INFO *infoPtr)
+static LRESULT theme_changed(TAB_INFO *infoPtr)
 {
     HTHEME theme = GetWindowTheme (infoPtr->hwnd);
     CloseThemeData (theme);
     OpenThemeData (infoPtr->hwnd, themeClass);
+    TAB_KushRefreshFont(infoPtr);
+    TAB_SetItemBounds(infoPtr);
+    InvalidateRect(infoPtr->hwnd, NULL, TRUE);
     return 0;
 }
 
@@ -3289,6 +3335,7 @@ static INT TAB_StyleChanged(TAB_INFO *infoPtr, WPARAM wStyleType,
     if (wStyleType != GWL_STYLE) return 0;
 
     infoPtr->dwStyle = lpss->styleNew;
+    TAB_KushRefreshFont(infoPtr);
 
     TAB_SetItemBounds (infoPtr);
     InvalidateRect(infoPtr->hwnd, NULL, TRUE);

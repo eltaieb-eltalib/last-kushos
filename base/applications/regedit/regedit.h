@@ -14,6 +14,9 @@
 #include <stdlib.h>
 
 #include "main.h"
+
+/* Presentation only; registry command paths remain native. */
+extern BOOL g_KushRegedit;
 #include "hexedit.h"
 #include "security.h"
 #include "wine/debug.h"

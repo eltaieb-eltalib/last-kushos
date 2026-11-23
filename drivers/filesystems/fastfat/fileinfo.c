@@ -227,7 +227,10 @@ Return Value:
 
 {
     NTSTATUS Status;
-    PIRP_CONTEXT IrpContext = NULL;
+    /* PSEH filters enter before the trampoline restores this function frame.
+     * Keep the cross-filter local in memory, so GCC cannot spill a live
+     * nonvolatile register through the caller RBP at the filter entry. */
+    PIRP_CONTEXT volatile IrpContext = NULL;
 
     BOOLEAN TopLevel;
 
@@ -308,7 +311,10 @@ Return Value:
 
 {
     NTSTATUS Status;
-    PIRP_CONTEXT IrpContext = NULL;
+    /* PSEH filters enter before the trampoline restores this function frame.
+     * Keep the cross-filter local in memory, so GCC cannot spill a live
+     * nonvolatile register through the caller RBP at the filter entry. */
+    PIRP_CONTEXT volatile IrpContext = NULL;
 
     BOOLEAN TopLevel;
 

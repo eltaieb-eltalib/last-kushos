@@ -1,3 +1,4 @@
+/* KUSH_CPL_FLUENT: generated mapping, original IDs preserved. */
 #include <windef.h>
 #include <winuser.h>
 #include <commctrl.h>
@@ -11,13 +12,16 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 #define REACTOS_STR_INTERNAL_NAME     "usrmgr"
 #define REACTOS_STR_ORIGINAL_FILENAME "usrmgr.cpl"
 #include <reactos/version.rc>
-
 IDI_USRMGR_ICON ICON "resources/applet.ico"
+(IDI_USRMGR_ICON + 40000) ICON "resources/fluent/people.ico"
 IDI_USRMGR_ICON2 ICON "resources/applet.ico"
-
+(IDI_USRMGR_ICON2 + 40000) ICON "resources/fluent/people.ico"
 IDI_USER ICON "resources/user.ico"
+(IDI_USER + 40000) ICON "resources/fluent/person.ico"
 IDI_LOCKED_USER ICON "resources/locked.ico"
+(IDI_LOCKED_USER + 40000) ICON "resources/fluent/person_prohibited.ico"
 IDI_GROUP ICON "resources/group.ico"
+(IDI_GROUP + 40000) ICON "resources/fluent/people.ico"
 
 #include <reactos/manifest_hosted.rc>
 

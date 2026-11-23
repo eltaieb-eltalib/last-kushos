@@ -10,8 +10,10 @@
 
 #define TOOLBAR_ROWS        8
 #define TOOLBAR_COLUMNS     2
-#define CXY_TB_BUTTON       25
-#define CX_TOOLBAR          (TOOLBAR_COLUMNS * CXY_TB_BUTTON)
+#define KUSH_PAINT_PADDING  (g_KushPaint ? 8 : 0)
+#define CXY_TB_BUTTON       (g_KushPaint ? 32 : 25)
+#define CX_TOOLBUTTONS      (TOOLBAR_COLUMNS * CXY_TB_BUTTON)
+#define CX_TOOLBAR          (CX_TOOLBUTTONS + 2 * KUSH_PAINT_PADDING)
 #define CY_TOOLBAR          (TOOLBAR_ROWS * CXY_TB_BUTTON)
 
 class CPaintToolBar : public CWindow
@@ -28,6 +30,7 @@ public:
 
     BEGIN_MSG_MAP(CToolBox)
         MESSAGE_HANDLER(WM_CREATE, OnCreate)
+        MESSAGE_HANDLER(WM_ERASEBKGND, OnEraseBkgnd)
         MESSAGE_HANDLER(WM_SYSCOLORCHANGE, OnSysColorChange)
         MESSAGE_HANDLER(WM_COMMAND, OnCommand)
         MESSAGE_HANDLER(WM_LBUTTONDOWN, OnLButtonDown)
@@ -40,6 +43,11 @@ public:
 
 private:
     CPaintToolBar toolbar;
+
+    LRESULT OnEraseBkgnd(UINT, WPARAM wParam, LPARAM, BOOL& bHandled)
+    {
+        return KushPaintErase(m_hWnd, (HDC)wParam, bHandled);
+    }
 
     LRESULT OnCreate(UINT nMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
     LRESULT OnSysColorChange(UINT nMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);

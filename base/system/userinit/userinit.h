@@ -59,6 +59,8 @@ typedef struct
     RUN Run;
     IMGINFO ImageInfo;
     struct _LIVECD_UNATTEND* Unattend;
+    BOOL KushModern;
+    HFONT KushFont;
 } STATE, *PSTATE;
 
 

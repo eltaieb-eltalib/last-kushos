@@ -7,6 +7,109 @@
 
 #include "precomp.h"
 
+static BOOL g_KushPerformance;
+static HFONT g_KushMeterFont;
+
+BOOL Graph_UseKushStyle(void)
+{
+    return g_KushPerformance;
+}
+
+void Graph_FreeKushStyle(void)
+{
+    if (g_KushMeterFont)
+        DeleteObject(g_KushMeterFont);
+    g_KushMeterFont = NULL;
+}
+
+void Graph_InitKushStyle(HWND dialog)
+{
+    HIGHCONTRASTW contrast = { sizeof(contrast) };
+    HKEY key;
+    const WCHAR *names[] = { L"ClassicTaskManager", L"ClassicWindows" };
+    UINT i;
+    LOGFONTW font;
+    HFONT baseFont;
+    HDC dc;
+    int dpi;
+
+    Graph_FreeKushStyle();
+    g_KushPerformance = TRUE;
+    if (SystemParametersInfoW(SPI_GETHIGHCONTRAST, sizeof(contrast), &contrast, 0) &&
+        (contrast.dwFlags & HCF_HIGHCONTRASTON))
+        g_KushPerformance = FALSE;
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Kush\\Shell", 0,
+                      KEY_QUERY_VALUE, &key) == ERROR_SUCCESS)
+    {
+        for (i = 0; i < ARRAYSIZE(names); ++i)
+        {
+            DWORD value = 0, type = 0, size = sizeof(value);
+            if (RegQueryValueExW(key, names[i], NULL, &type, (BYTE*)&value, &size) == ERROR_SUCCESS &&
+                type == REG_DWORD && size == sizeof(value) && value)
+                g_KushPerformance = FALSE;
+        }
+        RegCloseKey(key);
+    }
+    if (!g_KushPerformance)
+        return;
+    baseFont = (HFONT)SendMessageW(dialog, WM_GETFONT, 0, 0);
+    if (!baseFont)
+        baseFont = GetStockObject(DEFAULT_GUI_FONT);
+    if (!GetObjectW(baseFont, sizeof(font), &font))
+        return;
+    dc = GetDC(dialog);
+    dpi = dc ? GetDeviceCaps(dc, LOGPIXELSY) : 96;
+    if (dc)
+        ReleaseDC(dialog, dc);
+    font.lfHeight = -MulDiv(13, dpi > 0 ? dpi : 96, 72);
+    font.lfWeight = FW_MEDIUM;
+    g_KushMeterFont = CreateFontIndirectW(&font);
+}
+
+static void Graph_DrawKushMeter(HDC dc, HWND window, LPCWSTR text, ULONG value, ULONG kernel)
+{
+    RECT client, label, track, used;
+    HGDIOBJ oldBrush, oldPen;
+    int saved = SaveDC(dc);
+    GetClientRect(window, &client);
+    SetDCBrushColor(dc, RGB(255, 255, 255));
+    FillRect(dc, &client, GetStockObject(DC_BRUSH));
+    SetBkMode(dc, TRANSPARENT);
+    SetTextColor(dc, RGB(23, 43, 58));
+    if (g_KushMeterFont)
+        SelectObject(dc, g_KushMeterFont);
+    label = client;
+    label.bottom -= 17;
+    DrawTextW(dc, text, -1, &label, DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
+
+    track = client;
+    InflateRect(&track, -7, 0);
+    track.top = max(client.top, client.bottom - 13);
+    track.bottom = max(track.top, client.bottom - 6);
+    oldBrush = SelectObject(dc, GetStockObject(DC_BRUSH));
+    oldPen = SelectObject(dc, GetStockObject(NULL_PEN));
+    SetDCBrushColor(dc, RGB(227, 236, 239));
+    RoundRect(dc, track.left, track.top, track.right, track.bottom, 4, 4);
+    if (value > 100) value = 100;
+    if (kernel > value) kernel = value;
+    used = track;
+    used.right = used.left + MulDiv(track.right - track.left, value, 100);
+    if (value)
+    {
+        SetDCBrushColor(dc, RGB(13, 115, 119));
+        RoundRect(dc, used.left, used.top, max(used.left + 2, used.right), used.bottom, 4, 4);
+    }
+    if (kernel)
+    {
+        used.right = used.left + MulDiv(track.right - track.left, kernel, 100);
+        SetDCBrushColor(dc, RGB(217, 119, 6));
+        RoundRect(dc, used.left, used.top, max(used.left + 2, used.right), used.bottom, 4, 4);
+    }
+    SelectObject(dc, oldPen);
+    SelectObject(dc, oldBrush);
+    RestoreDC(dc, saved);
+}
+
 int      nlastBarsUsed = 0;
 
 WNDPROC  OldGraphWndProc;
@@ -147,6 +250,12 @@ void Graph_DrawCpuUsageGraph(HDC hDC, HWND hWnd)
     CpuUsage = PerfDataGetProcessorUsage();
 
     wsprintfW(Text, L"%d%%", (int)CpuUsage);
+    if (Graph_UseKushStyle())
+    {
+        Graph_DrawKushMeter(hDC, hWnd, Text, CpuUsage,
+            TaskManagerSettings.ShowKernelTimes ? PerfDataGetProcessorSystemUsage() : 0);
+        return;
+    }
 
     /*
      * Draw the font text onto the graph
@@ -313,6 +422,13 @@ void Graph_DrawMemUsageGraph(HDC hDC, HWND hWnd)
         wsprintfW(Text, L"%d MB", (int)(CommitChargeTotal / 1024));
     else
         wsprintfW(Text, L"%d K", (int)CommitChargeTotal);
+    if (Graph_UseKushStyle())
+    {
+        ULONG percent = CommitChargeLimit ? (ULONG)((CommitChargeTotal * 100) / CommitChargeLimit) : 0;
+        Graph_DrawKushMeter(hDC, hWnd, Text, percent, 0);
+        return;
+    }
+
     /*
      * Draw the font text onto the graph
      */

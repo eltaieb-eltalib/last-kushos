@@ -46,7 +46,8 @@ BitBlt(
     _In_ ULONG Height,
     _In_reads_bytes_(Height * Stride) PUCHAR Buffer,
     _In_ ULONG BitsPerPixel,
-    _In_ ULONG Stride)
+    /* Bottom-up DIBs step backwards, including on 64-bit. */
+    _In_ LONG Stride)
 {
     ULONG X, Y;
     PUCHAR InputBuffer;

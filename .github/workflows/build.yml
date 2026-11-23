@@ -1,0 +1,97 @@
+name: Build Kush bootcd
+
+# Manual trigger only. No automatic push, pull-request, or scheduled runs.
+# Toolchain: mirrors reactos/reactos .github/workflows/build.yml - builds the
+# supported RosBE toolchain once from source and caches it, instead of using
+# the runner's stock mingw (whose libstdc++ mismatches ReactOS msvcrt at link).
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: kush-bootcd
+  cancel-in-progress: false
+
+jobs:
+  bootcd:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 300
+    steps:
+      - name: Get RosBE build specifics
+        id: get_rosbe_spec
+        run: |
+          echo -march = $(gcc -march=native -Q --help=target | grep "\-march=  " | awk '{print $NF}')
+          echo march-sha=$(gcc -march=native -Q --help=target | sha1sum | awk '{print $1}') >> $GITHUB_OUTPUT
+          echo git-sha=$(git ls-remote https://github.com/zefklop/RosBE.git | grep unix_amd64 | awk '{print $1}') >> $GITHUB_OUTPUT
+          wget https://gist.githubusercontent.com/zefklop/b2d6a0b470c70183e93d5285a03f5899/raw/build_rosbe_ci.sh
+
+      - name: Get RosBE
+        id: get_rosbe
+        uses: actions/cache@v4
+        with:
+          path: RosBE-CI
+          key: RosBE-CI-${{runner.os}}-${{steps.get_rosbe_spec.outputs.march-sha}}-${{steps.get_rosbe_spec.outputs.git-sha}}-${{hashfiles('./build_rosbe_ci.sh')}}
+
+      - name: Compile RosBE
+        if: ${{ steps.get_rosbe.outputs.cache-hit != 'true' }}
+        run: |
+          chmod +x build_rosbe_ci.sh
+          ./build_rosbe_ci.sh ${{github.workspace}}/RosBE-CI
+
+      - name: Install build dependencies (host side only; mingw comes from RosBE)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            bison flex cmake ninja-build python3 \
+            zlib1g-dev libgmp-dev libmpfr-dev libmpc-dev ccache
+
+      - name: Free disk space (ReactOS build tree needs ~10GB)
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /usr/local/share/powershell /opt/hostedtoolcache || true
+          df -h /
+
+      - name: Source checkout
+        uses: actions/checkout@v4
+        with:
+          # Do NOT clean the workspace: the RosBE toolchain we just built
+          # (RosBE-CI/) and the ccache dir live next to the source tree.
+          clean: false
+
+      - name: Set up cache for ccache
+        uses: actions/cache@v4
+        with:
+          path: ccache
+          key: ccache-gcc-amd64-Release-${{github.sha}}
+          restore-keys: |
+            ccache-gcc-amd64-Release-
+
+      - name: Set ccache settings
+        run: |
+          echo "CCACHE_BASEDIR=${{github.workspace}}" >> $GITHUB_ENV
+          echo "CCACHE_DIR=${{github.workspace}}/ccache" >> $GITHUB_ENV
+          echo "CCACHE_MAXSIZE=1G" >> $GITHUB_ENV
+          echo "CCACHE_SLOPPINESS=time_macros" >> $GITHUB_ENV
+
+      - name: Ease ccache compiler check (GCC)
+        run: echo "CCACHE_COMPILERCHECK=string:${{steps.get_rosbe_spec.outputs.git-sha}}-${{hashfiles('./build_rosbe_ci.sh')}}" >> $GITHUB_ENV
+
+      - name: Configure
+        run: echo 'cmake -S ${{github.workspace}} -B ${{github.workspace}}/build -G Ninja -DCMAKE_TOOLCHAIN_FILE:FILEPATH=toolchain-gcc.cmake -DARCH:STRING=amd64 -DCMAKE_BUILD_TYPE=Release -DENABLE_CCACHE=1' | ${{github.workspace}}/RosBE-CI/RosBE.sh . 0 amd64
+
+      - name: Build bootcd
+        run: echo 'cmake --build ${{github.workspace}}/build --target bootcd' | ${{github.workspace}}/RosBE-CI/RosBE.sh . 0 amd64
+
+      - name: Print ccache statistics
+        run: ccache -s
+
+      - name: Record ISO hash
+        run: sha256sum build/bootcd.iso | tee build-sha256.txt
+
+      - name: Upload ISO artifact (private, 3-day retention)
+        uses: actions/upload-artifact@v4
+        with:
+          name: kush-bootcd-${{ github.run_id }}
+          path: |
+            build/bootcd.iso
+            build-sha256.txt
+          retention-days: 3

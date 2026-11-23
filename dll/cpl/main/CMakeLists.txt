@@ -21,3 +21,6 @@ target_link_libraries(main uuid)
 add_importlibs(main advapi32 user32 comctl32 devmgr comdlg32 shell32 gdi32 msvcrt kernel32)
 add_pch(main main.h SOURCE)
 add_cd_file(TARGET main DESTINATION reactos/system32 FOR all)
+
+file(GLOB kush_fluent_icon_deps "${CMAKE_CURRENT_SOURCE_DIR}/resources/fluent/*.ico")
+add_rc_deps(main.rc ${kush_fluent_icon_deps})

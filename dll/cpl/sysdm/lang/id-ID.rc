@@ -29,15 +29,15 @@ CAPTION "Perangkat Keras"
 FONT 8, "MS Shell Dlg"
 BEGIN
     GROUPBOX "Manajer Perangkat", IDC_STATIC, 6, 7, 244, 61
-    ICON IDI_DEVMGR, IDC_STATIC, 12, 18, 23, 21, SS_ICON
+    ICON IDI_DEVMGR, IDC_KUSH_STATIC_DEVMGR, 12, 18, 23, 21, SS_ICON
     LTEXT "Manajer perangkat mendaftar seluruh perangkat keras yang terpasang pada komputer anda. Gunakan Manajer Perangkat untuk mengubah properti setiap perangkat.", IDC_STATIC, 42, 18, 204, 24
     PUSHBUTTON "Manajer &Perangkat...", IDC_HARDWARE_DEVICE_MANAGER, 154, 48, 90, 14
     GROUPBOX "Bimbingan Perangkat Keras", IDC_STATIC, 6, 79, 244, 61
-    ICON IDI_ADDHW, IDC_STATIC, 12, 90, 23, 21, SS_ICON
+    ICON IDI_ADDHW, IDC_KUSH_STATIC_ADDHW, 12, 90, 23, 21, SS_ICON
     LTEXT "Bimbingan Perangkat Keras membantu anda memasang, mencopot, memperbaiki, mencabut, mengeluarkan, dan mengonfigurasi perangkat anda.", IDC_STATIC, 42, 90, 204, 24
     PUSHBUTTON "Bimbingan &Perangkat...", IDC_HARDWARE_WIZARD, 154, 120, 90, 14
     GROUPBOX "Profil Perangkat Keras", IDC_STATIC, 6, 149, 244, 61
-    ICON IDI_HARDPROF, IDC_STATIC, 12, 160, 23, 21, SS_ICON
+    ICON IDI_HARDPROF, IDC_KUSH_STATIC_HARDPROF, 12, 160, 23, 21, SS_ICON
     LTEXT "Profil perangkat keras menyediakan cara bagi anda untuk menyiapkan dan menyimpan konfigurasi perangkat keras yang berbeda.", IDC_STATIC, 42, 160, 204, 24
     PUSHBUTTON "Profil Hard&ware...", IDC_HARDWARE_PROFILE, 154, 190, 90, 14
 END
@@ -78,7 +78,7 @@ STYLE DS_SHELLFONT | DS_MODALFRAME | DS_CONTEXTHELP | WS_POPUP | WS_VISIBLE | WS
 CAPTION "Profil Perangkat Keras"
 FONT 8, "MS Shell Dlg"
 BEGIN
-    ICON IDI_HARDPROF, IDC_STATIC, 8, 11, 18, 20, SS_ICON
+    ICON IDI_HARDPROF, IDC_KUSH_STATIC_HARDPROF, 8, 11, 18, 20, SS_ICON
     LTEXT "Anda dapat mengatur profil perangkat keras untuk berbagai konfigurasinya. Saat memulai, Anda dapat memilih profil yang ingin digunakan.", IDC_STATIC, 46, 11, 188, 25
     LTEXT "Profil perangkat keras yang tersedia:", IDC_STATIC, 8, 41, 120, 8
     LISTBOX IDC_HRDPROFLSTBOX, 8, 52, 215, 54, LBS_NOTIFY
@@ -105,7 +105,7 @@ STYLE DS_SHELLFONT | DS_MODALFRAME | DS_CONTEXTHELP | WS_POPUP | WS_VISIBLE | WS
 CAPTION "Umum"
 FONT 8, "MS Shell Dlg"
 BEGIN
-    ICON IDI_HARDPROF, IDC_STATIC, 10, 10, 18, 20, SS_ICON
+    ICON IDI_HARDPROF, IDC_KUSH_STATIC_HARDPROF, 10, 10, 18, 20, SS_ICON
     LTEXT "", IDC_HWPPROP_PROFILE, 48, 16, 150, 8
     LTEXT "Dock ID:", IDC_STATIC, 10, 42, 43, 8
     LTEXT "", IDC_HWPPROP_DOCKID, 64, 42, 135, 8
@@ -151,7 +151,7 @@ STYLE DS_SHELLFONT | DS_MODALFRAME | DS_CONTEXTHELP | WS_POPUP | WS_VISIBLE | WS
 CAPTION "Profil Pengguna"
 FONT 8, "MS Shell Dlg"
 BEGIN
-    ICON IDI_USERPROF, IDC_STATIC, 6, 11, 16, 16, SS_ICON
+    ICON IDI_USERPROF, IDC_KUSH_STATIC_USERPROF, 6, 11, 16, 16, SS_ICON
     LTEXT "Profil pengguna berisi pengaturan desktop dan informasi lain yang terkait dengan cara masuk Anda. Profil yang berbeda dapat dibuat di setiap komputer yang anda gunakan, atau anda dapat memilih profil roaming yang sama di setiap komputer yang anda gunakan.", IDC_STATIC, 40, 6, 204, 44
     LTEXT "Profi tersimpan di komputer ini:", IDC_STATIC, 16, 51, 204, 9
     CONTROL "", IDC_USERPROFILE_LIST, "SysListView32", LVS_REPORT | LVS_SINGLESEL |

@@ -40,6 +40,18 @@ IDI_STARTMENU2      ICON "res/ico/257.ico"
 \*******************************************************************************/
 
 IDB_START                           BITMAP "res/bmp/143.bmp"
+IDB_START_KUSH                      BITMAP "res/bmp/kush-start.bmp"
+
+IDI_KUSH_START                      ICON "res/ico/kush-start.ico"
+IDI_KUSH_SEARCH                     ICON "res/ico/kush-search.ico"
+IDI_KUSH_POWER                      ICON "res/ico/kush-power.ico"
+IDI_KUSH_CMD                        ICON "res/ico/kush-cmd.ico"
+IDI_KUSH_NOTEPAD                    ICON "res/ico/kush-notepad.ico"
+IDI_KUSH_WORDPAD                    ICON "res/ico/kush-wordpad.ico"
+IDI_KUSH_PAINT                      ICON "res/ico/kush-paint.ico"
+IDI_KUSH_CALC                       ICON "res/ico/kush-calc.ico"
+IDI_KUSH_FILES                      ICON "res/ico/kush-files.ico"
+IDI_KUSH_EXPLORER                   ICON "res/ico/kush-explorer.ico"
 IDB_TASKBARPROP_AUTOHIDE            BITMAP "res/bmp/145.bmp"
 IDB_TASKBARPROP_LOCK_GROUP_QL       BITMAP "res/bmp/146.bmp"
 IDB_TASKBARPROP_NOLOCK_GROUP_QL     BITMAP "res/bmp/147.bmp"

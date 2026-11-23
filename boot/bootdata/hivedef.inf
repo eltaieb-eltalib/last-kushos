@@ -64,7 +64,7 @@ HKCU,"Control Panel\Desktop","ScreenSaverIsSecure",2,"1"
 HKCU,"Control Panel\Desktop","ScreenSaveTimeOut",2,"600"
 HKCU,"Control Panel\Desktop","WaitToKillAppTimeout",2,"20000"
 HKCU,"Control Panel\Desktop","Pattern",2,"(None)"
-HKCU,"Control Panel\Desktop","Wallpaper",0x00000002,"%SystemRoot%\\Web\\Wallpaper\\Kush-Flow.bmp"
+HKCU,"Control Panel\Desktop","Wallpaper",0x00020002,"%SystemRoot%\Web\Wallpaper\Kush-Flow.bmp"
 HKCU,"Control Panel\Desktop","TileWallpaper",2,"0"
 HKCU,"Control Panel\Desktop","WallpaperStyle",2,"10"
 HKCU,"Control Panel\Desktop","FontSmoothing",2,"0"
@@ -83,6 +83,12 @@ HKCU,"Control Panel\Desktop","MenuShowDelay",2,"400"
 HKCU,"Control Panel\Desktop","WheelScrollLines",2,"3"
 HKCU,"Control Panel\Desktop","WheelScrollChars",2,"3"
 
+; Kush Fluent default visual style, with ClassicWindows startup fallback.
+HKCU,"Software\Microsoft\Windows\CurrentVersion\ThemeManager","ThemeActive",0x00000000,"1"
+HKCU,"Software\Microsoft\Windows\CurrentVersion\ThemeManager","DllName",0x00020000,"%SystemRoot%\Resources\Themes\Modern\kushfluent.msstyles"
+HKCU,"Software\Microsoft\Windows\CurrentVersion\ThemeManager","ColorName",0x00000000,"Light"
+HKCU,"Software\Microsoft\Windows\CurrentVersion\ThemeManager","SizeName",0x00000000,"Regular Fonts"
+
 HKCU,"Control Panel\Desktop\WindowMetrics","AppliedDPI",0x00010003,0x00000060
 HKCU,"Control Panel\Desktop\WindowMetrics","ScrollWidth",2,"16"
 HKCU,"Control Panel\Desktop\WindowMetrics","ScrollHeight",2,"16"
@@ -93,10 +99,10 @@ HKCU,"Control Panel\Desktop\WindowMetrics","SmCaptionHeight",2,"15"
 HKCU,"Control Panel\Desktop\WindowMetrics","MenuWidth",2,"18"
 HKCU,"Control Panel\Desktop\WindowMetrics","MenuHeight",2,"18"
 HKCU,"Control Panel\Desktop\WindowMetrics","BorderWidth",2,"1"
-HKCU,"Control Panel\Desktop\WindowMetrics","Shell Icon Size",2,"32"
-HKCU,"Control Panel\Desktop\WindowMetrics","IconSpacing",2,"75"
+HKCU,"Control Panel\Desktop\WindowMetrics","Shell Icon Size",2,"48"
+HKCU,"Control Panel\Desktop\WindowMetrics","IconSpacing",2,"90"
 HKCU,"Control Panel\Desktop\WindowMetrics","IconTitleWrap",2,"1"
-HKCU,"Control Panel\Desktop\WindowMetrics","IconVerticalspacing",2,"75"
+HKCU,"Control Panel\Desktop\WindowMetrics","IconVerticalspacing",2,"90"
 HKCU, "Control Panel\Desktop\WindowMetrics","CaptionFont",0x00000003,f5,ff,ff,ff,00,00,00,\
 00,00,00,00,00,00,00,00,00,bc,02,00,00,00,00,00,01,00,00,00,00,54,00,61,00,68,00,6f,00,6d,\
 00,61,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,\

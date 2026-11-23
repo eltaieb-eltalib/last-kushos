@@ -1,3 +1,4 @@
+/* KUSH_CPL_FLUENT: generated mapping, original IDs preserved. */
 #include <windef.h>
 #include <winuser.h>
 #include <commctrl.h>
@@ -12,10 +13,12 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 #define REACTOS_STR_ORIGINAL_FILENAME "hdwwiz.cpl"
 
 #include <reactos/version.rc>
-
 IDI_CPLICON ICON "resources/applet.ico"
+(IDI_CPLICON + 40000) ICON "resources/fluent/plug_connected.ico"
 IDI_WARNINGICON ICON "resources/warning.ico"
+(IDI_WARNINGICON + 40000) ICON "resources/fluent/warning.ico"
 IDI_SEARCHICON ICON "resources/search.ico"
+(IDI_SEARCHICON + 40000) ICON "resources/fluent/search.ico"
 
 IDB_WATERMARK BITMAP "resources/watermark.bmp"
 IDB_HEADER BITMAP "resources/header.bmp"

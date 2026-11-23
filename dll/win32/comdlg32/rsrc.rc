@@ -151,3 +151,6 @@
 #ifdef LANGUAGE_ZH_CN
     #include "lang/cdlg_Zh.rc"
 #endif
+
+/* Official Fluent UI System Icons, MIT. Sources remain in media/icons/fluent-system. */
+IDB_KUSH_FILE_TOOLBAR BITMAP "res/bitmaps/kush-file-toolbar.bmp"

@@ -396,6 +396,10 @@ static void COMBOEX_AdjustEditPos (const COMBOEX_INFO *infoPtr)
     w = rect.right-rect.left - x - GetSystemMetrics(SM_CXVSCROLL) - 1;
     h = mysize.cy + 1;
     y = rect.bottom - h - 1;
+    /* Opt-in native Kush address band only. Other ComboBoxEx controls keep
+     * their existing layout, including application-owned controls. */
+    if (GetPropW(infoPtr->hwndSelf, L"KushCenteredAddress"))
+        y = (rect.bottom + rect.top - h) / 2;
 
     TRACE("Combo client (%s), setting Edit to (%d,%d)-(%d,%d)\n",
           wine_dbgstr_rect(&rect), x, y, x + w, y + h);
@@ -1440,7 +1444,13 @@ static LRESULT COMBOEX_DrawItem (COMBOEX_INFO *infoPtr, DRAWITEMSTRUCT const *di
 	if (drawimage >= 0 &&
 	    !(infoPtr->dwExtStyle & (CBES_EX_NOEDITIMAGE | CBES_EX_NOEDITIMAGEINDENT))) {
 	    if (overlay > 0) ImageList_SetOverlayImage (infoPtr->himl, overlay, 1);
-	    ImageList_Draw (infoPtr->himl, drawimage, dis->hDC, xbase, dis->rcItem.top,
+	    INT imageY = dis->rcItem.top;
+	    if (GetPropW(infoPtr->hwndSelf, L"KushCenteredAddress")) {
+	        INT imageWidth, imageHeight;
+	        if (ImageList_GetIconSize(infoPtr->himl, &imageWidth, &imageHeight))
+	            imageY += max(0, (dis->rcItem.bottom - dis->rcItem.top - imageHeight) / 2);
+	    }
+	    ImageList_Draw (infoPtr->himl, drawimage, dis->hDC, xbase, imageY,
 			    drawstate | (overlay > 0 ? INDEXTOOVERLAYMASK(1) : 0));
 	}
 

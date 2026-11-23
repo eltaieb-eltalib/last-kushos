@@ -39,7 +39,7 @@ GraphCtrl_Create(PTM_GRAPH_CONTROL inst, HWND hWnd, HWND hParentWnd, PTM_FORMAT 
 
     /* Styling */
     inst->hPenGrid = CreatePen(PS_SOLID, 0, fmt->clrGrid);
-    inst->hPen0 = CreatePen(PS_SOLID, 0, fmt->clrPlot0);
+    inst->hPen0 = CreatePen(PS_SOLID, Graph_UseKushStyle() ? 2 : 0, fmt->clrPlot0);
     inst->hPen1 = CreatePen(PS_SOLID, 0, fmt->clrPlot1);
     inst->hBrushBack = CreateSolidBrush(fmt->clrBack);
 

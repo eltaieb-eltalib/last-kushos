@@ -23,3 +23,6 @@ set_module_type(timedate cpl UNICODE)
 target_link_libraries(timedate tzlib)
 add_importlibs(timedate w32time advapi32 user32 gdi32 comctl32 ws2_32 iphlpapi msvcrt kernel32 ntdll)
 add_cd_file(TARGET timedate DESTINATION reactos/system32 FOR all)
+
+file(GLOB kush_fluent_icon_deps "${CMAKE_CURRENT_SOURCE_DIR}/resources/fluent/*.ico")
+add_rc_deps(timedate.rc ${kush_fluent_icon_deps})

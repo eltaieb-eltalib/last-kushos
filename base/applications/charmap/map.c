@@ -75,12 +75,15 @@ FillGrid(PMAP infoPtr,
     PCELL Cell;
     INT i;
     HBRUSH hOldBrush, hbrGray = (HBRUSH)GetStockObject(LTGRAY_BRUSH);
-    HPEN hOldPen, hPenGray = CreatePen(PS_SOLID, 1, RGB(140, 140, 140));
+    HPEN hGridPen = KushCharacterMap ? CreatePen(PS_SOLID, 1, RGB(219, 225, 231)) : NULL;
+    HBRUSH hSelected = KushCharacterMap ? CreateSolidBrush(RGB(228, 244, 241)) : NULL;
+    HPEN hOldPen, hPenGray = CreatePen(PS_SOLID, 1,
+        KushCharacterMap ? RGB(20, 128, 125) : RGB(140, 140, 140));
 
     UpdateCells(infoPtr);
 
     hOldFont = SelectObject(ps->hdc, infoPtr->hFont);
-    hOldPen = SelectObject(ps->hdc, GetStockObject(BLACK_PEN));
+    hOldPen = SelectObject(ps->hdc, hGridPen ? hGridPen : GetStockObject(BLACK_PEN));
     hOldBrush = SelectObject(ps->hdc, GetStockObject(WHITE_BRUSH));
 
     i = XCELLS * infoPtr->iYStart;
@@ -98,6 +101,8 @@ FillGrid(PMAP infoPtr,
 
             if (i < infoPtr->NumValidGlyphs)
             {
+                if (hSelected && Cell == infoPtr->pActiveCell)
+                    FillRect(ps->hdc, &Cell->CellInt, hSelected);
                 DrawTextW(ps->hdc, &Cell->ch, 1, &Cell->CellInt,
                           DT_CENTER | DT_VCENTER | DT_SINGLELINE);
                 if (Cell == infoPtr->pActiveCell)
@@ -108,7 +113,7 @@ FillGrid(PMAP infoPtr,
                     SelectObject(ps->hdc, GetStockObject(NULL_BRUSH));
                     SelectObject(ps->hdc, hPenGray);
                     Rectangle(ps->hdc, rc.left, rc.top, rc.right, rc.bottom);
-                    SelectObject(ps->hdc, hOldPen);
+                    SelectObject(ps->hdc, hGridPen ? hGridPen : hOldPen);
                     SelectObject(ps->hdc, hOldBrush);
 
                     if (GetFocus() == infoPtr->hMapWnd)
@@ -130,6 +135,8 @@ FillGrid(PMAP infoPtr,
     SelectObject(ps->hdc, hOldPen);
     SelectObject(ps->hdc, hOldBrush);
     DeleteObject(hPenGray);
+    if (hGridPen) DeleteObject(hGridPen);
+    if (hSelected) DeleteObject(hSelected);
 }
 
 
@@ -748,6 +755,20 @@ MapWndProc(HWND hwnd,
 
             break;
         }
+
+        case WM_SIZE:
+            if (KushCharacterMap && infoPtr)
+            {
+                RECT client;
+                GetClientRect(hwnd, &client);
+                infoPtr->ClientSize.cx = client.right;
+                infoPtr->ClientSize.cy = client.bottom;
+                infoPtr->CellSize.cx = max(1, client.right / XCELLS);
+                infoPtr->CellSize.cy = max(1, client.bottom / YCELLS);
+                SetGrid(infoPtr);
+                InvalidateRect(hwnd, NULL, TRUE);
+            }
+            break;
 
         case WM_KEYDOWN:
         {

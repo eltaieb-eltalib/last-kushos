@@ -1,3 +1,4 @@
+/* KUSH_FLUENT_TOOLBAR: 47 command slots retained, ClassicIcons rollback. */
 /*
  * Top level resource file for browseui stuff
  *
@@ -135,12 +136,18 @@ IDR_USERASSIST REGISTRY "res/userassist.rgs"
 
 /* Include band button bitmaps */
 IDB_BANDBUTTONS BITMAP "res/barbtn.bmp"
-IDB_SHELL_EXPLORER_LG        BITMAP "res/214.bmp"
-IDB_SHELL_EXPLORER_LG_HOT    BITMAP "res/215.bmp"
-IDB_SHELL_EXPLORER_SM        BITMAP "res/216.bmp"
-IDB_SHELL_EXPLORER_SM_HOT    BITMAP "res/217.bmp"
-IDB_SHELL_GO                 BITMAP "res/230.bmp"
-IDB_SHELL_GO_HOT             BITMAP "res/231.bmp"
+IDB_SHELL_EXPLORER_LG BITMAP "res/fluent/214.bmp"
+(IDB_SHELL_EXPLORER_LG + 40000) BITMAP "res/214.bmp"
+IDB_SHELL_EXPLORER_LG_HOT BITMAP "res/fluent/215.bmp"
+(IDB_SHELL_EXPLORER_LG_HOT + 40000) BITMAP "res/215.bmp"
+IDB_SHELL_EXPLORER_SM BITMAP "res/fluent/216.bmp"
+(IDB_SHELL_EXPLORER_SM + 40000) BITMAP "res/216.bmp"
+IDB_SHELL_EXPLORER_SM_HOT BITMAP "res/fluent/217.bmp"
+(IDB_SHELL_EXPLORER_SM_HOT + 40000) BITMAP "res/217.bmp"
+IDB_SHELL_GO BITMAP "res/fluent/230.bmp"
+(IDB_SHELL_GO + 40000) BITMAP "res/230.bmp"
+IDB_SHELL_GO_HOT BITMAP "res/fluent/231.bmp"
+(IDB_SHELL_GO_HOT + 40000) BITMAP "res/231.bmp"
 IDB_SHELL_BRANDBAND_SM_HI    BITMAP "res/240.bmp"
 /*IDB_SHELL_BRANDBAND_MD_HI    BITMAP "res/241.bmp"
 IDB_SHELL_BRANDBAND_LG_HI    BITMAP "res/242.bmp"

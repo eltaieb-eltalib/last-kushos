@@ -9,6 +9,7 @@
 
 #include <user32.h>
 #include <png.h>
+#include <kush_cursors.h>
 
 WINE_DEFAULT_DEBUG_CHANNEL(cursor);
 WINE_DECLARE_DEBUG_CHANNEL(icon);
@@ -1720,6 +1721,104 @@ end:
     return hCurIcon;
 }
 
+/* Appearance-only OEM cursor overlay. Original resources remain the fallback.
+ * Read once per process: set ClassicCursors=1 and restart the session to revert.
+ * Do not use SetSystemCursor here: its replacement branch is not implemented. */
+static UINT
+KushModernCursorResource(LPCWSTR Name)
+{
+    static LONG Enabled = -1;
+    LONG Current = Enabled;
+    if (!IS_INTRESOURCE(Name))
+        return 0;
+    if (Current == -1)
+    {
+        HKEY Key;
+        DWORD Classic = 0, Type = 0, Size = sizeof(Classic);
+        if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Kush\\Shell", 0,
+                          KEY_QUERY_VALUE, &Key) == ERROR_SUCCESS)
+        {
+            if (RegQueryValueExW(Key, L"ClassicCursors", NULL, &Type,
+                                (LPBYTE)&Classic, &Size) != ERROR_SUCCESS ||
+                Type != REG_DWORD || Size != sizeof(Classic))
+                Classic = 0;
+            RegCloseKey(Key);
+        }
+        Current = (Classic == 0);
+        InterlockedCompareExchange(&Enabled, Current, -1);
+    }
+    if (!Current)
+        return 0;
+    switch ((ULONG_PTR)Name)
+    {
+        case OCR_NORMAL: return KUSH_CURSOR_NORMAL;
+        case OCR_IBEAM: return KUSH_CURSOR_IBEAM;
+        case OCR_WAIT: return KUSH_CURSOR_WAIT;
+        case OCR_CROSS: return KUSH_CURSOR_CROSS;
+        case OCR_UP: return KUSH_CURSOR_UP;
+        case OCR_SIZENWSE: return KUSH_CURSOR_SIZENWSE;
+        case OCR_SIZENESW: return KUSH_CURSOR_SIZENESW;
+        case OCR_SIZEWE: return KUSH_CURSOR_SIZEWE;
+        case OCR_SIZENS: return KUSH_CURSOR_SIZENS;
+        case OCR_SIZEALL: return KUSH_CURSOR_SIZEALL;
+        case OCR_NO: return KUSH_CURSOR_NO;
+        case OCR_APPSTARTING: return KUSH_CURSOR_APPSTARTING;
+        case OCR_HELP: return KUSH_CURSOR_HELP;
+        case OCR_HAND: return KUSH_CURSOR_HAND;
+        default: return 0;
+    }
+}
+
+/* Keep the exact ANI resources, but copy a representative frame for the pointer.
+ * ReactOS can draw ANI frames, yet UserSetCursor does not animate them and
+ * uses the parent bitmap in its first-frame path. Avoid an invisible pointer
+ * without changing kernel behavior. Cache only shared default sizes. */
+static HCURSOR
+KushLoadAniPreview(UINT Id, int Width, int Height, UINT Flags)
+{
+    static PVOID Shared[2];
+    UINT Index = (Id == KUSH_CURSOR_WAIT) ? 0 : 1;
+    HRSRC Resource;
+    HGLOBAL Data;
+    HCURSOR Cursor, Existing, Animation, Frame;
+    INT Rate;
+    DWORD Steps;
+    if (Width != GetSystemMetrics(SM_CXCURSOR) ||
+        Height != GetSystemMetrics(SM_CYCURSOR))
+        return NULL;
+    if ((Flags & LR_SHARED) && Shared[Index])
+        return Shared[Index];
+    Resource = FindResourceW(User32Instance, MAKEINTRESOURCEW(Id), RT_ANICURSOR);
+    if (!Resource)
+        return NULL;
+    Data = LoadResource(User32Instance, Resource);
+    if (!Data)
+        return NULL;
+    Animation = CreateIconFromResourceEx(LockResource(Data),
+        SizeofResource(User32Instance, Resource), FALSE, 0x00030000,
+        Width, Height, Flags & LR_MONOCHROME);
+    if (!Animation)
+        return NULL;
+    Frame = NtUserGetCursorFrameInfo(Animation, 0, &Rate, &Steps);
+    if (Frame && Steps > 1)
+        Frame = NtUserGetCursorFrameInfo(Animation, Steps / 2, &Rate, &Steps);
+    Cursor = Frame ? CopyImage(Frame, IMAGE_CURSOR, Width, Height,
+                               Flags & LR_SHARED) : NULL;
+    NtUserDestroyCursor(Animation, TRUE);
+    if (Cursor && (Flags & LR_SHARED))
+    {
+        Existing = InterlockedCompareExchangePointer(&Shared[Index], Cursor, NULL);
+        if (Existing)
+        {
+            NtUserDestroyCursor(Cursor, TRUE);
+            Cursor = Existing;
+        }
+    }
+    DbgPrint("KUSH-DBG ModernCursor ANI-static-frame id=%u loaded=%d size=%dx%d\n",
+             Id, Cursor != NULL, Width, Height);
+    return Cursor;
+}
+
 static
 HANDLE
 CURSORICON_LoadImageW(
@@ -1751,6 +1850,22 @@ CURSORICON_LoadImageW(
     if(fuLoad & LR_LOADFROMFILE)
     {
         return CURSORICON_LoadFromFileW(lpszName, cxDesired, cyDesired, fuLoad, bIcon);
+    }
+
+    if (!hinst && !bIcon)
+    {
+        UINT Modern = KushModernCursorResource(lpszName);
+        if (Modern)
+        {
+            if (Modern == KUSH_CURSOR_WAIT || Modern == KUSH_CURSOR_APPSTARTING)
+                hCurIcon = KushLoadAniPreview(Modern, cxDesired, cyDesired, fuLoad);
+            else
+                hCurIcon = CURSORICON_LoadImageW(User32Instance,
+                    MAKEINTRESOURCEW(Modern), cxDesired, cyDesired, fuLoad, FALSE);
+            if (hCurIcon)
+                return hCurIcon;
+            WARN("Kush modern cursor %u failed, retaining classic resource.\n", Modern);
+        }
     }
 
     /* Check if caller wants OEM icons */
@@ -1942,6 +2057,11 @@ CURSORICON_LoadImageW(
     }
 
 done:
+    if (hinst == User32Instance && IS_INTRESOURCE(lpszName) &&
+        (ULONG_PTR)lpszName >= KUSH_CURSOR_NORMAL &&
+        (ULONG_PTR)lpszName <= KUSH_CURSOR_HAND)
+        DbgPrint("KUSH-DBG ModernCursor CUR id=%u loaded=%d size=%dx%d\n",
+                 (UINT)(ULONG_PTR)lpszName, hCurIcon != NULL, cxDesired, cyDesired);
     if(ustrModule.Buffer)
         HeapFree(GetProcessHeap(), 0, ustrModule.Buffer);
     return hCurIcon;

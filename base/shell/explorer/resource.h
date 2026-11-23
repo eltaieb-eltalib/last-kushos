@@ -30,6 +30,19 @@
 \*******************************************************************************/
 
 #define IDB_START                           143
+#define IDB_START_KUSH                      144
+
+/* Kush Fluent asset set (Fluent UI System Icons, MIT) */
+#define IDI_KUSH_START                      600
+#define IDI_KUSH_SEARCH                     601
+#define IDI_KUSH_POWER                      602
+#define IDI_KUSH_CMD                        603
+#define IDI_KUSH_NOTEPAD                    604
+#define IDI_KUSH_WORDPAD                    605
+#define IDI_KUSH_PAINT                      606
+#define IDI_KUSH_CALC                       607
+#define IDI_KUSH_FILES                      608
+#define IDI_KUSH_EXPLORER                   609
 #define IDB_TASKBARPROP_AUTOHIDE            145
 #define IDB_TASKBARPROP_LOCK_GROUP_QL       146
 #define IDB_TASKBARPROP_NOLOCK_GROUP_QL     147

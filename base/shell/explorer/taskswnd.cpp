@@ -7,6 +7,7 @@
  */
 
 #include "precomp.h"
+#include "kushstart.h"
 #include "mediabtns.h"
 #include <commoncontrols.h>
 #include <regstr.h>
@@ -300,7 +301,12 @@ public:
 
         tbm.cxBarPad = tbm.cyBarPad = 0;
 
-        if (bThemed)
+        if (bHorizontal && KushTaskbar_UseCompactTasks())
+        {
+            tbm.cxButtonSpacing = 4;
+            tbm.cyButtonSpacing = 0;
+        }
+        else if (bThemed)
         {
             tbm.cxButtonSpacing = 0;
             tbm.cyButtonSpacing = 0;
@@ -586,12 +592,14 @@ public:
     HICON GetWndIcon(HWND hwnd)
     {
         HICON hIcon = NULL;
+        BOOL Small = g_TaskbarSettings.bSmallIcons &&
+            !(m_Tray->IsHorizontal() && KushTaskbar_UseCompactTasks());
 
         /* Retrieve icon by sending a message */
 #define GET_ICON(type) \
     SendMessageTimeout(hwnd, WM_GETICON, (type), 0, SMTO_NOTIMEOUTIFNOTHUNG, 100, (PDWORD_PTR)&hIcon)
 
-        LRESULT bAlive = GET_ICON(g_TaskbarSettings.bSmallIcons ? ICON_SMALL2 : ICON_BIG);
+        LRESULT bAlive = GET_ICON(Small ? ICON_SMALL2 : ICON_BIG);
         if (hIcon)
             return hIcon;
 
@@ -604,18 +612,18 @@ public:
 
         if (bAlive)
         {
-            GET_ICON(g_TaskbarSettings.bSmallIcons ? ICON_BIG : ICON_SMALL2);
+            GET_ICON(Small ? ICON_BIG : ICON_SMALL2);
             if (hIcon)
                 return hIcon;
         }
 #undef GET_ICON
 
         /* If we failed, retrieve icon from the window class */
-        hIcon = (HICON)GetClassLongPtr(hwnd, g_TaskbarSettings.bSmallIcons ? GCLP_HICONSM : GCLP_HICON);
+        hIcon = (HICON)GetClassLongPtr(hwnd, Small ? GCLP_HICONSM : GCLP_HICON);
         if (hIcon)
             return hIcon;
 
-        return (HICON)GetClassLongPtr(hwnd, g_TaskbarSettings.bSmallIcons ? GCLP_HICON : GCLP_HICONSM);
+        return (HICON)GetClassLongPtr(hwnd, Small ? GCLP_HICON : GCLP_HICONSM);
     }
 
     INT UpdateTaskItemButton(IN PTASK_ITEM TaskItem)
@@ -826,6 +834,10 @@ public:
 
             /* Update button sizes and fix the button wrapping */
             UpdateButtonsSize(TRUE);
+            /* Kush Fluent (phase 7): the centered task group's width comes
+             * from the button count, so the tray must realign as it grows. */
+            if (!KushTaskbar_IsClassicRequested())
+                ::PostMessageW(m_Tray->GetHWND(), TWM_KUSHREALIGN, 0, 0);
             return iIndex;
         }
 
@@ -859,6 +871,9 @@ public:
 
                     /* Update button sizes and fix the button wrapping */
                     UpdateButtonsSize(TRUE);
+                    /* Kush Fluent (phase 7): realign the centered task group. */
+                    if (!KushTaskbar_IsClassicRequested())
+                        ::PostMessageW(m_Tray->GetHWND(), TWM_KUSHREALIGN, 0, 0);
                     return TRUE;
                 }
 
@@ -1355,15 +1370,17 @@ public:
         LONG NewBtnSize;
         BOOL Horizontal;
 
+        /* Compact cells use the application's 32px icon, with no title painted.
+         * Keep the toolbar text intact for tooltips and accessibility. */
+        BOOL Compact = m_Tray->IsHorizontal() && KushTaskbar_UseCompactTasks();
+        int cxWanted = Compact ? 32 : GetSystemMetrics(g_TaskbarSettings.bSmallIcons ? SM_CXSMICON : SM_CXICON);
+        int cyWanted = Compact ? 32 : GetSystemMetrics(g_TaskbarSettings.bSmallIcons ? SM_CYSMICON : SM_CYICON);
         /* Update the size of the image list if needed */
         int cx, cy;
         ImageList_GetIconSize(m_ImageList, &cx, &cy);
-        if (cx != GetSystemMetrics(g_TaskbarSettings.bSmallIcons ? SM_CXSMICON : SM_CXICON) ||
-            cy != GetSystemMetrics(g_TaskbarSettings.bSmallIcons ? SM_CYSMICON : SM_CYICON))
+        if (cx != cxWanted || cy != cyWanted)
         {
-            ImageList_SetIconSize(m_ImageList,
-                                  GetSystemMetrics(g_TaskbarSettings.bSmallIcons ? SM_CXSMICON : SM_CXICON),
-                                  GetSystemMetrics(g_TaskbarSettings.bSmallIcons ? SM_CYSMICON : SM_CYICON));
+            ImageList_SetIconSize(m_ImageList, cxWanted, cyWanted);
 
             /* SetIconSize removes all icons so we have to reinsert them */
             PTASK_ITEM TaskItem = m_TaskItems;
@@ -1419,7 +1436,9 @@ public:
                 uiMin = GetSystemMetrics(SM_CXSIZE) + (2 * GetSystemMetrics(SM_CXEDGE));
                 if (Horizontal)
                 {
-                    uiMax = GetSystemMetrics(SM_CXMINIMIZED);
+                    uiMax = Compact ? 56 : GetSystemMetrics(SM_CXMINIMIZED);
+                    if (Compact)
+                        uiMin = 32;
 
                     /* Calculate the ideal width and make sure it's within the allowed range */
                     NewBtnSize = (rcClient.right - (uiBtnsPerLine * cxButtonSpacing)) / uiBtnsPerLine;
@@ -1529,8 +1548,14 @@ public:
 
         SetWindowTheme(m_TaskBar.m_hWnd, L"TaskBand", NULL);
 
-        m_ImageList = ImageList_Create(GetSystemMetrics(g_TaskbarSettings.bSmallIcons ? SM_CXSMICON : SM_CXICON),
-                                       GetSystemMetrics(g_TaskbarSettings.bSmallIcons ? SM_CYSMICON : SM_CYICON),
+        BOOL Compact = m_Tray->IsHorizontal() && KushTaskbar_UseCompactTasks();
+        if (Compact)
+        {
+            m_TaskBar.SetButtonSize(56, 40);
+            m_ButtonSize.cy = 40;
+        }
+        m_ImageList = ImageList_Create(Compact ? 32 : GetSystemMetrics(g_TaskbarSettings.bSmallIcons ? SM_CXSMICON : SM_CXICON),
+                                       Compact ? 32 : GetSystemMetrics(g_TaskbarSettings.bSmallIcons ? SM_CYSMICON : SM_CYICON),
                                        ILC_COLOR32 | ILC_MASK, 0, 1000);
         m_TaskBar.SetImageList(m_ImageList);
 
@@ -1851,6 +1876,49 @@ public:
 
         TaskItem = FindTaskItemByIndex((INT) nmtbcd->nmcd.dwItemSpec);
         TaskGroup = FindTaskGroupByIndex((INT) nmtbcd->nmcd.dwItemSpec);
+        if (m_Tray->IsHorizontal() && KushTaskbar_UseCompactTasks() &&
+            TaskGroup == NULL && TaskItem != NULL && ::IsWindow(TaskItem->hWnd))
+        {
+            HDC dc = nmtbcd->nmcd.hdc;
+            RECT cell = nmtbcd->nmcd.rc;
+            UINT state = nmtbcd->nmcd.uItemState;
+            BOOL active = (state & CDIS_CHECKED) != 0;
+            HBRUSH base = CreateSolidBrush(RGB(0xF3, 0xF3, 0xF3));
+            FillRect(dc, &cell, base);
+            DeleteObject(base);
+            RECT tile = cell;
+            InflateRect(&tile, -2, -3);
+            if (state & (CDIS_HOT | CDIS_SELECTED | CDIS_CHECKED | CDIS_MARKED))
+            {
+                COLORREF color = active ? RGB(255,255,255) : RGB(232,235,239);
+                if (state & CDIS_SELECTED) color = RGB(221,226,232);
+                if (state & CDIS_MARKED) color = RGB(255,238,202);
+                HBRUSH fill = CreateSolidBrush(color);
+                HBRUSH oldBrush = (HBRUSH)SelectObject(dc, fill);
+                HPEN oldPen = (HPEN)SelectObject(dc, GetStockObject(NULL_PEN));
+                RoundRect(dc, tile.left, tile.top, tile.right, tile.bottom, 8, 8);
+                SelectObject(dc, oldPen);
+                SelectObject(dc, oldBrush);
+                DeleteObject(fill);
+            }
+            int cx = 32, cy = 32;
+            ImageList_GetIconSize(m_ImageList, &cx, &cy);
+            ImageList_Draw(m_ImageList, TaskItem->IconIndex, dc,
+                (cell.left + cell.right - cx) / 2,
+                (cell.top + cell.bottom - cy) / 2 - 1, ILD_TRANSPARENT);
+            int center = (cell.left + cell.right) / 2;
+            RECT bar = {center - (active ? 10 : 3), cell.bottom - 5,
+                        center + (active ? 10 : 3), cell.bottom - 2};
+            HBRUSH accent = CreateSolidBrush(active ? RGB(0x0D,0x73,0x77) : RGB(151,157,166));
+            FillRect(dc, &bar, accent);
+            DeleteObject(accent);
+            if (state & CDIS_FOCUS)
+            {
+                InflateRect(&tile, -1, -1);
+                DrawFocusRect(dc, &tile);
+            }
+            return CDRF_SKIPDEFAULT;
+        }
         if (TaskGroup == NULL && TaskItem != NULL)
         {
             ASSERT(TaskItem != NULL);
@@ -1900,7 +1968,26 @@ public:
             {
 
             case CDDS_ITEMPREPAINT:
-                Ret = HandleItemPaint(nmtbcd);
+                Ret = HandleItemPaint(nmtbcd) | CDRF_NOTIFYPOSTPAINT;
+                break;
+
+            case CDDS_ITEMPOSTPAINT:
+                /* Kush Fluent (phase 7): accent indicator under the active
+                 * task button (Kush teal, original). */
+                if (!KushTaskbar_IsClassicRequested() &&
+                    !(m_Tray->IsHorizontal() && KushTaskbar_UseCompactTasks()) &&
+                    (nmtbcd->nmcd.uItemState & CDIS_CHECKED))
+                {
+                    RECT rcBtn = nmtbcd->nmcd.rc;
+                    int iBarW = min(24, (rcBtn.right - rcBtn.left) / 2);
+                    int iCx = (rcBtn.left + rcBtn.right) / 2;
+                    RECT rcBar = { iCx - iBarW / 2, rcBtn.bottom - 4,
+                                   iCx + (iBarW + 1) / 2, rcBtn.bottom - 1 };
+                    HBRUSH hBar = CreateSolidBrush(RGB(0x0D, 0x73, 0x77));
+                    FillRect(nmtbcd->nmcd.hdc, &rcBar, hBar);
+                    DeleteObject(hBar);
+                }
+                Ret = CDRF_DODEFAULT;
                 break;
 
             case CDDS_PREPAINT:
@@ -2046,6 +2133,15 @@ public:
     {
         HDC hdc = (HDC) wParam;
 
+        if (m_Tray->IsHorizontal() && KushTaskbar_UseCompactTasks())
+        {
+            RECT rect;
+            GetClientRect(&rect);
+            HBRUSH brush = CreateSolidBrush(RGB(0xF3, 0xF3, 0xF3));
+            FillRect(hdc, &rect, brush);
+            DeleteObject(brush);
+            return TRUE;
+        }
         if (!IsAppThemed())
         {
             bHandled = FALSE;

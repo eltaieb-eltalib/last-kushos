@@ -7,6 +7,7 @@
  */
 
 #include "objects.h"
+#include <kushexplorer.h>
 
 #include <wine/debug.h>
 WINE_DEFAULT_DEBUG_CHANNEL(shdocvw);
@@ -19,6 +20,7 @@ WINE_DEFAULT_DEBUG_CHANNEL(shdocvw);
  */
 
 CExplorerBand::CExplorerBand()
+    : m_modernExplorer(KushModernExplorer())
 {
 }
 
@@ -42,7 +44,7 @@ INT CExplorerBand::_GetRootCsidl()
 DWORD CExplorerBand::_GetTVStyle()
 {
     // Remove TVS_SINGLEEXPAND for now since it has strange behaviour
-    return WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | TVS_HASLINES |
+    return WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | (m_modernExplorer ? 0 : TVS_HASLINES) |
            TVS_HASBUTTONS | TVS_SHOWSELALWAYS | TVS_EDITLABELS /* | TVS_SINGLEEXPAND*/;
 }
 
@@ -109,6 +111,13 @@ HRESULT CExplorerBand::_CreateTreeView(HWND hwndParent)
     HRESULT hr = CNSCBand::_CreateTreeView(hwndParent);
     if (FAILED_UNEXPECTEDLY(hr))
         return hr;
+
+    if (m_modernExplorer)
+    {
+        TreeView_SetItemHeight(m_hwndTreeView, KushExplorerPixels(m_hwndTreeView, 28));
+        TreeView_SetBkColor(m_hwndTreeView, RGB(250, 251, 252));
+        TreeView_SetTextColor(m_hwndTreeView, RGB(30, 35, 41));
+    }
 
     // Insert the root node
     m_hRoot = _InsertItem(NULL, m_pDesktop, m_pidlRoot, m_pidlRoot, FALSE);

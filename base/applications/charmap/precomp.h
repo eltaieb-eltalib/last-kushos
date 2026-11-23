@@ -70,6 +70,7 @@ typedef struct {
 } SETTINGS;
 
 extern SETTINGS Settings;
+extern BOOL KushCharacterMap;
 extern HWND hCharmapDlg;
 
 LRESULT CALLBACK LrgCellWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);

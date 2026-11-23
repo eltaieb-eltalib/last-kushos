@@ -12,6 +12,7 @@
 #include <shellapi.h>
 #include <cplext.h>
 #include <winnls.h>
+#include <uxtheme.h>
 
 #define NDEBUG
 #include <debug.h>
@@ -33,6 +34,67 @@ INT_PTR CALLBACK ScreenSaverPageProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPA
 INT_PTR CALLBACK AppearancePageProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 INT_PTR CALLBACK SettingsPageProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 UINT CALLBACK SettingsPageCallbackProc(HWND hwnd, UINT uMsg, LPPROPSHEETPAGE ppsp);
+
+static BOOL bKushDisplay;
+
+static BOOL
+KushDisplayEnabled(VOID)
+{
+    const WCHAR *names[] = {L"ClassicDisplay", L"ClassicWindows"};
+    LANGID language = GetUserDefaultUILanguage();
+    HIGHCONTRAST hc = {sizeof(hc)};
+    DWORD layout = 0, value, size, type;
+    HKEY key;
+    HDC dc;
+    INT dpi;
+    UINT i;
+    if (PRIMARYLANGID(language) == LANG_ARABIC || PRIMARYLANGID(language) == LANG_HEBREW ||
+        (GetProcessDefaultLayout(&layout) && (layout & LAYOUT_RTL))) return FALSE;
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Kush\\Shell", 0, KEY_QUERY_VALUE, &key) == ERROR_SUCCESS)
+    {
+        for (i = 0; i < ARRAYSIZE(names); ++i)
+        {
+            value = 0; size = sizeof(value); type = 0;
+            if (RegQueryValueExW(key, names[i], NULL, &type, (LPBYTE)&value, &size) == ERROR_SUCCESS &&
+                type == REG_DWORD && value)
+            {
+                RegCloseKey(key);
+                return FALSE;
+            }
+        }
+        RegCloseKey(key);
+    }
+    if (SystemParametersInfoW(SPI_GETHIGHCONTRAST, sizeof(hc), &hc, 0) &&
+        (hc.dwFlags & HCF_HIGHCONTRASTON)) return FALSE;
+    dc = GetDC(NULL);
+    if (!dc) return FALSE;
+    dpi = GetDeviceCaps(dc, LOGPIXELSY);
+    ReleaseDC(NULL, dc);
+    return dpi == 96;
+}
+
+static LRESULT CALLBACK
+KushDisplaySurfaceProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR id, DWORD_PTR data)
+{
+    UNREFERENCED_PARAMETER(data);
+    if (msg == WM_ERASEBKGND)
+    {
+        RECT rc;
+        GetClientRect(hwnd, &rc);
+        FillRect((HDC)wp, &rc, (HBRUSH)GetStockObject(WHITE_BRUSH));
+        return 1;
+    }
+    if (msg == WM_CTLCOLORDLG || msg == WM_CTLCOLORSTATIC || msg == WM_CTLCOLORBTN)
+    {
+        SetBkMode((HDC)wp, TRANSPARENT);
+        SetBkColor((HDC)wp, RGB(255, 255, 255));
+        SetTextColor((HDC)wp, IsWindowEnabled((HWND)lp) ? RGB(40, 48, 56) : GetSysColor(COLOR_GRAYTEXT));
+        return (LRESULT)GetStockObject(WHITE_BRUSH);
+    }
+    if (msg == WM_NCDESTROY) RemoveWindowSubclass(hwnd, KushDisplaySurfaceProc, id);
+    return DefSubclassProc(hwnd, msg, wp, lp);
+}
+
 
 HINSTANCE hApplet = NULL;
 HWND hCPLWindow = NULL;
@@ -116,6 +178,66 @@ InitPropSheetPage(PROPSHEETHEADER *ppsh, WORD idDlg, DLGPROC DlgProc, LPFNPSPCAL
     return FALSE;
 }
 
+static BOOL CALLBACK
+KushDisplayChildTheme(HWND hwnd, LPARAM data)
+{
+    WCHAR name[32];
+    DWORD style = GetWindowLongPtrW(hwnd, GWL_STYLE);
+    UNREFERENCED_PARAMETER(data);
+    if (GetClassNameW(hwnd, name, ARRAYSIZE(name)))
+    {
+        if ((!lstrcmpiW(name, L"Static") &&
+             (style & SS_TYPEMASK) != SS_OWNERDRAW && (style & SS_TYPEMASK) != SS_BITMAP &&
+             (style & SS_TYPEMASK) != SS_ICON) ||
+            (!lstrcmpiW(name, L"Button") && (style & BS_TYPEMASK) == BS_GROUPBOX))
+            SetWindowTheme(hwnd, L"", L"");
+    }
+    return TRUE;
+}
+
+static VOID
+KushDisplayPageSurface(HWND hwnd)
+{
+    SetWindowSubclass(hwnd, KushDisplaySurfaceProc, 1, 0);
+    EnumChildWindows(hwnd, KushDisplayChildTheme, 0);
+}
+
+static INT_PTR CALLBACK
+KushBackgroundPage(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+    INT_PTR result = BackgroundPageProc(hwnd, msg, wp, lp);
+    if (msg == WM_INITDIALOG && bKushDisplay)
+        KushDisplayPageSurface(hwnd);
+    return result;
+}
+
+static INT_PTR CALLBACK
+KushScreenSaverPage(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+    INT_PTR result = ScreenSaverPageProc(hwnd, msg, wp, lp);
+    if (msg == WM_INITDIALOG && bKushDisplay)
+        KushDisplayPageSurface(hwnd);
+    return result;
+}
+
+static INT_PTR CALLBACK
+KushAppearancePage(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+    INT_PTR result = AppearancePageProc(hwnd, msg, wp, lp);
+    if (msg == WM_INITDIALOG && bKushDisplay)
+        KushDisplayPageSurface(hwnd);
+    return result;
+}
+
+static INT_PTR CALLBACK
+KushSettingsPage(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+    INT_PTR result = SettingsPageProc(hwnd, msg, wp, lp);
+    if (msg == WM_INITDIALOG && bKushDisplay)
+        KushDisplayPageSurface(hwnd);
+    return result;
+}
+
 static const struct
 {
     WORD idDlg;
@@ -125,10 +247,10 @@ static const struct
 } PropPages[] =
 {
     /* { IDD_THEMES, ThemesPageProc, NULL, L"Themes" }, */ /* TODO: */
-    { IDD_BACKGROUND, BackgroundPageProc, NULL, L"Desktop" },
-    { IDD_SCREENSAVER, ScreenSaverPageProc, NULL, L"Screen Saver" },
-    { IDD_APPEARANCE, AppearancePageProc, NULL, L"Appearance" },
-    { IDD_SETTINGS, SettingsPageProc, SettingsPageCallbackProc, L"Settings" },
+    { IDD_BACKGROUND, KushBackgroundPage, NULL, L"Desktop" },
+    { IDD_SCREENSAVER, KushScreenSaverPage, NULL, L"Screen Saver" },
+    { IDD_APPEARANCE, KushAppearancePage, NULL, L"Appearance" },
+    { IDD_SETTINGS, KushSettingsPage, SettingsPageCallbackProc, L"Settings" },
 };
 
 static int CALLBACK
@@ -140,6 +262,7 @@ PropSheetProc(HWND hwndDlg, UINT uMsg, LPARAM lParam)
     {
         case PSCB_INITIALIZED:
         {
+            if (bKushDisplay) SetWindowSubclass(hwndDlg, KushDisplaySurfaceProc, 1, 0);
             hIcon = LoadIconW(hApplet, MAKEINTRESOURCEW(IDC_DESK_ICON));
             SendMessageW(hwndDlg, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
             break;
@@ -165,6 +288,7 @@ DisplayApplet(HWND hwnd, UINT uMsg, LPARAM wParam, LPARAM lParam)
 
     UNREFERENCED_PARAMETER(wParam);
 
+    bKushDisplay = KushDisplayEnabled();
     hCPLWindow = hwnd;
 
     if (uMsg == CPL_STARTWPARMSW && lParam)
@@ -215,7 +339,7 @@ DisplayApplet(HWND hwnd, UINT uMsg, LPARAM wParam, LPARAM lParam)
     psh.dwFlags = PSH_USECALLBACK | PSH_PROPTITLE | PSH_USEICONID;
     psh.hwndParent = hCPLWindow;
     psh.hInstance = hApplet;
-    psh.pszIcon = MAKEINTRESOURCEW(IDC_DESK_ICON);
+    psh.pszIcon = MAKEINTRESOURCEW(KushOwnIconId(IDC_DESK_ICON));
     psh.pszCaption = MAKEINTRESOURCEW(IDS_CPLNAME);
     psh.nPages = 0;
     psh.nStartPage = 0;
@@ -282,7 +406,7 @@ CPlApplet(HWND hwndCPl, UINT uMsg, LPARAM lParam1, LPARAM lParam2)
             {
                 CPLINFO *CPlInfo = (CPLINFO*)lParam2;
                 CPlInfo->lData = 0;
-                CPlInfo->idIcon = Applets[i].idIcon;
+                CPlInfo->idIcon = KushOwnIconId(Applets[i].idIcon);
                 CPlInfo->idName = Applets[i].idName;
                 CPlInfo->idInfo = Applets[i].idDescription;
             }

@@ -1,3 +1,4 @@
+/* KUSH_CPL_FLUENT: generated mapping, original IDs preserved. */
 #include <windef.h>
 #include <winuser.h>
 
@@ -10,8 +11,8 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 #define REACTOS_STR_INTERNAL_NAME     "joy"
 #define REACTOS_STR_ORIGINAL_FILENAME "joy.cpl"
 #include <reactos/version.rc>
-
 IDI_CPLSYSTEM ICON "resources/applet.ico"
+(IDI_CPLSYSTEM + 40000) ICON "resources/fluent/games.ico"
 
 #include <reactos/manifest_hosted.rc>
 

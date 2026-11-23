@@ -69,3 +69,5 @@ ResourceMessageBox(
     ...);
 
 #endif /* __CPL_SYSDM_H */
+
+#include <kushicons.h>

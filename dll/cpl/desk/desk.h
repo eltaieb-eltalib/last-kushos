@@ -207,3 +207,5 @@ RegLoadMUIStringW(IN HKEY hKey,
                   IN LPCWSTR pszDirectory  OPTIONAL);
 
 #endif /* _DESK_H */
+
+#include <kushicons.h>

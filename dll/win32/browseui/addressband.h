@@ -41,6 +41,7 @@ private:
     HWND                                    fGoButton;
     HWND                                    fComboBox;
     bool                                    fGoButtonShown;
+    BOOL                                    m_modernExplorer;
     HIMAGELIST                              m_himlNormal;
     HIMAGELIST                              m_himlHot;
 

@@ -7,13 +7,21 @@
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 
 IDI_NTOBJECTFOLDER  ICON "resources/1.ico"
+(IDI_NTOBJECTFOLDER + 40000) ICON "resources/fluent/shell-cube_tree.ico"
 IDI_NTOBJECTDIR     ICON "resources/2.ico"
+(IDI_NTOBJECTDIR + 40000) ICON "resources/fluent/shell-folder.ico"
 IDI_NTOBJECTDIROPEN ICON "resources/3.ico"
+(IDI_NTOBJECTDIROPEN + 40000) ICON "resources/fluent/shell-folder_open.ico"
 IDI_NTOBJECTITEM    ICON "resources/4.ico"
+(IDI_NTOBJECTITEM + 40000) ICON "resources/fluent/shell-document.ico"
 IDI_NTOBJECTDEVICE  ICON "resources/5.ico"
+(IDI_NTOBJECTDEVICE + 40000) ICON "resources/fluent/shell-desktop_tower.ico"
 IDI_NTOBJECTPORT    ICON "resources/6.ico"
+(IDI_NTOBJECTPORT + 40000) ICON "resources/fluent/shell-plug_connected.ico"
 IDI_REGISTRYKEY     ICON "resources/7.ico"
+(IDI_REGISTRYKEY + 40000) ICON "resources/fluent/shell-database.ico"
 IDI_REGISTRYVALUE   ICON "resources/8.ico"
+(IDI_REGISTRYVALUE + 40000) ICON "resources/fluent/shell-document_text.ico"
 
 IDR_NTOBJECTFOLDER REGISTRY "resources/rgs/ntobjectfolder.rgs"
 IDR_REGISTRYFOLDER REGISTRY "resources/rgs/regfolder.rgs"

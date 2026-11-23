@@ -8,6 +8,7 @@
 #include "hotplug.h"
 
 #include <strsafe.h>
+#include <kushicons.h>
 
 DEVINST
 GetDeviceInstForRemoval(

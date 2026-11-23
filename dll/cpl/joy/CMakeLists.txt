@@ -11,3 +11,8 @@ set_module_type(joy cpl UNICODE)
 target_link_libraries(joy uuid)
 add_importlibs(joy user32 comctl32 ole32 shell32 msvcrt kernel32 ntdll)
 add_cd_file(TARGET joy DESTINATION reactos/system32 FOR all)
+
+add_importlibs(joy advapi32)
+
+file(GLOB kush_fluent_icon_deps "${CMAKE_CURRENT_SOURCE_DIR}/resources/fluent/*.ico")
+add_rc_deps(joy.rc ${kush_fluent_icon_deps})

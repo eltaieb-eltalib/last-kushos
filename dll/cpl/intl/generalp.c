@@ -1355,7 +1355,7 @@ CustomizeLocalePropertySheet(
     psh.dwFlags =  PSH_PROPSHEETPAGE | PSH_USEICONID | PSH_USECALLBACK;
     psh.hwndParent = hwndDlg;
     psh.hInstance = hApplet;
-    psh.pszIcon = MAKEINTRESOURCE(IDC_CPLICON);
+    psh.pszIcon = MAKEINTRESOURCE(KushOwnIconId(IDC_CPLICON));
     psh.pszCaption = MAKEINTRESOURCE(IDS_CUSTOMIZE_TITLE);
     psh.nPages = (sizeof(PsPage) / sizeof(PROPSHEETPAGE)) - 1;
     psh.nStartPage = 0;

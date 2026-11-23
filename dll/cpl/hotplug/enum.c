@@ -10,6 +10,7 @@
 
 #include <initguid.h>
 #include <devguid.h>
+#include <kushicons.h>
 
 #define MAX_DEVICE_DISPLAYNAME_LEN 256
 

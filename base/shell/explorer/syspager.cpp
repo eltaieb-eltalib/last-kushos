@@ -20,6 +20,7 @@
  */
 
 #include "precomp.h"
+#include "kushstart.h"
 
 #define BALLOON_MAXWIDTH 340
 
@@ -1276,6 +1277,8 @@ void CNotifyToolbar::Initialize(HWND hWndParent, CBalloonQueue * queue)
     }
 
     SetWindowTheme(m_hWnd, L"TrayNotify", NULL);
+    if (!KushTaskbar_IsClassicRequested())
+        SendMessageW(CCM_SETBKCOLOR, 0, RGB(0xF3, 0xF3, 0xF3));
 
     m_ImageList = ImageList_Create(GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), ILC_COLOR32 | ILC_MASK, 0, 1000);
     SetImageList(m_ImageList);
@@ -1319,6 +1322,16 @@ CSysPagerWnd::~CSysPagerWnd() {}
 LRESULT CSysPagerWnd::OnEraseBackground(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
     HDC hdc = (HDC) wParam;
+
+    if (!KushTaskbar_IsClassicRequested())
+    {
+        RECT rc;
+        GetClientRect(&rc);
+        HBRUSH brush = CreateSolidBrush(RGB(0xF3, 0xF3, 0xF3));
+        FillRect(hdc, &rc, brush);
+        DeleteObject(brush);
+        return TRUE;
+    }
 
     if (!IsAppThemed())
     {

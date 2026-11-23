@@ -259,7 +259,7 @@ InitApplet(HANDLE hSectionOrWnd)
 
     psh.hInstance = hApplet;
     // psh.hIcon = LoadIcon(hApplet, MAKEINTRESOURCEW(IDC_CPLICON));
-    psh.pszIcon = MAKEINTRESOURCEW(IDC_CPLICON);
+    psh.pszIcon = MAKEINTRESOURCEW(KushOwnIconId(IDC_CPLICON));
     psh.nPages = ARRAYSIZE(psp);
     psh.nStartPage = 0;
     psh.ppsp = psp;
@@ -363,7 +363,7 @@ CPlApplet(HWND hwndCPl,
         case CPL_INQUIRE:
         {
             CPLINFO *CPlInfo = (CPLINFO*)lParam2;
-            CPlInfo->idIcon  = IDC_CPLICON;
+            CPlInfo->idIcon  = KushOwnIconId(KushOwnIconId(IDC_CPLICON));
             CPlInfo->idName  = IDS_CPLNAME;
             CPlInfo->idInfo  = IDS_CPLDESCRIPTION;
             break;

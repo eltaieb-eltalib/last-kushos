@@ -65,3 +65,5 @@ LONG APIENTRY
 MouseApplet(HWND hwnd, UINT uMsg, LPARAM wParam, LPARAM lParam);
 
 #endif /* _MAIN_H */
+
+#include <kushicons.h>

@@ -24,6 +24,7 @@ toolbar, and address band for an explorer window
 */
 
 #include "precomp.h"
+#include <kushexplorer.h>
 
 #if 1
 
@@ -178,6 +179,8 @@ HRESULT IUnknown_CloseDW(IUnknown * punk, DWORD dwReserved)
     return S_OK;
 }
 
+static const int ITBBID_KUSHNAVBAND = 0x4b55;
+
 class CInternetToolbar;
 
 class CDockSite :
@@ -312,7 +315,8 @@ HRESULT CDockSite::GetRBBandInfo(REBARBANDINFOW &bandInfo)
         bandInfo.fStyle |= RBBS_VARIABLEHEIGHT;
     if (fDeskBandInfo.dwModeFlags & DBIMF_USECHEVRON)
         bandInfo.fStyle |= RBBS_USECHEVRON;
-    if (fDeskBandInfo.dwModeFlags & DBIMF_BREAK)
+    if ((fDeskBandInfo.dwModeFlags & DBIMF_BREAK) ||
+        (fToolbar->fModernExplorer && (fFlags & ITF_NEWBANDALWAYS)))
         bandInfo.fStyle |= RBBS_BREAK;
     if (fDeskBandInfo.dwModeFlags & DBIMF_TOPALIGN)
         bandInfo.fStyle |= RBBS_TOPALIGN;
@@ -678,6 +682,8 @@ CInternetToolbar::CInternetToolbar()
     fNavigationWindow = NULL;
     fMenuCallback = new CComObject<CMenuCallback>();
     fToolbarWindow = NULL;
+    fNavToolbarWindow = NULL;
+    fModernExplorer = KushModernExplorer();
     fAdviseCookie = 0;
     pSettings = NULL;
     fIgnoreChanges = FALSE;
@@ -1019,6 +1025,14 @@ HRESULT STDMETHODCALLTYPE CInternetToolbar::CloseDW(DWORD dwReserved)
             return hResult;
         ReleaseCComPtrExpectZero(fControlsBar);
     }
+    if (fNavControlsBar)
+    {
+        hResult = IUnknown_CloseDW(fNavControlsBar, dwReserved);
+        if (FAILED_UNEXPECTEDLY(hResult))
+            return hResult;
+        ReleaseCComPtrExpectZero(fNavControlsBar);
+        fNavToolbarWindow = NULL;
+    }
     if (fNavigationBar)
     {
         hResult = IUnknown_CloseDW(fNavigationBar, dwReserved);
@@ -1043,6 +1057,17 @@ HRESULT STDMETHODCALLTYPE CInternetToolbar::ResizeBorderDW(LPCRECT prcBorder,
 {
     RECT neededBorderSpace;
     RECT availableBorderSpace = *prcBorder;
+
+    /* A container-sized height asks the rebar to split every band into a new
+     * row. Modern navigation deliberately shares its row with the address. */
+    if (fModernExplorer)
+    {
+        RECT current;
+        ::GetWindowRect(fMainReBar, &current);
+        LONG height = current.bottom - current.top;
+        if (height > 0 && availableBorderSpace.bottom - availableBorderSpace.top > height)
+            availableBorderSpace.bottom = availableBorderSpace.top + height;
+    }
 
     SendMessage(fMainReBar, RB_SIZETORECT, RBSTR_CHANGERECT, reinterpret_cast<LPARAM>(&availableBorderSpace));
 
@@ -1170,11 +1195,31 @@ HRESULT STDMETHODCALLTYPE CInternetToolbar::InitNew()
     if (FAILED_UNEXPECTEDLY(hResult))
         return hResult;
 
+    if (fModernExplorer)
+    {
+        CComPtr<IUnknown> navControls;
+        hResult = CKushNavigationBand_CreateInstance(IID_PPV_ARG(IUnknown, &navControls));
+        if (FAILED_UNEXPECTEDLY(hResult))
+            return hResult;
+        AddDockItem(navControls, ITBBID_KUSHNAVBAND, CDockSite::ITF_NOTITLE |
+            CDockSite::ITF_NEWBANDALWAYS | CDockSite::ITF_NOGRIPPER | CDockSite::ITF_FIXEDSIZE);
+        fNavControlsBar.Attach(navControls.Detach());
+        hResult = IUnknown_GetWindow(fNavControlsBar, &fNavToolbarWindow);
+        if (FAILED_UNEXPECTEDLY(hResult))
+            return hResult;
+    }
+
     /* Create and attach the address/navigation toolbar to the rebar */
     hResult = CAddressBand_CreateInstance(IID_PPV_ARG(IUnknown, &navigationBar));
     if (FAILED_UNEXPECTEDLY(hResult))
         return hResult;
-    AddDockItem(navigationBar, ITBBID_ADDRESSBAND, CDockSite::ITF_NEWBANDALWAYS | CDockSite::ITF_GRIPPERALWAYS);
+    DWORD addressFlags = CDockSite::ITF_NEWBANDALWAYS | CDockSite::ITF_GRIPPERALWAYS;
+    if (fNavToolbarWindow)
+    {
+        addressFlags &= ~CDockSite::ITF_NEWBANDALWAYS;
+        addressFlags |= CDockSite::ITF_NOTITLE;
+    }
+    AddDockItem(navigationBar, ITBBID_ADDRESSBAND, addressFlags);
     fNavigationBar.Attach(navigationBar.Detach());
     hResult = IUnknown_GetWindow(fNavigationBar, &fNavigationWindow);
 
@@ -1208,6 +1253,14 @@ HRESULT CInternetToolbar::SetBandVisibility(int BandID, int Show)
     bandInfo.fMask &= ~RBBIM_CHILD;
     ::ShowWindow(bandInfo.hwndChild, (bandInfo.fStyle & RBBS_HIDDEN) ? SW_HIDE : SW_SHOW); // CORE-17236
     SendMessage(fMainReBar, RB_SETBANDINFOW, index, (LPARAM)&bandInfo);
+
+    /* Navigation and its address field remain one visible row. */
+    if (BandID == ITBBID_ADDRESSBAND && fNavToolbarWindow)
+    {
+        int navIndex = (int)SendMessage(fMainReBar, RB_IDTOINDEX, ITBBID_KUSHNAVBAND, 0);
+        SendMessage(fMainReBar, RB_SHOWBAND, navIndex, !(bandInfo.fStyle & RBBS_HIDDEN));
+        ::ShowWindow(fNavToolbarWindow, (bandInfo.fStyle & RBBS_HIDDEN) ? SW_HIDE : SW_SHOW);
+    }
 
     ReserveBorderSpace(0);
     SetDirty();
@@ -1400,7 +1453,10 @@ HRESULT STDMETHODCALLTYPE CInternetToolbar::GetState(const GUID *pguidCmdGroup, 
     if (theState == NULL)
         return E_POINTER;
     // map the command id
-    *theState = (long)::SendMessage(fToolbarWindow, TB_GETSTATE, commandID, 0);
+    HWND toolbar = fNavToolbarWindow &&
+        ::SendMessage(fNavToolbarWindow, TB_COMMANDTOINDEX, commandID, 0) >= 0 ?
+        fNavToolbarWindow : fToolbarWindow;
+    *theState = (long)::SendMessage(toolbar, TB_GETSTATE, commandID, 0);
     return S_OK;
 }
 
@@ -1408,6 +1464,8 @@ HRESULT STDMETHODCALLTYPE CInternetToolbar::SetState(const GUID *pguidCmdGroup, 
 {
     // map the command id
     ::SendMessage(fToolbarWindow, TB_SETSTATE, commandID, MAKELONG(theState, 0));
+    if (fNavToolbarWindow)
+        ::SendMessage(fNavToolbarWindow, TB_SETSTATE, commandID, MAKELONG(theState, 0));
     return S_OK;
 }
 
@@ -1430,7 +1488,23 @@ HRESULT STDMETHODCALLTYPE CInternetToolbar::SendToolbarMsg(const GUID *pguidCmdG
 {
     if (fToolbarWindow)
     {
-        LRESULT res = ::SendMessageW(fToolbarWindow, uMsg, wParam, lParam);
+        HWND toolbar = fToolbarWindow;
+        if (fNavToolbarWindow && (uMsg == TB_ENABLEBUTTON || uMsg == TB_CHECKBUTTON ||
+            uMsg == TB_PRESSBUTTON || uMsg == TB_HIDEBUTTON || uMsg == TB_INDETERMINATE ||
+            uMsg == TB_MARKBUTTON || uMsg == TB_SETSTATE || uMsg == TB_GETSTATE ||
+            uMsg == TB_ISBUTTONENABLED || uMsg == TB_ISBUTTONCHECKED) &&
+            ::SendMessage(fNavToolbarWindow, TB_COMMANDTOINDEX, wParam, 0) >= 0)
+            toolbar = fNavToolbarWindow;
+        /* The view already sends selection capability for Move To / Copy To.
+         * Apply that same native capability to the newly visible Cut / Copy. */
+        if (fModernExplorer && uMsg == TB_ENABLEBUTTON)
+        {
+            if (wParam == gMoveToCommandID)
+                ::SendMessageW(fToolbarWindow, uMsg, gCutCommandID, lParam);
+            else if (wParam == gCopyToCommandID)
+                ::SendMessageW(fToolbarWindow, uMsg, gCopyCommandID, lParam);
+        }
+        LRESULT res = ::SendMessageW(toolbar, uMsg, wParam, lParam);
         if (result)
             *result = res;
         return S_OK;
@@ -1703,14 +1777,15 @@ LRESULT CInternetToolbar::OnMenuDropDown(UINT idControl, NMHDR *pNMHDR, BOOL &bH
     wchar_t                                 templateString[200];
 
     notifyInfo = (NMTOOLBARW *)pNMHDR;
-    if (notifyInfo->hdr.hwndFrom != fToolbarWindow)
+    if (notifyInfo->hdr.hwndFrom != fToolbarWindow &&
+        notifyInfo->hdr.hwndFrom != fNavToolbarWindow)
     {
         // not from the toolbar, keep looking for a message handler
         bHandled = FALSE;
         return 0;
     }
-    SendMessage(fToolbarWindow, TB_GETRECT, notifyInfo->iItem, reinterpret_cast<LPARAM>(&bounds));
-    ::MapWindowPoints(fToolbarWindow, NULL, reinterpret_cast<POINT *>(&bounds), 2);
+    SendMessage(notifyInfo->hdr.hwndFrom, TB_GETRECT, notifyInfo->iItem, reinterpret_cast<LPARAM>(&bounds));
+    ::MapWindowPoints(notifyInfo->hdr.hwndFrom, NULL, reinterpret_cast<POINT *>(&bounds), 2);
     switch (notifyInfo->iItem)
     {
         case IDM_GOTO_BACK:
@@ -1844,6 +1919,7 @@ LRESULT CInternetToolbar::OnContextMenu(UINT uMsg, WPARAM wParam, LPARAM lParam,
             DeleteMenu(contextMenu, IDM_TOOLBARS_TEXTLABELS, MF_BYCOMMAND);
             DeleteMenu(contextMenu, IDM_TOOLBARS_GOBUTTON, MF_BYCOMMAND);
             break;
+        case ITBBID_KUSHNAVBAND:
         case ITBBID_ADDRESSBAND:    // navigation band
             DeleteMenu(contextMenu, IDM_TOOLBARS_CUSTOMIZE, MF_BYCOMMAND);
             DeleteMenu(contextMenu, IDM_TOOLBARS_TEXTLABELS, MF_BYCOMMAND);

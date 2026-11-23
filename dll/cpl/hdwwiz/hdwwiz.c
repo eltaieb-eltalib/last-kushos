@@ -26,6 +26,7 @@
 
 #include "resource.h"
 #include "hdwwiz.h"
+#include <kushicons.h>
 
 /* GLOBALS ******************************************************************/
 
@@ -904,7 +905,7 @@ HardwareWizardInit(HWND hwnd)
     psh.dwSize = sizeof(PROPSHEETHEADER);
     psh.dwFlags = PSH_WIZARD97 | PSH_WATERMARK | PSH_HEADER | PSH_USEICONID | PSH_USECALLBACK;
     psh.hInstance = hApplet;
-    psh.pszIcon = MAKEINTRESOURCEW(IDI_CPLICON);
+    psh.pszIcon = MAKEINTRESOURCEW(KushOwnIconId(IDI_CPLICON));
     psh.hwndParent = hwnd;
     psh.nPages = nPages;
     psh.nStartPage = 0;
@@ -958,7 +959,7 @@ CPlApplet(HWND hwndCpl, UINT uMsg, LPARAM lParam1, LPARAM lParam2)
             {
                 CPLINFO *CPlInfo = (CPLINFO*)lParam2;
                 CPlInfo->lData = 0;
-                CPlInfo->idIcon = IDI_CPLICON;
+                CPlInfo->idIcon = KushOwnIconId(IDI_CPLICON);
                 CPlInfo->idName = IDS_CPLNAME;
                 CPlInfo->idInfo = IDS_CPLDESCRIPTION;
             }

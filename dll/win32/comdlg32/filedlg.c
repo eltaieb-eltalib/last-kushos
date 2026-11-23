@@ -220,6 +220,97 @@ FileOpenDlgInfos *get_filedlg_infoptr(HWND hwnd)
     return GetPropW(hwnd, L"FileOpenDlgInfos");
 }
 
+/* Only the stock Explorer template is rearranged. App-owned templates/hooks,
+ * RTL and high contrast keep their original layout and system colors. */
+static BOOL FILEDLG95_KushStyle(HWND hwnd, FileOpenDlgInfos *info)
+{
+    HIGHCONTRASTW contrast = { sizeof(contrast) };
+    HKEY key;
+    const WCHAR *names[] = { L"ClassicFileDialogs", L"ClassicWindows", L"ClassicIcons" };
+    UINT i;
+    BOOL enabled = TRUE;
+    info->kush_icons = TRUE;
+    if (!GetDlgItem(hwnd, IDC_TOOLBARPLACES) ||
+        !(info->ofnInfos->Flags & OFN_EXPLORER) ||
+        (info->ofnInfos->Flags & (OFN_ENABLEHOOK | OFN_ENABLETEMPLATE | OFN_ENABLETEMPLATEHANDLE)) ||
+        (GetWindowLongPtrW(hwnd, GWL_EXSTYLE) & WS_EX_LAYOUTRTL))
+        enabled = FALSE;
+    if (SystemParametersInfoW(SPI_GETHIGHCONTRAST, sizeof(contrast), &contrast, 0) &&
+        (contrast.dwFlags & HCF_HIGHCONTRASTON))
+        enabled = FALSE;
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Kush\\Shell", 0, KEY_QUERY_VALUE, &key) == ERROR_SUCCESS)
+    {
+        for (i = 0; i < ARRAY_SIZE(names); ++i)
+        {
+            DWORD type = 0, value = 0, size = sizeof(value);
+            if (RegQueryValueExW(key, names[i], NULL, &type, (BYTE*)&value, &size) == ERROR_SUCCESS &&
+                type == REG_DWORD && size == sizeof(value) && value)
+            {
+                if (i == 2) info->kush_icons = FALSE;
+                else enabled = FALSE;
+            }
+        }
+        RegCloseKey(key);
+    }
+    return enabled;
+}
+
+static int FILEDLG95_KushPixels(HWND hwnd, int value)
+{
+    HDC dc = GetDC(hwnd);
+    int dpi = dc ? GetDeviceCaps(dc, LOGPIXELSX) : 96;
+    if (dc) ReleaseDC(hwnd, dc);
+    return MulDiv(value, dpi > 0 ? dpi : 96, 96);
+}
+
+static void FILEDLG95_KushLayout(HWND hwnd)
+{
+    RECT view, places, rect, window;
+    HWND child, sidebar = GetDlgItem(hwnd, IDC_TOOLBARPLACES);
+    int extra = FILEDLG95_KushPixels(hwnd, 14), shift = 0;
+    GetWindowRect(GetDlgItem(hwnd, IDC_SHELLSTATIC), &view);
+    MapWindowPoints(NULL, hwnd, (POINT*)&view, 2);
+    if (sidebar)
+    {
+        GetWindowRect(sidebar, &places);
+        MapWindowPoints(NULL, hwnd, (POINT*)&places, 2);
+        shift = max(0, FILEDLG95_KushPixels(hwnd, 180) - (places.right - places.left));
+    }
+    for (child = GetWindow(hwnd, GW_CHILD); child; child = GetWindow(child, GW_HWNDNEXT))
+    {
+        int id = GetDlgCtrlID(child), dx = 0, width;
+        GetWindowRect(child, &rect);
+        MapWindowPoints(NULL, hwnd, (POINT*)&rect, 2);
+        width = rect.right - rect.left;
+        if (rect.top >= view.top)
+        {
+            if (child == sidebar) width += shift;
+            else if (id == IDC_SHELLSTATIC || id == IDC_FILENAME || id == cmb13 ||
+                     id == IDC_FILETYPE || id == IDC_OPENREADONLY)
+            {
+                dx = shift;
+                width -= shift;
+            }
+            else if (id == IDC_FILENAMESTATIC || id == IDC_FILETYPESTATIC) dx = shift;
+            SetWindowPos(child, NULL, rect.left + dx, rect.top + extra,
+                max(1, width), rect.bottom - rect.top, SWP_NOZORDER | SWP_NOACTIVATE);
+        }
+    }
+    /* Keep the genuine location combo and its item data, but use the whole row. */
+    child = GetDlgItem(hwnd, IDC_LOOKINSTATIC);
+    GetWindowRect(child, &rect); MapWindowPoints(NULL, hwnd, (POINT*)&rect, 2);
+    SetWindowPos(child, NULL, FILEDLG95_KushPixels(hwnd, 12), rect.top + FILEDLG95_KushPixels(hwnd, 4),
+        0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+    child = GetDlgItem(hwnd, IDC_LOOKIN);
+    GetWindowRect(child, &rect); MapWindowPoints(NULL, hwnd, (POINT*)&rect, 2);
+    SetWindowPos(child, NULL, FILEDLG95_KushPixels(hwnd, 80), rect.top + FILEDLG95_KushPixels(hwnd, 4),
+        rect.right - FILEDLG95_KushPixels(hwnd, 80), rect.bottom - rect.top,
+        SWP_NOZORDER | SWP_NOACTIVATE);
+    GetWindowRect(hwnd, &window);
+    SetWindowPos(hwnd, NULL, 0, 0, window.right - window.left, window.bottom - window.top + extra,
+        SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+}
+
 static BOOL is_dialog_hooked(const FileOpenDlgInfos *info)
 {
     return (info->ofnInfos->Flags & OFN_ENABLEHOOK) && info->ofnInfos->lpfnHook;
@@ -1450,6 +1541,8 @@ INT_PTR CALLBACK FileOpenDlgProc95(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
 
          SetPropW(hwnd, L"FileOpenDlgInfos", fodInfos);
 
+         fodInfos->kush_toolbar_images = NULL;
+         fodInfos->kush_style = FILEDLG95_KushStyle(hwnd, fodInfos);
          FILEDLG95_InitControls(hwnd);
 
          if (fodInfos->ofnInfos->Flags & OFN_ENABLESIZING)
@@ -1547,6 +1640,19 @@ INT_PTR CALLBACK FileOpenDlgProc95(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
 #endif
          return 0;
        }
+    case WM_CTLCOLORDLG:
+    case WM_CTLCOLORSTATIC:
+      {
+          FileOpenDlgInfos *info = get_filedlg_infoptr(hwnd);
+          if (info && info->kush_style)
+          {
+              SetBkColor((HDC)wParam, RGB(247, 248, 250));
+              SetTextColor((HDC)wParam, RGB(23, 43, 58));
+              SetDCBrushColor((HDC)wParam, RGB(247, 248, 250));
+              return (INT_PTR)GetStockObject(DC_BRUSH);
+          }
+          return FALSE;
+      }
     case WM_SIZE:
       return FILEDLG95_OnWMSize(hwnd, wParam);
     case WM_GETMINMAXINFO:
@@ -1576,6 +1682,12 @@ INT_PTR CALLBACK FileOpenDlgProc95(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
           if (fodInfos && fodInfos->ofnInfos->Flags & OFN_ENABLESIZING)
               MemDialogSize = fodInfos->sizedlg;
 
+          if (fodInfos && fodInfos->kush_toolbar_images)
+          {
+              SendMessageW(fodInfos->DlgInfos.hwndTB, TB_SETIMAGELIST, 0, 0);
+              ImageList_Destroy(fodInfos->kush_toolbar_images);
+              fodInfos->kush_toolbar_images = NULL;
+          }
           if (places_bar)
           {
               himl = (HIMAGELIST)SendDlgItemMessageW(hwnd, IDC_TOOLBARPLACES, TB_GETIMAGELIST, 0, 0);
@@ -1677,6 +1789,16 @@ static LRESULT FILEDLG95_InitControls(HWND hwnd)
    {VIEW_LIST,         FCIDM_TB_SMALLICON,  TBSTATE_ENABLED, BTNS_BUTTON, {0, 0}, 0, 0 },
    {VIEW_DETAILS,      FCIDM_TB_REPORTVIEW, TBSTATE_ENABLED, BTNS_BUTTON, {0, 0}, 0, 0 },
   };
+  static const TBBUTTON kush_tbb[] =
+  {
+   {0, FCIDM_TB_UPFOLDER, TBSTATE_ENABLED, BTNS_BUTTON, {0, 0}, 0, 0},
+   {0, 0, TBSTATE_ENABLED, BTNS_SEP, {0, 0}, 0, 0},
+   {1, FCIDM_TB_DESKTOP, TBSTATE_ENABLED, BTNS_BUTTON, {0, 0}, 0, 0},
+   {2, FCIDM_TB_NEWFOLDER, TBSTATE_ENABLED, BTNS_BUTTON, {0, 0}, 0, 0},
+   {0, 0, TBSTATE_ENABLED, BTNS_SEP, {0, 0}, 0, 0},
+   {3, FCIDM_TB_SMALLICON, TBSTATE_ENABLED, BTNS_BUTTON, {0, 0}, 0, 0},
+   {4, FCIDM_TB_REPORTVIEW, TBSTATE_ENABLED, BTNS_BUTTON, {0, 0}, 0, 0}
+  };
   static const TBADDBITMAP tba = {HINST_COMMCTRL, IDB_VIEW_SMALL_COLOR};
 
   RECT rectTB;
@@ -1714,6 +1836,9 @@ static LRESULT FILEDLG95_InitControls(HWND hwnd)
       fodInfos->DlgInfos.hwndFileName = GetDlgItem( hwnd, cmb13 );
   }
 
+  if (fodInfos->kush_style)
+      FILEDLG95_KushLayout(hwnd);
+
   /* Get the hwnd of the controls */
   fodInfos->DlgInfos.hwndFileTypeCB = GetDlgItem(hwnd,IDC_FILETYPE);
   fodInfos->DlgInfos.hwndLookInCB = GetDlgItem(hwnd,IDC_LOOKIN);
@@ -1748,6 +1873,17 @@ static LRESULT FILEDLG95_InitControls(HWND hwnd)
 /* FIXME: use TB_LOADIMAGES when implemented */
 /*  SendMessageW(fodInfos->DlgInfos.hwndTB, TB_LOADIMAGES, IDB_VIEW_SMALL_COLOR, HINST_COMMCTRL);*/
   SendMessageW(fodInfos->DlgInfos.hwndTB, TB_SETMAXTEXTROWS, 0, 0);
+  if (fodInfos->kush_style && fodInfos->kush_icons)
+      fodInfos->kush_toolbar_images = ImageList_LoadImageW(COMDLG32_hInstance,
+          MAKEINTRESOURCEW(IDB_KUSH_FILE_TOOLBAR), 24, 0, RGB(255, 0, 255),
+          IMAGE_BITMAP, LR_CREATEDIBSECTION);
+  if (fodInfos->kush_toolbar_images)
+  {
+      SendMessageW(fodInfos->DlgInfos.hwndTB, TB_SETIMAGELIST, 0, (LPARAM)fodInfos->kush_toolbar_images);
+      SendMessageW(fodInfos->DlgInfos.hwndTB, TB_ADDBUTTONSW, ARRAY_SIZE(kush_tbb), (LPARAM)kush_tbb);
+  }
+  else
+  {
   SendMessageW(fodInfos->DlgInfos.hwndTB, TB_ADDBITMAP, 12, (LPARAM) &tba);
 
   /* Retrieve and add desktop icon to the toolbar */
@@ -1762,7 +1898,18 @@ static LRESULT FILEDLG95_InitControls(HWND hwnd)
 
   /* Finish Toolbar Construction */
   SendMessageW(fodInfos->DlgInfos.hwndTB, TB_ADDBUTTONSW, 9, (LPARAM) tbb);
+  }
+  if (fodInfos->kush_style)
+      SendMessageW(fodInfos->DlgInfos.hwndTB, TB_SETBUTTONSIZE, 0, MAKELPARAM(34, 34));
   SendMessageW(fodInfos->DlgInfos.hwndTB, TB_AUTOSIZE, 0, 0);
+  if (fodInfos->kush_style)
+  {
+      SIZE size;
+      if (SendMessageW(fodInfos->DlgInfos.hwndTB, TB_GETMAXSIZE, 0, (LPARAM)&size))
+          SetWindowPos(fodInfos->DlgInfos.hwndTB, NULL, 0, 0, size.cx, size.cy,
+              SWP_NOMOVE | SWP_NOACTIVATE | SWP_NOZORDER);
+  }
+
 
   if (is_places_bar_enabled(fodInfos))
   {
@@ -1775,6 +1922,12 @@ static LRESULT FILEDLG95_InitControls(HWND hwnd)
       GetClientRect(GetDlgItem(hwnd, IDC_TOOLBARPLACES), &rect);
       cx = rect.right - rect.left;
 
+      if (fodInfos->kush_style)
+      {
+          HWND bar = GetDlgItem(hwnd, IDC_TOOLBARPLACES);
+          SetWindowLongPtrW(bar, GWL_STYLE, GetWindowLongPtrW(bar, GWL_STYLE) | TBSTYLE_LIST | TBSTYLE_FLAT);
+          SendMessageW(bar, TB_SETMAXTEXTROWS, 1, 0);
+      }
       SendDlgItemMessageW(hwnd, IDC_TOOLBARPLACES, TB_SETBUTTONWIDTH, 0, MAKELPARAM(cx, cx));
       himl = ImageList_Create(GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON), ILC_COLOR32, 4, 1);
 
@@ -1801,7 +1954,7 @@ static LRESULT FILEDLG95_InitControls(HWND hwnd)
       }
 
       SendDlgItemMessageW(hwnd, IDC_TOOLBARPLACES, TB_SETIMAGELIST, 0, (LPARAM)himl);
-      SendDlgItemMessageW(hwnd, IDC_TOOLBARPLACES, TB_SETBUTTONSIZE, 0, MAKELPARAM(cx, cx * 3 / 4));
+      SendDlgItemMessageW(hwnd, IDC_TOOLBARPLACES, TB_SETBUTTONSIZE, 0, MAKELPARAM(cx, fodInfos->kush_style ? FILEDLG95_KushPixels(hwnd, 48) : cx * 3 / 4));
   }
 
   /* Set the window text with the text specified in the OPENFILENAME structure */

@@ -1465,6 +1465,23 @@ LRESULT CALLBACK FrameWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
     RECT rc;
     switch (message)
     {
+    case WM_GETMINMAXINFO:
+        if (g_KushRegedit)
+        {
+            MINMAXINFO *info = (MINMAXINFO *)lParam;
+            MONITORINFO monitor = {sizeof(monitor)};
+            info->ptMinTrackSize.x = 640;
+            info->ptMinTrackSize.y = 400;
+            if (GetMonitorInfoW(MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST), &monitor))
+            {
+                info->ptMaxPosition.x = monitor.rcWork.left - monitor.rcMonitor.left;
+                info->ptMaxPosition.y = monitor.rcWork.top - monitor.rcMonitor.top;
+                info->ptMaxSize.x = monitor.rcWork.right - monitor.rcWork.left;
+                info->ptMaxSize.y = monitor.rcWork.bottom - monitor.rcWork.top;
+            }
+            return 0;
+        }
+        return DefWindowProcW(hWnd, message, wParam, lParam);
     case WM_CREATE:
         // For now, the Help dialog item is disabled because of lacking of HTML Help support
         EnableMenuItem(GetMenu(hWnd), ID_HELP_HELPTOPICS, MF_BYCOMMAND | MF_GRAYED);

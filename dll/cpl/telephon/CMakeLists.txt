@@ -11,3 +11,6 @@ set_module_type(telephon cpl UNICODE)
 target_link_libraries(telephon uuid)
 add_importlibs(telephon advapi32 user32 comctl32 ole32 shell32 msvcrt kernel32)
 add_cd_file(TARGET telephon DESTINATION reactos/system32 FOR all)
+
+file(GLOB kush_fluent_icon_deps "${CMAKE_CURRENT_SOURCE_DIR}/resources/fluent/*.ico")
+add_rc_deps(telephon.rc ${kush_fluent_icon_deps})

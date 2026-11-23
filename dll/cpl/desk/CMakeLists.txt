@@ -40,3 +40,6 @@ target_link_libraries(desk uuid)
 add_importlibs(desk user32 advapi32 gdi32 comctl32 comdlg32 ole32 setupapi shell32 shlwapi uxtheme gdiplus msvcrt kernel32 ntdll)
 add_pch(desk desk.h "${PCH_SKIP_SOURCE}")
 add_cd_file(TARGET desk DESTINATION reactos/system32 FOR all)
+
+file(GLOB kush_fluent_icon_deps "${CMAKE_CURRENT_SOURCE_DIR}/resources/fluent/*.ico")
+add_rc_deps(desk.rc ${kush_fluent_icon_deps})

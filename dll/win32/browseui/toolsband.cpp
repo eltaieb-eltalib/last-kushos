@@ -23,6 +23,9 @@ Implements the toolbar band of a cabinet window
 */
 
 #include "precomp.h"
+#include <kushexplorer.h>
+#define KUSH_ICONS_NO_LOAD_MACROS
+#include <kushicons.h>
 
 class CToolsBand :
     public CWindowImpl<CToolsBand, CWindow, CControlWinTraits>,
@@ -36,6 +39,9 @@ private:
     CComPtr<IDockingWindowSite> fDockSite;
     HIMAGELIST m_himlNormal;
     HIMAGELIST m_himlHot;
+protected:
+    bool m_navigationOnly;
+    BOOL m_modernExplorer;
 public:
     CToolsBand();
     virtual ~CToolsBand();
@@ -91,7 +97,8 @@ END_COM_MAP()
 };
 
 CToolsBand::CToolsBand()
-    : fDockSite(NULL)
+    : fDockSite(NULL), m_himlNormal(NULL), m_himlHot(NULL),
+      m_navigationOnly(false), m_modernExplorer(KushModernExplorer())
 {
 }
 
@@ -114,6 +121,9 @@ HRESULT STDMETHODCALLTYPE CToolsBand::GetBandInfo(DWORD dwBandID, DWORD dwViewMo
     /* Obtain the ideal size, to be used as min and max */
     SendMessageW(m_hWnd, TB_AUTOSIZE, 0, 0);
     SendMessageW(m_hWnd, TB_GETMAXSIZE, 0, reinterpret_cast<LPARAM>(&maxSize));
+
+    if (m_navigationOnly)
+        actualSize.x = maxSize.x;
 
     idealSize = maxSize;
     SendMessageW(m_hWnd, TB_GETIDEALSIZE, FALSE, reinterpret_cast<LPARAM>(&idealSize));
@@ -290,16 +300,54 @@ HRESULT STDMETHODCALLTYPE CToolsBand::SetSite(IUnknown* pUnkSite){
     SendMessage(TB_SETEXTENDEDSTYLE, 0, TBSTYLE_EX_HIDECLIPPEDBUTTONS | TBSTYLE_EX_MIXEDBUTTONS | TBSTYLE_EX_DRAWDDARROWS);
 
     m_himlNormal = ImageList_LoadImageW(_AtlBaseModule.GetResourceInstance(),
-                                        MAKEINTRESOURCEW(IDB_SHELL_EXPLORER_LG),
+                                        MAKEINTRESOURCEW(KushBitmapResourceId(_AtlBaseModule.GetResourceInstance(), IDB_SHELL_EXPLORER_LG)),
                                         0, 0, RGB(255, 0, 255), IMAGE_BITMAP, LR_DEFAULTSIZE | LR_CREATEDIBSECTION);
 
     m_himlHot = ImageList_LoadImageW(_AtlBaseModule.GetResourceInstance(),
-                                     MAKEINTRESOURCEW(IDB_SHELL_EXPLORER_LG_HOT),
+                                     MAKEINTRESOURCEW(KushBitmapResourceId(_AtlBaseModule.GetResourceInstance(), IDB_SHELL_EXPLORER_LG_HOT)),
                                      0, 0, RGB(255, 0, 255), IMAGE_BITMAP, LR_DEFAULTSIZE | LR_CREATEDIBSECTION);
 
     SendMessage(TB_SETIMAGELIST, 0, (LPARAM) m_himlNormal);
     SendMessage(TB_SETHOTIMAGELIST, 0, (LPARAM) m_himlHot);
-    SendMessage(TB_ADDBUTTONSW, numShownButtons, (LPARAM)&tbButtonsAdd);
+    if (m_modernExplorer)
+    {
+        /* Keep the native command IDs, images, strings and state notifications.
+         * Only their presentation and grouping change. */
+        const int navigation[] = { IDM_GOTO_BACK, IDM_GOTO_FORWARD, IDM_GOTO_UPONELEVEL };
+        const int commands[] = { gCutCommandID, gCopyCommandID, gPasteCommandID, -1,
+            gMoveToCommandID, gCopyToCommandID, gDeleteCommandID, gUndoCommandID, -1,
+            gViewsCommandID, -1, gSearchCommandID, gFoldersCommandID };
+        const int *ids = m_navigationOnly ? navigation : commands;
+        const UINT count = m_navigationOnly ? ARRAYSIZE(navigation) : ARRAYSIZE(commands);
+        for (UINT i = 0; i < count; ++i)
+        {
+            if (ids[i] == -1)
+            {
+                TBBUTTON separator = { KushExplorerPixels(m_hWnd, 12), 0, TBSTATE_ENABLED, BTNS_SEP };
+                SendMessage(TB_ADDBUTTONSW, 1, (LPARAM)&separator);
+                continue;
+            }
+            for (UINT j = 0; j < ARRAYSIZE(tbButtonsAdd); ++j)
+            {
+                if (tbButtonsAdd[j].idCommand != ids[i])
+                    continue;
+                TBBUTTON button = tbButtonsAdd[j];
+                if (m_navigationOnly)
+                    button.fsStyle &= ~BTNS_SHOWTEXT;
+                if (ids[i] == gViewsCommandID)
+                    button.fsStyle |= BTNS_SHOWTEXT;
+                SendMessage(TB_ADDBUTTONSW, 1, (LPARAM)&button);
+                break;
+            }
+        }
+    }
+    else
+        SendMessage(TB_ADDBUTTONSW, numShownButtons, (LPARAM)&tbButtonsAdd);
+    if (m_modernExplorer)
+    {
+        DWORD size = SendMessage(TB_GETBUTTONSIZE, 0, 0);
+        SendMessage(TB_SETBUTTONSIZE, 0, MAKELPARAM(LOWORD(size), KushExplorerPixels(m_hWnd, 38)));
+    }
 
     return hResult;
 }
@@ -421,3 +469,15 @@ HRESULT CToolsBand_CreateInstance(REFIID riid, void **ppv)
     return ShellObjectCreator<CToolsBand>(riid, ppv);
 }
 
+
+/* A fixed native navigation band shares the address row in the modern layout. */
+class CKushNavigationBand : public CToolsBand
+{
+public:
+    CKushNavigationBand() { m_navigationOnly = true; }
+};
+
+HRESULT CKushNavigationBand_CreateInstance(REFIID riid, void **ppv)
+{
+    return ShellObjectCreator<CKushNavigationBand>(riid, ppv);
+}

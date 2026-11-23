@@ -1,3 +1,4 @@
+/* KUSH_CPL_FLUENT: generated mapping, original IDs preserved. */
 #include <windef.h>
 #include <winuser.h>
 #include <commctrl.h>
@@ -11,25 +12,42 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 #define REACTOS_STR_INTERNAL_NAME     "main"
 #define REACTOS_STR_ORIGINAL_FILENAME "main.cpl"
 #include <reactos/version.rc>
-
 IDC_CPLICON_1 ICON "resources/mouse.ico"
+(IDC_CPLICON_1 + 40000) ICON "resources/fluent/cursor_click.ico"
 IDC_CPLICON_2 ICON "resources/keyboard.ico"
+(IDC_CPLICON_2 + 40000) ICON "resources/fluent/keyboard.ico"
 IDI_FOLDER_OPEN ICON "resources/folder_open.ico"
+(IDI_FOLDER_OPEN + 40000) ICON "resources/fluent/folder_open.ico"
 IDI_FOLDER_CLOSED ICON "resources/folder_closed.ico"
+(IDI_FOLDER_CLOSED + 40000) ICON "resources/fluent/folder.ico"
 IDI_MOUSE_LEFT ICON "resources/mouse_left.ico"
+(IDI_MOUSE_LEFT + 40000) ICON "resources/fluent/cursor_click.ico"
 IDI_MOUSE_RIGHT ICON "resources/mouse_right.ico"
+(IDI_MOUSE_RIGHT + 40000) ICON "resources/fluent/cursor_click.ico"
 IDI_MOUSE_SPEED ICON "resources/mouse_speed.ico"
+(IDI_MOUSE_SPEED + 40000) ICON "resources/fluent/cursor.ico"
 IDI_MOUSE_BUTTON ICON "resources/mouse_button.ico"
+(IDI_MOUSE_BUTTON + 40000) ICON "resources/fluent/cursor_click.ico"
 IDI_MOUSE_TRAILS ICON "resources/mouse_trails.ico"
+(IDI_MOUSE_TRAILS + 40000) ICON "resources/fluent/cursor.ico"
 IDI_MOUSE_HIDE ICON "resources/mouse_hide.ico"
-IDI_PRINTERS_FOLDER ICON "../../win32/shell32/res/icons/38.ico" // IDI_SHELL_PRINTERS_FOLDER
-IDI_FONTS_FOLDER ICON "../../win32/shell32/res/icons/39.ico" // IDI_SHELL_FONTS_FOLDER
+(IDI_MOUSE_HIDE + 40000) ICON "resources/fluent/cursor_hover_off.ico"
+IDI_PRINTERS_FOLDER ICON "../../win32/shell32/res/icons/38.ico"
+(IDI_PRINTERS_FOLDER + 40000) ICON "resources/fluent/print.ico" // IDI_SHELL_PRINTERS_FOLDER
+IDI_FONTS_FOLDER ICON "../../win32/shell32/res/icons/39.ico"
+(IDI_FONTS_FOLDER + 40000) ICON "resources/fluent/text_font.ico" // IDI_SHELL_FONTS_FOLDER
 IDI_ADMIN_TOOLS_FOLDER ICON "resources/admintools_folder.ico"
+(IDI_ADMIN_TOOLS_FOLDER + 40000) ICON "resources/fluent/wrench.ico"
 IDI_MOUSE_POINTER ICON "resources/mouse_pointer.ico"
+(IDI_MOUSE_POINTER + 40000) ICON "resources/fluent/cursor.ico"
 IDI_MOUSE_WHEEL ICON "resources/mouse_wheel.ico"
+(IDI_MOUSE_WHEEL + 40000) ICON "resources/fluent/arrow_sort.ico"
 IDI_REPEAT_RATE ICON "resources/repeat_rate.ico"
+(IDI_REPEAT_RATE + 40000) ICON "resources/fluent/keyboard.ico"
 IDI_REPEAT_DELAY ICON "resources/repeat_delay.ico"
+(IDI_REPEAT_DELAY + 40000) ICON "resources/fluent/clock.ico"
 IDI_LOCK_KEY ICON "resources/lock_key.ico"
+(IDI_LOCK_KEY + 40000) ICON "resources/fluent/lock_closed.ico"
 
 #include <reactos/manifest_hosted.rc>
 

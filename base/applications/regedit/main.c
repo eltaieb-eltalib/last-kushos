@@ -19,6 +19,7 @@ const WCHAR *reg_class_namesW[] = {L"HKEY_LOCAL_MACHINE", L"HKEY_USERS",
  */
 
 HINSTANCE hInst;
+BOOL g_KushRegedit;
 HWND hFrameWnd;
 HWND hStatusBar;
 HMENU hMenuFrame;
@@ -116,6 +117,15 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
                                 NULL, hMenuFrame, hInstance, NULL/*lpParam*/);
     if (!hFrameWnd)
         return FALSE;
+
+    if (g_KushRegedit)
+    {
+        RECT work;
+        if (SystemParametersInfoW(SPI_GETWORKAREA, 0, &work, 0))
+            SetWindowPos(hFrameWnd, NULL, work.left + (work.right - work.left - 740) / 2,
+                         work.top + (work.bottom - work.top - 480) / 2,
+                         740, 480, SWP_NOZORDER | SWP_NOACTIVATE);
+    }
 
     /* Create the status bar */
     hStatusBar = CreateStatusWindowW(WS_VISIBLE | WS_CHILD | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | SBT_NOBORDERS,

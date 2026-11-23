@@ -93,6 +93,9 @@ public:
     CComPtr<IOleCommandTarget>              fCommandTarget;
     GUID                                    fCommandCategory;
     HWND                                    fToolbarWindow;
+    CComPtr<IUnknown>                       fNavControlsBar;
+    HWND                                    fNavToolbarWindow;
+    BOOL                                    fModernExplorer;
     DWORD                                   fAdviseCookie;
     CComPtr<IBandProxy>                     fBandProxy;
     BOOL                                    fSizing;

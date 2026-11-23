@@ -21,3 +21,6 @@ set_module_type(access cpl UNICODE)
 add_importlibs(access user32 gdi32 advapi32 comctl32 msvcrt kernel32)
 add_pch(access access.h SOURCE)
 add_cd_file(TARGET access DESTINATION reactos/system32 FOR all)
+
+file(GLOB kush_fluent_icon_deps "${CMAKE_CURRENT_SOURCE_DIR}/resources/fluent/*.ico")
+add_rc_deps(access.rc ${kush_fluent_icon_deps})

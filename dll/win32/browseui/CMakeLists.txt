@@ -68,3 +68,6 @@ add_custom_command(TARGET browseui POST_BUILD
      "$<TARGET_FILE:browseui>"
      "$<TARGET_FILE_DIR:filebrowser>/$<TARGET_FILE_NAME:browseui>"
   COMMENT "Copying to output directory")
+
+file(GLOB kush_toolbar_icon_deps "${CMAKE_CURRENT_SOURCE_DIR}/res/fluent/*.bmp")
+add_rc_deps(browseui.rc ${kush_toolbar_icon_deps})

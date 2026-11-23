@@ -10,6 +10,95 @@
 #include "precomp.h"
 
 #include <regstr.h>
+#include <winnls.h>
+#include <uxtheme.h>
+
+static BOOL bKushSystemProperties;
+
+static BOOL
+KushSystemPropertiesEnabled(VOID)
+{
+    const WCHAR *names[] = {L"ClassicSystemProperties", L"ClassicWindows"};
+    LANGID language = GetUserDefaultUILanguage();
+    HIGHCONTRAST hc = {sizeof(hc)};
+    DWORD layout = 0, value, size, type;
+    HKEY key;
+    HDC dc;
+    INT dpi;
+    UINT i;
+    if (PRIMARYLANGID(language) == LANG_ARABIC || PRIMARYLANGID(language) == LANG_HEBREW ||
+        (GetProcessDefaultLayout(&layout) && (layout & LAYOUT_RTL))) return FALSE;
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Kush\\Shell", 0, KEY_QUERY_VALUE, &key) == ERROR_SUCCESS)
+    {
+        for (i = 0; i < ARRAYSIZE(names); ++i)
+        {
+            value = 0; size = sizeof(value); type = 0;
+            if (RegQueryValueExW(key, names[i], NULL, &type, (LPBYTE)&value, &size) == ERROR_SUCCESS &&
+                type == REG_DWORD && value)
+            {
+                RegCloseKey(key);
+                return FALSE;
+            }
+        }
+        RegCloseKey(key);
+    }
+    if (SystemParametersInfoW(SPI_GETHIGHCONTRAST, sizeof(hc), &hc, 0) &&
+        (hc.dwFlags & HCF_HIGHCONTRASTON)) return FALSE;
+    dc = GetDC(NULL);
+    if (!dc) return FALSE;
+    dpi = GetDeviceCaps(dc, LOGPIXELSY);
+    ReleaseDC(NULL, dc);
+    return dpi == 96;
+}
+
+static LRESULT CALLBACK
+KushSystemPropertiesSurfaceProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR id, DWORD_PTR data)
+{
+    UNREFERENCED_PARAMETER(data);
+    if (msg == WM_ERASEBKGND)
+    {
+        RECT rc;
+        GetClientRect(hwnd, &rc);
+        FillRect((HDC)wp, &rc, (HBRUSH)GetStockObject(WHITE_BRUSH));
+        return 1;
+    }
+    if (msg == WM_CTLCOLORDLG || msg == WM_CTLCOLORSTATIC || msg == WM_CTLCOLORBTN)
+    {
+        SetBkMode((HDC)wp, TRANSPARENT);
+        SetBkColor((HDC)wp, RGB(255, 255, 255));
+        SetTextColor((HDC)wp, IsWindowEnabled((HWND)lp) ? RGB(40, 48, 56) : GetSysColor(COLOR_GRAYTEXT));
+        return (LRESULT)GetStockObject(WHITE_BRUSH);
+    }
+    if (msg == WM_NCDESTROY) RemoveWindowSubclass(hwnd, KushSystemPropertiesSurfaceProc, id);
+    return DefSubclassProc(hwnd, msg, wp, lp);
+}
+
+
+static BOOL CALLBACK
+KushSystemPropertiesChildTheme(HWND hwnd, LPARAM data)
+{
+    WCHAR name[32];
+    DWORD style = GetWindowLongPtrW(hwnd, GWL_STYLE);
+    UNREFERENCED_PARAMETER(data);
+    if (GetClassNameW(hwnd, name, ARRAYSIZE(name)))
+    {
+        if ((!lstrcmpiW(name, L"Static") &&
+             (style & SS_TYPEMASK) != SS_OWNERDRAW && (style & SS_TYPEMASK) != SS_BITMAP &&
+             (style & SS_TYPEMASK) != SS_ICON) ||
+            (!lstrcmpiW(name, L"Button") && (style & BS_TYPEMASK) == BS_GROUPBOX))
+            SetWindowTheme(hwnd, L"", L"");
+    }
+    return TRUE;
+}
+
+static VOID
+KushSystemPropertiesPageSurface(HWND hwnd)
+{
+    SetWindowSubclass(hwnd, KushSystemPropertiesSurfaceProc, 1, 0);
+    EnumChildWindows(hwnd, KushSystemPropertiesChildTheme, 0);
+}
+
+
 
 static LONG APIENTRY SystemApplet(HWND hwnd, UINT uMsg, LPARAM wParam, LPARAM lParam);
 HINSTANCE hApplet = 0;
@@ -63,6 +152,33 @@ PropSheetAddPage(HPROPSHEETPAGE hpage, LPARAM lParam)
     }
 
     return FALSE;
+}
+
+static INT_PTR CALLBACK
+KushGeneralPage(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+    INT_PTR result = GeneralPageProc(hwnd, msg, wp, lp);
+    if (msg == WM_INITDIALOG && bKushSystemProperties)
+        KushSystemPropertiesPageSurface(hwnd);
+    return result;
+}
+
+static INT_PTR CALLBACK
+KushHardwarePage(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+    INT_PTR result = HardwarePageProc(hwnd, msg, wp, lp);
+    if (msg == WM_INITDIALOG && bKushSystemProperties)
+        KushSystemPropertiesPageSurface(hwnd);
+    return result;
+}
+
+static INT_PTR CALLBACK
+KushAdvancedPage(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+    INT_PTR result = AdvancedPageProc(hwnd, msg, wp, lp);
+    if (msg == WM_INITDIALOG && bKushSystemProperties)
+        KushSystemPropertiesPageSurface(hwnd);
+    return result;
 }
 
 static BOOL
@@ -136,6 +252,7 @@ PropSheetProc(HWND hwndDlg, UINT uMsg, LPARAM lParam)
     {
         case PSCB_INITIALIZED:
         {
+            if (bKushSystemProperties) SetWindowSubclass(hwndDlg, KushSystemPropertiesSurfaceProc, 1, 0);
             hIcon = LoadIconW(hApplet, MAKEINTRESOURCEW(IDI_CPLSYSTEM));
             SendMessageW(hwndDlg, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
             break;
@@ -156,6 +273,8 @@ SystemApplet(HWND hwnd, UINT uMsg, LPARAM wParam, LPARAM lParam)
     LONG Ret;
     static INITCOMMONCONTROLSEX icc = {sizeof(INITCOMMONCONTROLSEX), ICC_LINK_CLASS};
 
+    bKushSystemProperties = KushSystemPropertiesEnabled();
+
     if (!InitCommonControlsEx(&icc))
         return 0;
 
@@ -175,17 +294,17 @@ SystemApplet(HWND hwnd, UINT uMsg, LPARAM wParam, LPARAM lParam)
     psh.dwFlags =  PSH_PROPTITLE | PSH_USEICONID | PSH_USECALLBACK;
     psh.hwndParent = hwnd;
     psh.hInstance = hApplet;
-    psh.pszIcon = MAKEINTRESOURCEW(IDI_CPLSYSTEM);
+    psh.pszIcon = MAKEINTRESOURCEW(KushOwnIconId(IDI_CPLSYSTEM));
     psh.pszCaption = MAKEINTRESOURCE(IDS_CPLSYSTEMNAME);
     psh.nPages = 0;
     psh.nStartPage = 0;
     psh.phpage = hpsp;
     psh.pfnCallback = PropSheetProc;
 
-    InitPropSheetPage(&psh, IDD_PROPPAGEGENERAL, GeneralPageProc);
+    InitPropSheetPage(&psh, IDD_PROPPAGEGENERAL, KushGeneralPage);
     hNetIdDll = AddNetIdPage(&psh);
-    InitPropSheetPage(&psh, IDD_PROPPAGEHARDWARE, HardwarePageProc);
-    InitPropSheetPage(&psh, IDD_PROPPAGEADVANCED, AdvancedPageProc);
+    InitPropSheetPage(&psh, IDD_PROPPAGEHARDWARE, KushHardwarePage);
+    InitPropSheetPage(&psh, IDD_PROPPAGEADVANCED, KushAdvancedPage);
 
     /* Load additional pages provided by shell extensions */
     hpsxa = SHCreatePropSheetExtArray(HKEY_LOCAL_MACHINE, REGSTR_PATH_CONTROLSFOLDER TEXT("\\System"), MAX_SYSTEM_PAGES - psh.nPages);
@@ -234,7 +353,7 @@ CPlApplet(HWND hwndCPl,
             {
                  CPLINFO *CPlInfo = (CPLINFO*)lParam2;
                  CPlInfo->lData = 0;
-                 CPlInfo->idIcon = Applets[i].idIcon;
+                 CPlInfo->idIcon = KushOwnIconId(Applets[i].idIcon);
                  CPlInfo->idName = Applets[i].idName;
                  CPlInfo->idInfo = Applets[i].idDescription;
             }

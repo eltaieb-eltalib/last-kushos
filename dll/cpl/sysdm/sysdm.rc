@@ -1,3 +1,4 @@
+/* KUSH_CPL_FLUENT: generated mapping, original IDs preserved. */
 #include <windef.h>
 #include <winuser.h>
 #include <commctrl.h>
@@ -11,15 +12,22 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 #define REACTOS_STR_INTERNAL_NAME     "sysdm"
 #define REACTOS_STR_ORIGINAL_FILENAME "sysdm.cpl"
 #include <reactos/version.rc>
-
 IDI_CPLSYSTEM ICON "resources/applet.ico"
+(IDI_CPLSYSTEM + 40000) ICON "resources/fluent/desktop_tower.ico"
 IDI_USERPROF ICON "resources/devmgr.ico"
+(IDI_USERPROF + 40000) ICON "resources/fluent/person_settings.ico"
 IDI_HARDPROF ICON "resources/hwprofile.ico"
+(IDI_HARDPROF + 40000) ICON "resources/fluent/desktop_tower.ico"
 IDI_DEVMGR ICON "resources/dev.ico"
+(IDI_DEVMGR + 40000) ICON "resources/fluent/settings.ico"
 IDI_LICENSE ICON "resources/license.ico"
+(IDI_LICENSE + 40000) ICON "resources/fluent/certificate.ico"
 IDI_UP ICON "resources/up.ico"
+(IDI_UP + 40000) ICON "resources/fluent/chevron_up.ico"
 IDI_DOWN ICON "resources/down.ico"
+(IDI_DOWN + 40000) ICON "resources/fluent/chevron_down.ico"
 IDI_ADDHW ICON "resources/addhw.ico"
+(IDI_ADDHW + 40000) ICON "resources/fluent/plug_connected.ico"
 IDB_ROSBMP BITMAP "resources/rosbitmap.bmp"
 IDB_ROSMASK BITMAP "resources/rosbitmap_mask.bmp"
 

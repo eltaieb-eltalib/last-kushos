@@ -38,7 +38,7 @@ LONG CALLBACK AppletInit(HWND hWnd)
     psh.dwFlags =  PSH_PROPSHEETPAGE | PSH_USEICONID | PSH_USECALLBACK;
     psh.hwndParent = hWnd;
     psh.hInstance = hApplet;
-    psh.pszIcon = MAKEINTRESOURCEW(IDI_CPLICON);
+    psh.pszIcon = MAKEINTRESOURCEW(KushOwnIconId(IDI_CPLICON));
     psh.pszCaption = MAKEINTRESOURCEW(IDS_CPLNAME);
     psh.nPages = sizeof(psp) / sizeof(PROPSHEETPAGE);
     psh.nStartPage = 0;
@@ -62,7 +62,7 @@ LONG CALLBACK CPlApplet(HWND hWnd, UINT uMsg, LPARAM lParam1, LPARAM lParam2)
             {
                 CPLINFO *CPlInfo = (CPLINFO*)lParam2;
                 CPlInfo->lData = 0;
-                CPlInfo->idIcon = IDI_CPLICON;
+                CPlInfo->idIcon = KushOwnIconId(IDI_CPLICON);
                 CPlInfo->idInfo = IDS_CPLDESCRIPTION;
                 CPlInfo->idName = IDS_CPLNAME;
             }

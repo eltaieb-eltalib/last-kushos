@@ -211,3 +211,5 @@ GetSelectedComboBoxIndex(
 VOID AddNewKbLayoutsByLcid(LCID Lcid);
 
 #endif /* _INTL_H */
+
+#include <kushicons.h>

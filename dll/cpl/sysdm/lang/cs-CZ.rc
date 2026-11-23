@@ -34,15 +34,15 @@ CAPTION "Hardware"
 FONT 8, "MS Shell Dlg"
 BEGIN
     GROUPBOX "Správce zařízení", IDC_STATIC, 6, 7, 244, 61
-    ICON IDI_DEVMGR, IDC_STATIC, 12, 18, 23, 21, SS_ICON
+    ICON IDI_DEVMGR, IDC_KUSH_STATIC_DEVMGR, 12, 18, 23, 21, SS_ICON
     LTEXT "Správce zařízení zobrazuje seznam všech hardwarových zařízení nainstalovaných na tomto počítači. Ve Správci zařízení lze změnit vlastnosti libovolného zařízení.", IDC_STATIC, 42, 18, 204, 24
     PUSHBUTTON "&Správce zařízení...", IDC_HARDWARE_DEVICE_MANAGER, 154, 48, 90, 15
     GROUPBOX "Průvodce hardwarem", IDC_STATIC, 6, 79, 244, 61
-    ICON IDI_ADDHW, IDC_STATIC, 12, 90, 23, 21, SS_ICON
+    ICON IDI_ADDHW, IDC_KUSH_STATIC_ADDHW, 12, 90, 23, 21, SS_ICON
     LTEXT "Průvodce hardwarem umožňuje přidávat, odebírat, opravovat, odpojovat, vysouvat a konfigurovat hardware.", IDC_STATIC, 42, 90, 204, 24
     PUSHBUTTON "&Průvodce hardwarem...", IDC_HARDWARE_WIZARD, 154, 120, 90, 15
     GROUPBOX "Hardwarové profily", IDC_STATIC, 6, 149, 244, 61
-    ICON IDI_HARDPROF, IDC_STATIC, 12, 160, 23, 21, SS_ICON
+    ICON IDI_HARDPROF, IDC_KUSH_STATIC_HARDPROF, 12, 160, 23, 21, SS_ICON
     LTEXT "Hardwarové profily dovolují nastavení a uložení různých hardwarových konfigurací.", IDC_STATIC, 42, 160, 204, 24
     PUSHBUTTON "Hard&warové profily...", IDC_HARDWARE_PROFILE, 154, 190, 90, 15
 END
@@ -83,7 +83,7 @@ STYLE DS_SHELLFONT | DS_MODALFRAME | DS_CONTEXTHELP | WS_POPUP | WS_VISIBLE | WS
 CAPTION "Hardwarové profily"
 FONT 8, "MS Shell Dlg"
 BEGIN
-    ICON IDI_HARDPROF, IDC_STATIC, 8, 11, 18, 20, SS_ICON
+    ICON IDI_HARDPROF, IDC_KUSH_STATIC_HARDPROF, 8, 11, 18, 20, SS_ICON
     LTEXT "Zde lze nastavovat hardwarové profily pro různé konfigurace hardwaru. Nastavení, které bude použito, lze vybrat při startu systému.", IDC_STATIC, 46, 11, 188, 25
     LTEXT "Dostupné hardwarové profily:", IDC_STATIC, 8, 41, 120, 8
     LISTBOX IDC_HRDPROFLSTBOX, 8, 52, 215, 54, LBS_NOTIFY
@@ -110,7 +110,7 @@ STYLE DS_SHELLFONT | DS_MODALFRAME | DS_CONTEXTHELP | WS_POPUP | WS_VISIBLE | WS
 CAPTION "Obecné"
 FONT 8, "MS Shell Dlg"
 BEGIN
-    ICON IDI_HARDPROF, IDC_STATIC, 10, 10, 18, 20, SS_ICON
+    ICON IDI_HARDPROF, IDC_KUSH_STATIC_HARDPROF, 10, 10, 18, 20, SS_ICON
     LTEXT "", IDC_HWPPROP_PROFILE, 48, 16, 150, 8
     LTEXT "ID doku:", IDC_STATIC, 10, 42, 43, 8
     LTEXT "", IDC_HWPPROP_DOCKID, 64, 42, 135, 8
@@ -156,7 +156,7 @@ STYLE DS_SHELLFONT | DS_MODALFRAME | DS_CONTEXTHELP | WS_POPUP | WS_VISIBLE | WS
 CAPTION "Uživatelské profily"
 FONT 8, "MS Shell Dlg"
 BEGIN
-    ICON IDI_USERPROF, IDC_STATIC, 6, 11, 16, 16, SS_ICON
+    ICON IDI_USERPROF, IDC_KUSH_STATIC_USERPROF, 6, 11, 16, 16, SS_ICON
     LTEXT "Uživatelské profily obsahují nastavení plochy a další informace vztahující se k přihlášení. Na každém použitém počítači může být vytvořen jiný profil, nebo lze zvolit sdílený profil, který je stejný na všech počítačích.", IDC_STATIC, 40, 11, 211, 35
     LTEXT "Profily uložené na tomto počítači:", IDC_STATIC, 16, 51, 204, 9
     CONTROL "", IDC_USERPROFILE_LIST, "SysListView32", LVS_REPORT | LVS_SINGLESEL |
