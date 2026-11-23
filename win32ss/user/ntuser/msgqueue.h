@@ -13,6 +13,13 @@ typedef struct _USER_MESSAGE
   LONG_PTR ExtraInfo;
   DWORD dwQEvent;
   PTHREADINFO pti;
+  /* Kush 1.1: set while co_MsqPeekHardwareMessage processes the message
+   * (hooks/callbacks run with the user lock released and may try to destroy
+   * it); MsqDestroyMessage then only unlinks it and sets DeferredFree, and
+   * the peek loop frees it afterwards. Prevents use-after-free (BSOD 0x1E in
+   * MsqDestroyMessage on Alt+Tab with Firefox running). */
+  BOOLEAN InPlay;
+  BOOLEAN DeferredFree;
 } USER_MESSAGE, *PUSER_MESSAGE;
 
 struct _USER_MESSAGE_QUEUE;

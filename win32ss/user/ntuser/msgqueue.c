@@ -755,8 +755,33 @@ MsqDestroyMessage(PUSER_MESSAGE Message)
    }
    RemoveEntryList(&Message->ListEntry);
    Message->pti = NULL;
+
+   if (Message->InPlay)
+   {
+      /* Being processed further up the stack: keep the memory alive (it must
+       * not be recycled by the lookaside list while the peek loop still uses
+       * it); the peek loop frees it when it is done. */
+      InitializeListHead(&Message->ListEntry);
+      Message->DeferredFree = TRUE;
+      return;
+   }
+
    ExFreeToPagedLookasideList(pgMessageLookasideList, Message);
    PostMsgCount--;
+}
+
+/* Kush 1.1: end of processing for a hardware message (see USER_MESSAGE::InPlay).
+ * Returns TRUE if the message was destroyed meanwhile (and is now freed). */
+static BOOLEAN
+MsqEndPlayMessage(PUSER_MESSAGE Message)
+{
+   Message->InPlay = FALSE;
+   if (!Message->DeferredFree)
+      return FALSE;
+
+   ExFreeToPagedLookasideList(pgMessageLookasideList, Message);
+   PostMsgCount--;
+   return TRUE;
 }
 
 PUSER_SENT_MESSAGE FASTCALL
@@ -1998,6 +2023,7 @@ co_MsqPeekHardwareMessage(IN PTHREADINFO pti,
       {
          idSave = MessageQueue->idSysPeek;
          MessageQueue->idSysPeek = (ULONG_PTR)CurrentMessage;
+         CurrentMessage->InPlay = TRUE;
 
          msg = CurrentMessage->Msg;
          ExtraInfo = CurrentMessage->ExtraInfo;
@@ -2008,6 +2034,31 @@ co_MsqPeekHardwareMessage(IN PTHREADINFO pti,
 
          UpdateKeyStateFromMsg(MessageQueue, &msg);
          AcceptMessage = co_IntProcessHardwareMessage(&msg, &Remove, &NotForUs, ExtraInfo, MsgFilterLow, MsgFilterHigh);
+
+         /* The callbacks above run with the user lock released: the message may
+          * have been destroyed (it is then unlinked and freed here), and the
+          * next entry saved before processing may be gone too. */
+         if (MsqEndPlayMessage(CurrentMessage))
+         {
+             MessageQueue->idSysPeek = idSave;
+             if (Remove)
+                 ClearMsgBitsMask(pti, QS_Flags);
+             if (NotForUs)
+                 break;
+             if (AcceptMessage &&
+                 (NotForUs || (MsgFilterLow == 0 && MsgFilterHigh == 0) ||
+                  (msg.message >= MsgFilterLow && msg.message <= MsgFilterHigh)))
+             {
+                 *pMsg = msg;
+                 pti->timeLast = msg.time;
+                 pti->ptLast   = msg.pt;
+                 MessageQueue->ExtraInfo = ExtraInfo;
+                 Ret = TRUE;
+             }
+             /* The list changed under us: let the caller peek again */
+             break;
+         }
+         ListHead = CurrentMessage->ListEntry.Flink;
 
          if (!NotForUs && (MsgFilterLow != 0 || MsgFilterHigh != 0))
          {
@@ -2022,7 +2073,7 @@ co_MsqPeekHardwareMessage(IN PTHREADINFO pti,
 
          if (Remove)
          {
-             if (CurrentMessage->pti != NULL && (MessageQueue->idSysPeek == (ULONG_PTR)CurrentMessage))
+             if (CurrentMessage->pti != NULL)
              {
                 MsqDestroyMessage(CurrentMessage);
              }
