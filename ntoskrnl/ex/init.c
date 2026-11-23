@@ -956,6 +956,11 @@ ExpInitializeExecutive(IN ULONG Cpu,
                      LoaderBlock->Extension->MinorVersion);
     }
 
+    /* Kush 1.1: remember the firmware type for SystemBootEnvironmentInformation */
+    if (!Cpu)
+        ExpFirmwareType = LoaderBlock->Extension->BootViaEFI ? 2 /* FirmwareTypeUefi */
+                                                            : 1 /* FirmwareTypeBios */;
+
     /* Initialize PRCB pool lookaside pointers */
     ExInitPoolLookasidePointers();
 

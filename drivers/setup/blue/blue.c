@@ -312,10 +312,12 @@ ScrInbvCleanup(VOID)
  * changed cell is drawn on the boot framebuffer through BootVid (lfbbvid on
  * UEFI, which already scales its 640x480 screen to the GOP resolution).
  */
+/* Same geometry as the VGA mode blue.sys programs (80x50 with an 8x8 font),
+ * which is what usetup lays its screens out for; one spacing line per row. */
 #define FB_COLUMNS  80
-#define FB_ROWS     25
+#define FB_ROWS     50
 #define FB_CELL_W   8
-#define FB_CELL_H   16
+#define FB_CELL_H   9
 #define FB_LEFT     ((640 - FB_COLUMNS * FB_CELL_W) / 2)
 #define FB_TOP      ((480 - FB_ROWS * FB_CELL_H) / 2)
 
@@ -376,11 +378,18 @@ ScrFbDrawCell(
     {
         UCHAR Bits;
 
-        /* A code page font loaded by the console is 8x8: double its lines */
-        if (DeviceExtension->FontBitfield)
-            Bits = DeviceExtension->FontBitfield[Char * 8 + Row / 2];
-        else
-            Bits = ScrFbFont8x16[Char * 16 + Row];
+        /* Glyph lines 0-7; line 8 is spacing, except for the box-drawing
+         * characters, which repeat their last line so vertical lines join */
+        ULONG Line = Row;
+        if (Line >= 8)
+            Line = (Char >= 0xB3 && Char <= 0xDF) ? 7 : 8;
+
+        if (Line >= 8)
+            Bits = 0;
+        else if (DeviceExtension->FontBitfield) /* Code page font loaded by the console */
+            Bits = DeviceExtension->FontBitfield[Char * 8 + Line];
+        else /* Built-in 8x16 font, two lines merged into one */
+            Bits = ScrFbFont8x16[Char * 16 + Line * 2] | ScrFbFont8x16[Char * 16 + Line * 2 + 1];
 
         if (Cursor && Row >= FB_CELL_H - 2)
             Bits = 0xFF;
@@ -571,7 +580,7 @@ ScrAcquireOwnership(
         /* Standard 80x25 text screen, drawn on the framebuffer */
         DeviceExtension->Columns = FB_COLUMNS;
         DeviceExtension->Rows = FB_ROWS;
-        DeviceExtension->ScanLines = FB_CELL_H;
+        DeviceExtension->ScanLines = 8;
         DeviceExtension->CursorX = 0;
         DeviceExtension->CursorY = 0;
 

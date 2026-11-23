@@ -99,6 +99,11 @@ UefiGetTime(VOID);
 BOOLEAN
 UefiInitializeBootDevices(VOID);
 
+VOID
+UefiDetectDisks(
+    _In_ PCONFIGURATION_COMPONENT_DATA SystemKey,
+    _In_ PCONFIGURATION_COMPONENT_DATA BusKey);
+
 PCONFIGURATION_COMPONENT_DATA
 UefiHwDetect(
     _In_opt_ PCSTR Options);

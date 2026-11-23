@@ -1902,6 +1902,29 @@ AddDiskToList(
 }
 
 /*
+ * Kush 1.1: TRUE when the machine was booted by UEFI firmware
+ * (NtQuerySystemInformation class 90, SystemBootEnvironmentInformation).
+ */
+static
+BOOLEAN
+IsUefiFirmware(VOID)
+{
+    static LONG Cached = -1;
+    ULONG Info[8]; /* SYSTEM_BOOT_ENVIRONMENT_INFORMATION: GUID, FIRMWARE_TYPE, ... */
+    NTSTATUS Status;
+
+    if (Cached < 0)
+    {
+        RtlZeroMemory(Info, sizeof(Info));
+        Status = NtQuerySystemInformation(SystemBootEnvironmentInformation,
+                                          Info, sizeof(Info), NULL);
+        Cached = (NT_SUCCESS(Status) && Info[4] == 2 /* FirmwareTypeUefi */);
+        DPRINT1("Firmware type: %s\n", Cached ? "UEFI" : "BIOS");
+    }
+    return (BOOLEAN)Cached;
+}
+
+/*
  * Retrieve the system disk, i.e. the fixed disk that is accessible by the
  * firmware during boot time and where the system partition resides.
  * If no system partition has been determined, we retrieve the first disk
@@ -1925,6 +1948,15 @@ GetSystemDisk(
      */
     if (List->SystemPartition)
         return List->SystemPartition->DiskEntry;
+
+    /*
+     * Kush 1.1: UEFI firmware has no "first BIOS disk": it boots any disk
+     * that has \EFI\BOOT\BOOTX64.EFI. Do not pick the first firmware disk
+     * (often the USB stick Setup was started from); the system partition
+     * then goes on the installation disk (see FindSupportedSystemPartition).
+     */
+    if (IsUefiFirmware())
+        return NULL;
 
     /* Loop over the disks and find the correct one */
     for (Entry = List->DiskListHead.Flink;

@@ -326,6 +326,9 @@ DetectInternal(PCONFIGURATION_COMPONENT_DATA SystemKey, ULONG *BusNumber)
     /* Detect devices that do not belong to "standard" buses */
     DetectDisplayController(BusKey);
 
+    /* Kush 1.1: firmware disks, so Setup knows which disks UEFI can boot */
+    UefiDetectDisks(SystemKey, BusKey);
+
     /* FIXME: Detect more devices */
 }
 

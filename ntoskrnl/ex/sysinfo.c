@@ -2971,6 +2971,34 @@ QSI_DEF(SystemProcessorBrandString)
     return STATUS_SUCCESS;
 }
 
+/* Class 90 - Boot environment (firmware type).
+ * Kush 1.1: lets user mode (GetFirmwareType, Setup) tell UEFI from BIOS. */
+ULONG ExpFirmwareType = 0; /* FirmwareTypeUnknown; set in ExpInitializeExecutive */
+
+typedef struct _KUSH_BOOT_ENVIRONMENT_INFORMATION
+{
+    GUID BootIdentifier;
+    ULONG FirmwareType;     /* FIRMWARE_TYPE */
+    ULONGLONG BootFlags;    /* Windows 8+ */
+} KUSH_BOOT_ENVIRONMENT_INFORMATION;
+
+QSI_DEF(SystemBootEnvironmentInformation)
+{
+    KUSH_BOOT_ENVIRONMENT_INFORMATION Info;
+    /* Vista/7 callers use the structure without BootFlags */
+    ULONG Length = (Size >= sizeof(Info)) ? sizeof(Info)
+                 : FIELD_OFFSET(KUSH_BOOT_ENVIRONMENT_INFORMATION, BootFlags);
+
+    *ReqSize = Length;
+    if (Size < FIELD_OFFSET(KUSH_BOOT_ENVIRONMENT_INFORMATION, BootFlags))
+        return STATUS_INFO_LENGTH_MISMATCH;
+
+    RtlZeroMemory(&Info, sizeof(Info));
+    Info.FirmwareType = ExpFirmwareType;
+    RtlCopyMemory(Buffer, &Info, Length);
+    return STATUS_SUCCESS;
+}
+
 /* Query/Set Calls Table */
 typedef
 struct _QSSI_CALLS
@@ -3074,6 +3102,7 @@ CallQS[] =
     // Vista and later
     SI_QX(SystemModuleInformationEx),
     SI_QX(SystemProcessorIdleCycleTimeInformation),
+    SI_QX(SystemBootEnvironmentInformation),
     SI_QX(SystemProcessorBrandString),
 };
 
