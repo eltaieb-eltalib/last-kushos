@@ -35,7 +35,12 @@ Build (Linux, mingw-w64 **posix** toolchain, cmake, ninja, bison, flex, libgmp-d
 
 ![Firefox installed](docs/wow64/screenshots/09-firefox-installed.png) ![Firefox running](docs/wow64/screenshots/10-firefox-installed-running.png)
 
-عشان نوصل للنقطة دي اتصلحت 28 مشكلة من جذورها. من أهمها خطأ في الكيرنل نفسه كان بيعمل شاشة زرقا لأي خطأ يتمسك بـ SEH جوه الكيرنل،
+**وبعد كده:** الدبل كليك على `Firefox Setup.exe` بقى بيشغّل المعالج لوحده، وزرار **"Launch Firefox now"** في الآخر بيفتح Firefox
+(إصلاح محاذاة الـ stack للبرامج الـ 64-bit اللي بيشغّلها برنامج 32-bit، وتمرير `GetLastError` بين الـ TEB الاتنين):
+
+![Wizard](docs/wow64/screenshots/12-ffsetup-doubleclick-wizard.png) ![Launched by the installer](docs/wow64/screenshots/13-firefox-launched-by-installer.png)
+
+عشان نوصل للنقطة دي اتصلحت 30 مشكلة من جذورها. من أهمها خطأ في الكيرنل نفسه كان بيعمل شاشة زرقا لأي خطأ يتمسك بـ SEH جوه الكيرنل،
 حتى في برامج 64-bit (‏`.pushframe` كان بيشيل الـ error code). وKush بقى يعلن نفسه Windows 10 (‏10.0.19045) للبرامج اللي بتطلبه.
 
 التفاصيل كلها (المشاكل وأسبابها وحلولها، **والمشاكل اللي لسه ما اتحلّتش**) في [`docs/wow64/README.md`](docs/wow64/README.md).

@@ -761,9 +761,14 @@ RtlpUnwindInternal(
             /* Kush 1.1: say where an unwind gives up (it ends in int3 /
              * bugcheck 0x1E in __C_specific_handler when this happens in
              * kernel SEH) */
-            DbgPrint("KUSH-UNWIND: stop at rip %p rsp %p, stack %p-%p, target %p ip %p\n",
-                     (PVOID)UnwindContext.Rip, (PVOID)UnwindContext.Rsp,
-                     (PVOID)StackLow, (PVOID)StackHigh, TargetFrame, TargetIp);
+            /* (an exception search simply ends at the top of the stack,
+             * e.g. before a WOW64 exception goes to the 32-bit side) */
+            if (HandlerType == UNW_FLAG_UHANDLER)
+            {
+                DbgPrint("KUSH-UNWIND: stop at rip %p rsp %p, stack %p-%p, target %p ip %p\n",
+                         (PVOID)UnwindContext.Rip, (PVOID)UnwindContext.Rsp,
+                         (PVOID)StackLow, (PVOID)StackHigh, TargetFrame, TargetIp);
+            }
             return FALSE;
         }
 
