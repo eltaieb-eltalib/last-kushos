@@ -389,10 +389,23 @@ ENDM
 
 .macro .pushframe param
     /*
-     * .seh_pushframe doesn't accept the code argument (binutils 2.34),
-     * so drop it. The param is kept for MASM compatibility.
+     * Kush 1.1: pass the error code flag through (binutils >= 2.35 accepts
+     * "code"). Dropping it (a binutils 2.34 workaround) gave every trap handler
+     * that has a CPU error code (page fault, GP fault...) unwind data without
+     * it: unwinding through such a trap read the machine frame one slot off
+     * (RIP = error code, RSP = EFLAGS), so every kernel SEH handler catching
+     * a fault (ProbeForWrite on a bad user pointer...) failed to unwind and
+     * __C_specific_handler bugchecked the system (0x1E).
      */
-    .seh_pushframe
+    .ifc \param,code
+        .seh_pushframe code
+    .else
+    .ifc \param,Code
+        .seh_pushframe code
+    .else
+        .seh_pushframe
+    .endif
+    .endif
 .endm
 
 .macro .pushreg reg
