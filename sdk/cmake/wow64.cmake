@@ -102,6 +102,18 @@ function(setup_wow64)
         set(WOW64_SUFFIX_ARG -UMINGW_TOOLCHAIN_SUFFIX)
     endif()
 
+    # Kush 1.1: the SysWOW64 build must match the native one. WOW64_BUILD_TYPE
+    # was never set, so the i386 build fell back to Debug (DBG=1): its win32k
+    # syscall stubs then counted the DBG-only services of w32ksvc32.h while
+    # the release wow64.dll did not, shifting every later service by 5
+    # (MonitorFromWindow called GdiDdDDICreateAllocation, GetMonitorInfo
+    # failed, dialogs were centered with garbage: the Firefox installer window
+    # landed at y = 1045769672).
+    if(NOT WOW64_BUILD_TYPE)
+        set(WOW64_BUILD_TYPE ${CMAKE_BUILD_TYPE})
+    endif()
+    list(APPEND CMAKE_WOW64_TOOLS_EXTRA_ARGS -DDBG:BOOL=${DBG} -DKDBG:BOOL=${KDBG})
+
     ExternalProject_Add(wow64-binaries
         SOURCE_DIR ${REACTOS_SOURCE_DIR}
         PREFIX ${REACTOS_BINARY_DIR}/wow64
