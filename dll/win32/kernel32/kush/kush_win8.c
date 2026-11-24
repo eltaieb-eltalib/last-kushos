@@ -10,6 +10,7 @@
 #define WIN32_NO_STATUS
 #include <windef.h>
 #include <winbase.h>
+#include <winnls.h> /* LocaleNameToLCID/LCIDToLocaleName: include it directly, the SysWOW64 build does not get it indirectly */
 #define NTOS_MODE_USER
 #include <ndk/rtlfuncs.h>
 #include <ndk/iofuncs.h>
