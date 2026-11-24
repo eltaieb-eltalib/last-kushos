@@ -9,6 +9,16 @@ __readfsdword:
    
 PUBLIC EnterApc32
 EnterApc32:
+    /* Kush 1.1: preserve every non-volatile register across the 32-bit code,
+     * not only r12. The 32-bit LdrInitializeThunk does "xor ebp, ebp", so on
+     * return Wow64Trampoline used RBP = 0 and faulted on [rbp - 0x340]. */
+    push rbx
+    push rbp
+    push rsi
+    push rdi
+    push r13
+    push r14
+    push r15
     push r12
     mov r12, rsp
     
@@ -42,6 +52,13 @@ l:
 return64:
     mov rsp, r12
     pop r12
+    pop r15
+    pop r14
+    pop r13
+    pop rdi
+    pop rsi
+    pop rbp
+    pop rbx
     ret
 
 PUBLIC SetupFs

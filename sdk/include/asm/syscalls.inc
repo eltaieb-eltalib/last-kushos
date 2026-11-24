@@ -89,7 +89,10 @@ x:
     call x3
     
     push HEX(23)
-    push x2
+    /* Kush 1.1: "offset" is required. A bare "push x2" assembles (GAS intel
+     * syntax) to "push dword ptr [x2]" (FF 35 disp32), which in 64-bit mode
+     * is RIP-relative: every 32-bit syscall faulted on its way back. */
+    push offset x2
     .byte HEX(48)
     retf
 x2:

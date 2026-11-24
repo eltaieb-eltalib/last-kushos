@@ -28,8 +28,9 @@ static PNLSTABLEINFO32 UnicodeNlsTable = (PVOID)&UnicodeData;
 static PCPTABLEINFO32 AnsiCpTable;
 static PCPTABLEINFO32 OemCpTable;
 
-static UNICODE_STRING NtDll32Str = RTL_CONSTANT_STRING(L"" TMP_WOW_DIR L"\\ntdll.dll");
-static UNICODE_STRING Kernel32Str = RTL_CONSTANT_STRING(L"" TMP_WOW_DIR L"\\kernel32.dll");
+/* Kush 1.1: built at run time from SharedUserData->NtSystemRoot */
+static WCHAR NtDll32Path[MAX_PATH + 32];
+static UNICODE_STRING NtDll32Str;
 static UNICODE_STRING Wow64CpuStr = RTL_CONSTANT_STRING(L"wow64cpu.dll");
 
 static PVOID NtDll32 = NULL, Wow64Cpu = NULL;
@@ -85,8 +86,8 @@ Wow64CopyContext64To32(PWOW64_CONTEXT pContext32,
     pContext32->Ebx = pContext->Rbx;
     pContext32->Ecx = pContext->Rcx;
     pContext32->Edx = pContext->Rdx;
-    pContext32->Esi = pContext->Rdi;
-    pContext32->Edi = pContext->Rsi;
+    pContext32->Esi = pContext->Rsi; /* Kush 1.1: Esi/Edi were swapped */
+    pContext32->Edi = pContext->Rdi;
     pContext32->Ebp = pContext->Rbp;
     pContext32->Esp = pContext->Rsp;
     pContext32->SegCs = pContext->SegCs;
@@ -599,8 +600,8 @@ wow64_NtSetInformationProcess(UINT* pArgs)
         case ProcessCycleTime:  /* PROCESS_CYCLE_TIME_INFORMATION */
             return NtSetInformationProcess(Handle, Class, Information, Length);
         default:
-            /* UNIMPLEMENTED */
-            __debugbreak();
+            /* UNIMPLEMENTED (Kush 1.1: report it instead of __debugbreak()) */
+            DPRINT1("WOW64: NtSetInformationProcess class %lu not implemented\n", (ULONG)Class);
             return STATUS_NOT_IMPLEMENTED;
     }
     
@@ -804,15 +805,26 @@ Wow64InitProcess(PCONTEXT pContext)
     IMAGE_NT_HEADERS32 *NtHeaders = NULL;
     
     Status = Wow64InitEntrypointTranslation();
-    ASSERT(NT_SUCCESS(Status));
+    if (!NT_SUCCESS(Status))
+    {
+        DbgPrint("WOW64: entry point translation setup failed, status 0x%08lx\n", Status);
+    }
     
     NtHeaders = (IMAGE_NT_HEADERS32 *)RtlImageNtHeader(Peb->ImageBaseAddress);
 
-    Status = LdrLoadDll(NtDll32Str.Buffer, 0, &NtDll32Str, &NtDll32);
+    /* Kush 1.1: %SystemRoot%\SysWOW64\ntdll.dll, not a hardcoded C:\ReactOS path.
+     * When this failed every 32-bit entry point stayed NULL: the process
+     * jumped to address 0 and the exception path re-entered itself until the
+     * stack overflowed. Fail cleanly instead. */
+    wcsncpy(NtDll32Path, SharedUserData->NtSystemRoot, MAX_PATH - 1);
+    wcscat(NtDll32Path, L"\\SysWOW64\\ntdll.dll");
+    RtlInitUnicodeString(&NtDll32Str, NtDll32Path);
+
+    Status = LdrLoadDll(NULL, 0, &NtDll32Str, &NtDll32);
     if (!NT_SUCCESS(Status))
     {
-        DPRINT1("32 bit NTDLL.DLL could not be loaded.\n");
-        ASSERT(FALSE);
+        DbgPrint("WOW64: cannot load %wZ (status 0x%08lx)\n", &NtDll32Str, Status);
+        NtTerminateProcess(NtCurrentProcess(), Status);
     }
 
     Status = LdrLoadDll(NULL, 0, &Wow64CpuStr, &Wow64Cpu);
@@ -902,9 +914,21 @@ Wow64Trampoline(PCONTEXT pContext)
                                             pContext);
     if (!NT_SUCCESS(Status))
     {
-        return Status;
+        /* Kush 1.1: returning here made ntdll continue the thread at its
+         * 64-bit start address (kernel32!BaseProcessStartup), which is not
+         * mapped in a 32-bit process. Report it and stop the thread. */
+        DbgPrint("WOW64: cannot translate start address %p (status 0x%08lx)\n",
+                 (PVOID)pContext->Rip, Status);
+        NtTerminateThread(NtCurrentThread(), Status);
     }
     
+    if (NtDll32LdrpRoutine == NULL || NtDll32KiUserExceptionDispatcher == NULL)
+    {
+        /* Kush 1.1: never jump to a NULL 32-bit entry point */
+        DbgPrint("WOW64: 32-bit NTDLL entry points missing, terminating.\n");
+        NtTerminateProcess(NtCurrentProcess(), STATUS_INVALID_IMAGE_FORMAT);
+    }
+
     EnterApc32Stack.ApcRoutine = (ULONG_PTR)NtDll32LdrpRoutine;
     EnterApc32Stack.SegCs = 0x23;
     EnterApc32Stack.RetAddress32 = 0;
@@ -922,7 +946,15 @@ Wow64Trampoline(PCONTEXT pContext)
     }
     _SEH2_END;
 
+    /* Kush 1.1: the 32-bit kernel32 may have been loaded at another base */
+    EnterApc32Stack.Context32.Eip = Wow64FixupRelocatedEntrypoint32(EnterApc32Stack.Context32.Eip);
     Wow64CopyContext32To64(pContext, &EnterApc32Stack.Context32);
+    {
+        MEMORY_BASIC_INFORMATION mbi = {0};
+        NtQueryVirtualMemory(NtCurrentProcess(), (PVOID)pContext->Rip, MemoryBasicInformation, &mbi, sizeof(mbi), NULL);
+        DbgPrint("WOW64: 32-bit init returned, continuing at %p cs %x esp %x (alloc %p state %lx prot %lx type %lx)\n",
+                 (PVOID)pContext->Rip, pContext->SegCs, (ULONG)pContext->Rsp, mbi.AllocationBase, mbi.State, mbi.Protect, mbi.Type);
+    }
     return STATUS_SUCCESS;
 }
 
@@ -997,11 +1029,15 @@ Wow64LdrpInitialize(PCONTEXT pContext)
 {
     static LONG ProcessInitialized = 0;
 
+    DbgPrint("WOW64: initializing thread, start address %p\n", (PVOID)pContext->Rip);
+
     if (InterlockedCompareExchange(&ProcessInitialized,
                                    1,
                                    0) == 0)
     {
-        __debugbreak();
+        /* Kush 1.1: a leftover development __debugbreak() was here. Without a
+         * debugger attached it raised STATUS_BREAKPOINT and aborted the
+         * initialization of every 32-bit process. */
         Wow64InitProcess(pContext);
     }
     

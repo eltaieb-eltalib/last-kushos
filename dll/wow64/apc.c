@@ -10,6 +10,7 @@ wow64_NtContinue(UINT *pArgs)
     NTSTATUS Status = pContext32->Eax;
     struct user_apc_frame *Frame = NtCurrentTeb()->TlsSlots[WOW64_TLS_APCLIST];
 
+    DbgPrint("WOW64: NtContinue eip %x esp %x cs %x\n", pContext32->Eip, pContext32->Esp, pContext32->SegCs);
     pBTCpuSetContext(NtCurrentThread(), NtCurrentProcess(), NULL, pContext32);
 
     while (Frame && Frame->wow_context != pContext32)

@@ -68,11 +68,7 @@ GetFileRedirect(OBJECT_ATTRIBUTES* attr)
     {
     /* TODO: system directory shouldn't be hardcoded here */
 #define REDIRECTION(From, To) { RTL_CONSTANT_STRING(From), RTL_CONSTANT_STRING(To) }
-#ifdef TMP_WOW_DIR
-        REDIRECTION(L"\\??\\%SystemRoot%\\system32", L"\\??\\" TMP_WOW_DIR),
-#else
         REDIRECTION(L"\\??\\%SystemRoot%\\system32", L"\\??\\%SystemRoot%\\SysWOW64"),
-#endif
         REDIRECTION(L"\\KnownDlls", L"\\KnownDlls32")
 #undef  REDIRECTION
     };

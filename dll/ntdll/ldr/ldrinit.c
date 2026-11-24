@@ -611,8 +611,9 @@ LdrpInitializeThread(IN PCONTEXT Context)
         Status = LdrpLoadWow64();
         if (!NT_SUCCESS(Status))
         {
-            DPRINT1("Loading WOW64 failed\n");
-            ASSERT(FALSE);
+            /* Kush 1.1: do not call a NULL Wow64LdrpInitialize */
+            DbgPrint("LDR: loading WOW64.DLL failed, status 0x%08lx\n", Status);
+            NtTerminateThread(NtCurrentThread(), Status);
         }
         
         LdrpWow64LdrpInitialize(Context);
@@ -2551,7 +2552,8 @@ LdrpInitializeProcess(IN PCONTEXT Context,
         Status = LdrpLoadWow64();
         if (!NT_SUCCESS(Status))
         {
-             DPRINT1("Loading WOW64 failed\n");
+            /* Kush 1.1: always visible (DPRINT1 is compiled out in release) */
+            DbgPrint("LDR: loading WOW64.DLL failed, status 0x%08lx\n", Status);
             return Status;
         }
         

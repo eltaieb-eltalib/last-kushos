@@ -35,6 +35,13 @@ extern "C"
 
 #include <debug.h>
 
+/* Kush 1.1: WOW64 is young; keep its error messages and assertions visible
+ * in release builds too (DPRINT1/ASSERT are compiled out there). */
+#undef DPRINT1
+#define DPRINT1(fmt, ...) DbgPrint("WOW64 %s:%d: " fmt, __FILE__, __LINE__, ##__VA_ARGS__)
+#undef ASSERT
+#define ASSERT(x) do { if (!(x)) DbgPrint("WOW64 ASSERT %s:%d: %s\n", __FILE__, __LINE__, #x); } while (0)
+
 #define WOW64_TLS_CPURESERVED      1
 #define WOW64_TLS_TEMPLIST         3
 #define WOW64_TLS_USERCALLBACKDATA 5
@@ -47,7 +54,9 @@ extern "C"
  * Don't print, so this doesn't crash (this shouldn't crash either way, but for
  * some reason, SEH fails to RtlUnwindEx: investigate) */
 // #define FIXME(...) do { DPRINT1(__VA_ARGS__); __debugbreak(); } while(0);
-#define FIXME(...) do { __debugbreak(); (void)(__VA_ARGS__); } while(0);
+/* Kush 1.1: log instead of __debugbreak() (Wine's FIXME only logs). The format
+ * string is printed as-is (%s), so Wine-style format specifiers are harmless. */
+#define FIXME(fmt, ...) do { DbgPrint("WOW64 FIXME %s:%d: %s", __FILE__, __LINE__, (fmt)); } while(0)
 
 static inline ULONG get_ulong( UINT **args ) { return *(*args)++; }
 static inline HANDLE get_handle( UINT **args ) { return UlongToHandle( *(*args)++ ); }
@@ -399,7 +408,7 @@ static inline void put_handle( ULONG *handle32, HANDLE handle )
 static inline void put_addr( ULONG *addr32, void *addr )
 {
     if (addr != (PVOID)(ULONG_PTR)PtrToUlong(addr))
-        __debugbreak();
+        DbgPrint("WOW64: address %p does not fit in 32 bits\n", addr); /* Kush 1.1: was __debugbreak() */
     if (addr32) *addr32 = PtrToUlong( addr );
 }
 

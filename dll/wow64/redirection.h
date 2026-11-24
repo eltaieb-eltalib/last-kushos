@@ -9,8 +9,9 @@
 
 #pragma once
 
-/* FIXME: for now, the WOW64 directory path is hardcoded. */
-#define TMP_WOW_DIR L"C:\\ReactOS\\SysWOW64"
+/* Kush 1.1: the SysWOW64 directory is no longer hardcoded (it was
+ * "C:\\ReactOS\\SysWOW64"): it is derived from %SystemRoot% at run time, so
+ * WOW64 works on the Live CD (X:\\reactos) and on any install path. */
 
 typedef struct _WOW64_PATH_REDIRECTION
 {

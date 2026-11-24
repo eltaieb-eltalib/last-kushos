@@ -14,3 +14,6 @@ NTSTATUS
 Wow64TranslateEntrypoint64To32(IN  HANDLE hProcess,
                                OUT PWOW64_CONTEXT pContext32, 
                                IN  PCONTEXT pContext);
+/* Kush 1.1 */
+ULONG
+Wow64FixupRelocatedEntrypoint32(ULONG Eip);

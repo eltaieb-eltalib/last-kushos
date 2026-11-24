@@ -150,6 +150,37 @@ KiDispatchExceptionToUser(
     /* Get pointer to the usermode context, exception record and machine frame */
     UserStack = (PKUSER_EXCEPTION_STACK)UserRsp;
 
+    /* Kush 1.1: if the frame does not fit in the thread's user stack
+     * reservation (recursive faults exhausted it), do not touch it. Faulting
+     * on it from here took the kernel SEH path, whose unwind failed and
+     * bugchecked (0x1E) the whole system. Fail the dispatch instead: the
+     * exception goes to second chance and only the process is terminated. */
+    {
+        PTEB Teb = (PTEB)KeGetCurrentThread()->Teb;
+        ULONG_PTR Low = 0, High = 0;
+
+        _enable();
+        _SEH2_TRY
+        {
+            if (Teb)
+            {
+                Low = (ULONG_PTR)Teb->DeallocationStack;
+                High = (ULONG_PTR)Teb->NtTib.StackBase;
+            }
+        }
+        _SEH2_EXCEPT(EXCEPTION_EXECUTE_HANDLER) {} _SEH2_END;
+        _disable();
+
+        if (Low != 0 && High > Low &&
+            Context->Rsp > Low && Context->Rsp <= High &&
+            UserRsp < Low + PAGE_SIZE)
+        {
+            DbgPrint("KUSH-EXC: user stack exhausted (rsp %p, stack %p-%p), cannot dispatch %lx\n",
+                     (PVOID)Context->Rsp, (PVOID)Low, (PVOID)High, ExceptionRecord->ExceptionCode);
+            return FALSE;
+        }
+    }
+
     /* Enable interrupts */
     _enable();
 

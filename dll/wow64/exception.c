@@ -34,8 +34,9 @@ wow64_NtRaiseException(UINT* pArgs)
     PEXCEPTION_RECORD32 pRecord32 = get_ptr(&pArgs);
     PWOW64_CONTEXT pContext32 = get_ptr(&pArgs);
     BOOLEAN FirstChance = get_ulong(&pArgs);
-    
-    __debugbreak();
+
+    /* Kush 1.1: no unconditional __debugbreak() here: every RaiseException of a
+     * 32-bit program (C++ exceptions, OutputDebugString...) used to stop on it. */
     
     EXCEPTION_RECORD Record;
     CONTEXT Context;
@@ -55,8 +56,7 @@ wow64_NtRaiseException(UINT* pArgs)
 
     if (FirstChance == FALSE)
     {
-        DPRINT1("Unhandled 32-bit exception in a WOW64 process.\n");
-        __debugbreak();
+        DPRINT1("Unhandled 32-bit exception %08lx in a WOW64 process.\n", Record.ExceptionCode);
     }
 
     return NtRaiseException(&Record, &Context, FirstChance);
@@ -75,6 +75,15 @@ Wow64UnhandledExceptionHandler(IN PEXCEPTION_POINTERS ExceptionInfo)
     
     pRecord = ExceptionInfo->ExceptionRecord;
     pContext = ExceptionInfo->ContextRecord;
+
+    /* Kush 1.1: without a 32-bit dispatcher Jump32 went to address 0, which
+     * faulted and re-entered this handler until the stack overflowed. */
+    if (NtDll32KiUserExceptionDispatcher == NULL)
+    {
+        DbgPrint("WOW64: exception %08lx at %p before 32-bit NTDLL was ready\n",
+                 pRecord->ExceptionCode, pRecord->ExceptionAddress);
+        NtTerminateProcess(NtCurrentProcess(), pRecord->ExceptionCode);
+    }
     
     Record32.ExceptionCode = pRecord->ExceptionCode;
     Record32.ExceptionFlags = pRecord->ExceptionFlags;

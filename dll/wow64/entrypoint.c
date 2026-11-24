@@ -14,6 +14,7 @@ typedef struct _ENTRYPOINT_TRANSLATION
     LPCSTR      SymbolName32;
     ULONG_PTR   SymbolAddress64;
     ULONG       SymbolAddress32;
+    ULONG       SymbolRva32;     /* Kush 1.1: the 32-bit DLL may be relocated */
     NTSTATUS    (*ContextFixup)(HANDLE hProcess, PCONTEXT, PWOW64_CONTEXT, FIXUP);
 } ENTRYPOINT_TRANSLATION, *PENTRYPOINT_TRANSLATION;
 
@@ -33,13 +34,13 @@ static ENTRYPOINT_TRANSLATION EntrypointTranslations[] =
     {
         L"kernel32.dll",    L"kernel32.dll", 
         "BaseProcessStart",  "BaseProcessStartThunk", 
-        0,                  0, 
+        0,                  0,      0,
         FixupStartupThunks
     },
     {
         L"kernel32.dll",    L"kernel32.dll", 
         "BaseThreadStart",   "BaseThreadStartupThunk",  
-        0,                  0, 
+        0,                  0,      0,
         FixupStartupThunks
     }
 };
@@ -217,13 +218,9 @@ Wow64InitEntrypointTranslation(VOID)
         return Status;
     }
     
-#ifndef TMP_WOW_DIR
     wcscpy(Directory32, L"\\??\\");
     wcscat(Directory32, Buffer);
     wcscat(Directory32, L"\\SysWOW64");
-#else
-    wcscpy(Directory32, L"\\??\\" TMP_WOW_DIR);
-#endif
     
     wcscpy(Directory64, L"\\??\\");
     wcscat(Directory64, Buffer);
@@ -244,6 +241,7 @@ Wow64InitEntrypointTranslation(VOID)
                                                 &Base32);
         if (!NT_SUCCESS(Status))
         {
+            DbgPrint("WOW64: cannot map %ls\\%ls (status 0x%08lx)\n", Directory32, pTranslation->LibraryName32, Status);
             break;
         }
         
@@ -254,6 +252,7 @@ Wow64InitEntrypointTranslation(VOID)
                                                 &Base64);
         if (!NT_SUCCESS(Status))
         {
+            DbgPrint("WOW64: cannot map %ls\\%ls (status 0x%08lx)\n", Directory64, pTranslation->LibraryName64, Status);
             break;
         }
         
@@ -263,24 +262,25 @@ Wow64InitEntrypointTranslation(VOID)
                                     &Temp);
         if (!NT_SUCCESS(Status))
         {
-            DPRINT1("WOW64 Entrypoint Translation Warning: %s not found in 32-bit %ls\n", 
+            DbgPrint("WOW64: %s not found in 32-bit %ls\n", 
                     pTranslation->SymbolName32, pTranslation->LibraryName32);
             continue;
         }
         pTranslation->SymbolAddress32 = PtrToUlong(Temp);
+        pTranslation->SymbolRva32 = (ULONG)((ULONG_PTR)Temp - (ULONG_PTR)Base32);
         
         Status = Wow64FindDllExport(Base64, 
                                     pTranslation->SymbolName64, 
                                     &Temp);
         if (!NT_SUCCESS(Status))
         {
-            DPRINT1("WOW64 Entrypoint Translation Warning: %s not found in 64-bit %ls\n", 
+            DbgPrint("WOW64: %s not found in 64-bit %ls\n", 
                     pTranslation->SymbolName64, pTranslation->LibraryName64);
             continue;
         }
         pTranslation->SymbolAddress64 = (ULONG_PTR)Temp;
         
-        DPRINT("Translating %ls!%s=%llX <-> %ls!%s=%lX\n", 
+        DbgPrint("WOW64: translating %ls!%s=%llX <-> %ls!%s=%lX\n", 
                pTranslation->LibraryName64,
                pTranslation->SymbolName64,
                pTranslation->SymbolAddress64, 
@@ -306,6 +306,81 @@ Wow64InitEntrypointTranslation(VOID)
     return Status;
 }
 
+/* Kush 1.1: the address of a 32-bit symbol in the DLL as the 32-bit loader
+ * actually loaded it. The translation tables are built from a temporary view
+ * at the preferred base, but the real 32-bit DLL can be relocated (it was:
+ * kernel32 is not at its preferred base in a WOW64 process), and jumping to
+ * the preferred-base address faulted on free memory. Returns 0 if the DLL is
+ * not loaded (yet). */
+typedef struct _KUSH_LDR_DATA32
+{
+    ULONG Length;
+    ULONG Initialized;
+    ULONG SsHandle;
+    LIST_ENTRY32 InLoadOrderModuleList;
+} KUSH_LDR_DATA32;
+
+typedef struct _KUSH_LDR_ENTRY32
+{
+    LIST_ENTRY32 InLoadOrderLinks;
+    LIST_ENTRY32 InMemoryOrderLinks;
+    LIST_ENTRY32 InInitializationOrderLinks;
+    ULONG DllBase;
+    ULONG EntryPoint;
+    ULONG SizeOfImage;
+    UNICODE_STRING32 FullDllName;
+    UNICODE_STRING32 BaseDllName;
+} KUSH_LDR_ENTRY32;
+
+static
+ULONG
+Wow64Resolve32(PENTRYPOINT_TRANSLATION pTranslation)
+{
+    KUSH_LDR_DATA32 *Ldr;
+    ULONG Head, Link;
+    ULONG Count = 0;
+    SIZE_T NameLen = wcslen(pTranslation->LibraryName32) * sizeof(WCHAR);
+
+    if (pTranslation->SymbolAddress32 == 0)
+        return 0;
+
+    Ldr = UlongToPtr(NtCurrentPeb32()->Ldr);
+    if (Ldr == NULL)
+        return 0;
+
+    Head = PtrToUlong(&Ldr->InLoadOrderModuleList);
+    for (Link = Ldr->InLoadOrderModuleList.Flink;
+         Link != 0 && Link != Head && Count < 1024;
+         Link = ((KUSH_LDR_ENTRY32 *)UlongToPtr(Link))->InLoadOrderLinks.Flink, Count++)
+    {
+        KUSH_LDR_ENTRY32 *Entry = UlongToPtr(Link);
+        if (Entry->BaseDllName.Length == NameLen &&
+            _wcsnicmp(UlongToPtr(Entry->BaseDllName.Buffer),
+                      pTranslation->LibraryName32,
+                      NameLen / sizeof(WCHAR)) == 0)
+        {
+            return Entry->DllBase + pTranslation->SymbolRva32;
+        }
+    }
+    return 0;
+}
+
+ULONG
+Wow64FixupRelocatedEntrypoint32(ULONG Eip)
+{
+    SIZE_T i;
+
+    for (i = 0; i < _countof(EntrypointTranslations); i++)
+    {
+        if (EntrypointTranslations[i].SymbolAddress32 == Eip)
+        {
+            ULONG Real = Wow64Resolve32(&EntrypointTranslations[i]);
+            return Real ? Real : Eip;
+        }
+    }
+    return Eip;
+}
+
 NTSTATUS
 Wow64TranslateEntrypoint32To64(IN  HANDLE hProcess,
                                OUT PCONTEXT pContext, 
@@ -319,7 +394,8 @@ Wow64TranslateEntrypoint32To64(IN  HANDLE hProcess,
     {
         pTranslation = &EntrypointTranslations[i];
         
-        if (pTranslation->SymbolAddress32 == pContext32->Eip)
+        if (pTranslation->SymbolAddress32 == pContext32->Eip ||
+            (pContext32->Eip != 0 && Wow64Resolve32(pTranslation) == pContext32->Eip))
         {
             if (pTranslation->ContextFixup != NULL)
             {
@@ -369,7 +445,13 @@ Wow64TranslateEntrypoint64To32(IN  HANDLE hProcess,
                 }
             }
             
-            pContext32->Eip = pTranslation->SymbolAddress32;
+            pContext32->Eip = Wow64Resolve32(pTranslation);
+            if (pContext32->Eip == 0)
+            {
+                /* Not loaded yet (first thread): Wow64Trampoline fixes it up
+                 * once the 32-bit loader has run. */
+                pContext32->Eip = pTranslation->SymbolAddress32;
+            }
             return STATUS_SUCCESS;
         }
     }

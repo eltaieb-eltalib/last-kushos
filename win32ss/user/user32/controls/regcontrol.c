@@ -205,8 +205,13 @@ BOOL WINAPI RegisterClientPFN(VOID)
   pfnClientWorker.pfnGhostWndProc     = GhostWndProc_common;
   pfnClientWorker.pfnCtfHookProc      = User32DefWindowProc;
 
-#if (DLL_EXPORT_VERSION >= _WIN32_WINNT_VISTA)
-    /* Register the PFNs with ntdll */
+#if (DLL_EXPORT_VERSION >= _WIN32_WINNT_VISTA) && !defined(BUILD_WOW6432)
+    /* Register the PFNs with ntdll.
+     * Kush 1.1: not in the SysWOW64 user32. There PFNCLIENT keeps the 64-bit
+     * layout (8 bytes per entry, see ntuser.h) while ntdll's tables hold
+     * 4-byte pointers, so RtlInitializeNtUserPfn rejected the sizes and
+     * user32 failed to load (0xc0000142) in every 32-bit process. wow64win
+     * keeps the 32-bit procedure tables itself. */
     Status = RtlInitializeNtUserPfn(&pfnClientA,
                                     sizeof(pfnClientA),
                                     &pfnClientW,
