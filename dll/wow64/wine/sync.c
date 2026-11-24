@@ -1098,11 +1098,8 @@ NTSTATUS WINAPI wow64_NtQueryObject( UINT *args )
 
     case ObjectTypesInformation:   /* OBJECT_TYPES_INFORMATION */
     {
-#ifndef __REACTOS__
+        /* ReactOS renamed OBJECT_ALL_TYPES_INFORMATION to the Wine/Windows name */
         OBJECT_TYPES_INFORMATION *info, *info32 = ptr;
-#else
-        OBJECT_ALL_TYPES_INFORMATION *info, *info32 = ptr;
-#endif
         /* assume at most 32 types, with an average 16-char name */
         ULONG ret_size, size = 32 * (sizeof(OBJECT_TYPE_INFORMATION) + 16 * sizeof(WCHAR));
 

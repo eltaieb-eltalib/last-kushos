@@ -227,7 +227,7 @@ typedef IO_STATUS_BLOCK32 *PIO_STATUS_BLOCK32;
 
 static inline void *apc_32to64( ULONG func )
 {
-    return func ? Wow64ApcRoutine : NULL;
+    return func ? (void *)Wow64ApcRoutine : NULL;
 }
 
 static inline void *

@@ -652,6 +652,11 @@ endif()
 function(add_importlibs _module)
     add_dependency_node(${_module})
     foreach(LIB ${ARGN})
+        # Kush 1.1: the SysWOW64 (i386) build has no kernel targets; kernel-mode
+        # helper libraries that import ntoskrnl/hal are not used by WoW64.
+        if(SYSWOW64_BUILD AND (LIB STREQUAL "ntoskrnl" OR LIB STREQUAL "hal") AND NOT TARGET ${LIB})
+            continue()
+        endif()
         target_link_libraries(${_module} lib${LIB})
         add_dependency_edge(${_module} ${LIB})
     endforeach()
