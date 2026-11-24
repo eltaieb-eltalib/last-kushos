@@ -92,6 +92,16 @@ function(setup_wow64)
             )
     endif()
 
+    # Kush 1.1: MinGW variant for the i386 SysWOW64 build. Use the win32
+    # thread model (e.g. -DWOW64_MINGW_TOOLCHAIN_SUFFIX=-win32): with the posix
+    # one, i386 libgcc_eh drags in libwinpthread, whose msvcrt imports collide
+    # with ucrt inside ucrtbase.dll ("multiple definition of _errno ...").
+    if(DEFINED WOW64_MINGW_TOOLCHAIN_SUFFIX)
+        set(WOW64_SUFFIX_ARG -DMINGW_TOOLCHAIN_SUFFIX:STRING=${WOW64_MINGW_TOOLCHAIN_SUFFIX})
+    else()
+        set(WOW64_SUFFIX_ARG -UMINGW_TOOLCHAIN_SUFFIX)
+    endif()
+
     ExternalProject_Add(wow64-binaries
         SOURCE_DIR ${REACTOS_SOURCE_DIR}
         PREFIX ${REACTOS_BINARY_DIR}/wow64
@@ -101,7 +111,7 @@ function(setup_wow64)
             -DCMAKE_TOOLCHAIN_FILE:FILEPATH=${WOW64_TOOLCHAIN_FILE}
             -UCMAKE_GENERATOR_PLATFORM
             -UMINGW_TOOLCHAIN_PREFIX
-            -UMINGW_TOOLCHAIN_SUFFIX
+            ${WOW64_SUFFIX_ARG}
             -DNO_ROSSYM=1
             -DARCH:STRING=i386
             -DCMAKE_INSTALL_PREFIX=${REACTOS_BINARY_DIR}/wow64
