@@ -56,6 +56,15 @@ ninja bootcd
 
 (لسه على الـ Live CD محتاجين `TEMP` ومجلدات AppData على C:، والـ sandbox مقفول، زي ما مكتوب فوق.)
 
+### الاختبار الحقيقي: البحث في Google بالـ Firefox المتثبّت ✅
+
+بعد التثبيت (دبل كليك ← Next ← Install ← Finish مع "Launch Firefox now")، كتبنا **ok** في شريط العنوان وظهرت نتايج Google:
+
+![Google search in the installed Firefox](screenshots/14-installed-firefox-google-search.png)
+
+(الشبكة في الـ VM ماشية عن طريق proxy بيئة الاختبار: إعدادات `policies.json` للـ VM بس، ومش جزء من Kush.
+خلي بالك إن برنامج تثبيت Firefox بيمسح مجلد `distribution`، فلازم الإعدادات تتحط **بعد** التثبيت.)
+
 ## المشاكل وحلولها (بالترتيب اللي كانت بتوقّف بيه عملية 32-bit)
 
 | # | العَرَض | السبب الجذري | الحل | الملف |
@@ -108,7 +117,7 @@ ninja bootcd
 | 15 | ~~برامج 64-bit اللي بيشغّلها برنامج 32-bit بتقع~~ اتحلّت (#29). المشكلة القديمة: **برامج 64-bit اللي بيشغّلها برنامج 32-bit بتقع**: `firefox.exe` لما بيشغّله برنامج التثبيت (‏"Launch Firefox now")، و`maintenanceservice.exe` و`default-browser-agent.exe`. نفس `firefox.exe` بيفتح عادي من cmd الـ 64-bit. ومسار خدمة الصيانة طلع `...\%SystemDrive%\Program Files\...` من غير ما المتغير يتفك | غالبًا بيئة العملية (environment) أو الـ process parameters اللي بتتبعت من عملية 32-bit لابن 64-bit | نقارن البيئة اللي بتوصل الابن في الحالتين |
 | 16 | على الـ Live CD، ‏Firefox بيقول "Profile Missing" | ‏Firefox بيجيب مكان AppData من `SHGetKnownFolderPath` (‏`User Shell Folders` في الريجستري)، وده بيشاور على X: اللي للقراية بس. ملفات القفل نفسها شغالة عادي على FAT32 (اختبار `proflock64.exe`) | على الـ Live CD: نخلّي `User Shell Folders` تشاور على RAM disk أو على هارد. على النظام المتثبّت مش مشكلة |
 | 17 | Firefox محتاج يتشغّل وsandbox بتاعه مقفول (`MOZ_DISABLE_*_SANDBOX`)، وإلا بيفضل شغال من غير نافذة | ده من قبل WoW64: Kush لسه ما بيدعمش sandbox بتاع Firefox (job objects/tokens) | مشروع لوحده |
-| 20 | على الـ Live CD برنامج التثبيت ما حطش اختصار على سطح المكتب | مجلد سطح المكتب على X: وده للقراية بس. إنشاء الاختصارات نفسه شغال من برامج 32-bit: اختبار `lnk32.exe` (‏`IShellLink` + `IPersistFile::Save`) عمل `Firefox32.lnk` لما سطح المكتب اتحوّل لـ C: | على النظام المتثبّت مش مشكلة. على الـ Live CD نخلّي سطح المكتب على RAM disk |
+| 20 | على الـ Live CD برنامج التثبيت ما حطش اختصار على سطح المكتب ولا في قايمة Start | البرنامج اختار مجلدات "كل المستخدمين" (`X:\Users\Public\Desktop` و`X:\ProgramData\...\Start Menu`)، ودول على X: اللي للقراية بس. إنشاء الاختصارات نفسه شغال من برامج 32-bit: اختبار `lnk32.exe` (‏`IShellLink` + `IPersistFile::Save`) عمل `Firefox32.lnk` لما سطح المكتب اتحوّل لـ C: | على النظام المتثبّت مش مشكلة. على الـ Live CD نخلّي سطح المكتب على RAM disk |
 | 18 | ‏dialog بتاع 32-bit بيستلم في `WM_INITDIALOG` مؤشر window procedure بتاع **64-bit** مقصوص لـ 32-bit (‏`RtlpNtUserPfnDispatch23` في ntdll الـ 64-bit). ‏user32 بيمسك الاستثناء والتثبيت بيكمّل | ‏win32k بيرجّع الـ PFNs اللي اتسجلت من ntdll الـ 64-bit لعملية 32-bit | wow64win يحوّلها للـ PFNs الـ 32-bit (‏`apfnClientProcs32A/W`) |
 | 19 | دوال GDI path مالهاش thunks (‏`GdiBeginPath`، `GdiEndPath`، `GdiPathToRegion`) | الرسم اللي بيعتمد على paths في برامج 32-bit | thunks ليهم |
 | 10 | ~~برنامج تثبيت Firefox: مرحلة فك الضغط~~ اتحلّت (#30). المشكلة القديمة: برنامج تثبيت Firefox: مرحلة فك الضغط (‏7-Zip SFX، ‏32-bit) بتخلّص الـ 76 ملف (379 MB)، لكن بعدها بيفضل مستني وما بيشغّلش `setup.exe` | التثبيت بالدبل كليك على `Firefox Setup.exe` لسه ما بيكمّلش لوحده | نتتبّع إيه اللي الـ stub مستنيه (async I/O أو انتظار العملية الابن) |

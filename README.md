@@ -40,6 +40,10 @@ Build (Linux, mingw-w64 **posix** toolchain, cmake, ninja, bison, flex, libgmp-d
 
 ![Wizard](docs/wow64/screenshots/12-ffsetup-doubleclick-wizard.png) ![Launched by the installer](docs/wow64/screenshots/13-firefox-launched-by-installer.png)
 
+**والاختبار الحقيقي:** Firefox المتثبّت بحث في Google عن "ok" وظهرت النتايج:
+
+![Google search](docs/wow64/screenshots/14-installed-firefox-google-search.png)
+
 عشان نوصل للنقطة دي اتصلحت 30 مشكلة من جذورها. من أهمها خطأ في الكيرنل نفسه كان بيعمل شاشة زرقا لأي خطأ يتمسك بـ SEH جوه الكيرنل،
 حتى في برامج 64-bit (‏`.pushframe` كان بيشيل الـ error code). وKush بقى يعلن نفسه Windows 10 (‏10.0.19045) للبرامج اللي بتطلبه.
 
