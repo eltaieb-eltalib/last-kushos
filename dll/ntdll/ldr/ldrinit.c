@@ -1900,6 +1900,32 @@ LdrpInitializeProcessCompat(PVOID pProcessActctx, PVOID* pOldShimData)
     if (ContextCompatInfo->ElementCount == 0)
         return;
 
+    /* Kush 1.1: like Windows, a program whose manifest declares Windows 10
+     * support sees the Windows version Kush advertises (KUSER_SHARED_DATA,
+     * 10.0.19045 by default, see ntoskrnl/ex/init.c) in its PEB, so
+     * GetVersionEx/RtlGetVersion/RtlGetNtVersionNumbers return it. Modern
+     * installers (Firefox's NSIS setup.exe) refuse to run otherwise. Programs
+     * without such a manifest keep the native NT 5.2. */
+    if (SharedUserData->NtMajorVersion >= 10 && !LdrpDisableProcessCompatGuidDetection())
+    {
+        for (n = 0; n < ContextCompatInfo->ElementCount; ++n)
+        {
+            if (ContextCompatInfo->Elements[n].Type == ACTCTX_COMPATIBILITY_ELEMENT_TYPE_OS &&
+                RtlCompareMemory(&ContextCompatInfo->Elements[n].Id, &COMPAT_GUID_WIN10, sizeof(GUID)) == sizeof(GUID))
+            {
+                PPEB Peb = NtCurrentPeb();
+                ULONG Build = *(volatile ULONG *)((PUCHAR)SharedUserData + 0x260); /* NtBuildNumber */
+
+                Peb->OSMajorVersion = SharedUserData->NtMajorVersion;
+                Peb->OSMinorVersion = SharedUserData->NtMinorVersion;
+                if (Build) Peb->OSBuildNumber = (USHORT)Build;
+                Peb->OSCSDVersion = 0;
+                Peb->CSDVersion.Length = 0; /* Windows 10 has no service pack */
+                break;
+            }
+        }
+    }
+
     /* Search for known GUIDs, starting from oldest to newest.
        Note that on Windows it is somewhat reversed, starting from the latest known
        version, going down. But we are not Windows, trying to allow a lower version,
