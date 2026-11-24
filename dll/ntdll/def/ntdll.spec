@@ -52,10 +52,10 @@
 @ stdcall -wow64 CsrIdentifyAlertableThread() NtWow64CsrIdentifyAlertableThread
 @ stdcall -nowow64 -version=0x502+ CsrNewThread() # Should be only 0x502, but we need it for now
 @ stdcall -wow64 -version=0x502+ CsrNewThread() NtWow64CsrNewThread
-@ stdcall -nowow64 -version=0x502 CsrProbeForRead(ptr long long)
-@ stdcall -wow64 -version=0x502 CsrProbeForRead(ptr long long) NtWow64CsrProbeForRead
-@ stdcall -nowow64 -version=0x502 CsrProbeForWrite(ptr long long)
-@ stdcall -wow64 -version=0x502 CsrProbeForWrite(ptr long long) NtWow64CsrProbeForWrite
+@ stdcall -nowow64 -version=0x502+ CsrProbeForRead(ptr long long)
+@ stdcall -wow64 -version=0x502+ CsrProbeForRead(ptr long long) NtWow64CsrProbeForRead
+@ stdcall -nowow64 -version=0x502+ CsrProbeForWrite(ptr long long)
+@ stdcall -wow64 -version=0x502+ CsrProbeForWrite(ptr long long) NtWow64CsrProbeForWrite
 @ stdcall -nowow64 CsrSetPriorityClass(ptr ptr)
 @ stdcall -wow64 CsrSetPriorityClass(ptr ptr) NtWow64CsrSetPriorityClass
 
@@ -1969,8 +1969,8 @@
 @ stdcall -wow64 NtWow64CsrGetProcessId() 
 @ stdcall -wow64 NtWow64CsrIdentifyAlertableThread() 
 @ stdcall -wow64 -version=0x502+ NtWow64CsrNewThread()
-@ stdcall -wow64 -version=0x502 NtWow64CsrProbeForRead(ptr long long) 
-@ stdcall -wow64 -version=0x502 NtWow64CsrProbeForWrite(ptr long long) 
+@ stdcall -wow64 -version=0x502+ NtWow64CsrProbeForRead(ptr long long) 
+@ stdcall -wow64 -version=0x502+ NtWow64CsrProbeForWrite(ptr long long) 
 @ stdcall -wow64 NtWow64CsrSetPriorityClass(ptr ptr) 
 @ stdcall -wow64 NtWow64CsrCaptureMessageMultiUnicodeStringsInPlace(ptr long ptr)
 @ stdcall -wow64 NtWow64CsrCaptureTimeout(long ptr)
@@ -1985,8 +1985,8 @@
 @ stdcall -wow64 ZwCsrGetProcessId() NtWow64CsrGetProcessId
 @ stdcall -wow64 ZwCsrIdentifyAlertableThread() NtWow64CsrIdentifyAlertableThread
 @ stdcall -wow64 -version=0x502+ ZwCsrNewThread() NtWow64CsrNewThread
-@ stdcall -wow64 -version=0x502 ZwCsrProbeForRead(ptr long long) NtWow64CsrProbeForRead
-@ stdcall -wow64 -version=0x502 ZwCsrProbeForWrite(ptr long long) NtWow64CsrProbeForWrite
+@ stdcall -wow64 -version=0x502+ ZwCsrProbeForRead(ptr long long) NtWow64CsrProbeForRead
+@ stdcall -wow64 -version=0x502+ ZwCsrProbeForWrite(ptr long long) NtWow64CsrProbeForWrite
 @ stdcall -wow64 ZwCsrSetPriorityClass(ptr ptr) NtWow64CsrSetPriorityClass
 @ stdcall -wow64 ZwWow64CsrCaptureMessageMultiUnicodeStringsInPlace(ptr long ptr) NtWow64CsrCaptureMessageMultiUnicodeStringsInPlace
 @ stdcall -wow64 ZwWow64CsrCaptureTimeout(long ptr) NtWow64CsrCaptureTimeout
