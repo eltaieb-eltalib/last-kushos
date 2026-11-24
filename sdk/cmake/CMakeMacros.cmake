@@ -369,7 +369,10 @@ function(add_cd_file)
             list(APPEND _CD_FOR "bootcd;livecd;regtest")
         endif()
 
-        if (BUILD_WOW64_ENABLED AND NOT _CD_NO_WOW64 AND "${_CD_DESTINATION}" MATCHES "^reactos[\\\\/]+system32([\\\\/]+.*|$)")
+        # Kush 1.1: kernel-mode drivers (system32\drivers) never get a SysWOW64 copy,
+        # even when their CMakeLists lacks NO_WOW64 (e.g. drivers Kush added).
+        if (BUILD_WOW64_ENABLED AND NOT _CD_NO_WOW64 AND "${_CD_DESTINATION}" MATCHES "^reactos[\\\\/]+system32([\\\\/]+.*|$)"
+            AND NOT "${_CD_DESTINATION}" MATCHES "^reactos[\\\\/]+system32[\\\\/]+drivers([\\\\/]|$)")
             string(REGEX REPLACE "^reactos([\\\\/]+)system32" "reactos\\1SysWOW64" _CD_WOW64_DESTINATION "${_CD_DESTINATION}")
             string(REGEX REPLACE "^reactos([\\\\/]+|$)" "${ARCH}\\1" _CD_WOW64_ARCH_DESTINATION "${_CD_WOW64_DESTINATION}")
         else()

@@ -2,6 +2,9 @@
 Signature = "$Windows NT$"
 
 [AddReg]
+; Kush 1.1: WoW64 (32-bit programs). Set Enabled=0 to refuse 32-bit programs as before.
+HKLM,"SYSTEM\CurrentControlSet\Control\Kush\Wow64","Enabled",0x00010001,1
+
 
 HKLM,"SYSTEM\CurrentControlSet\Control","CurrentUser",2,"USERNAME"
 HKLM,"SYSTEM\CurrentControlSet\Control","WaitToKillServiceTimeout",2,"20000"

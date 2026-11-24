@@ -19,6 +19,43 @@
 
 /* GLOBALS *******************************************************************/
 
+#if defined(_M_AMD64) || defined(BUILD_WOW6432)
+/*
+ * Kush 1.1: WoW64 kill switch.
+ * HKLM\SYSTEM\CurrentControlSet\Control\Kush\Wow64, REG_DWORD Enabled:
+ * 0 = refuse 32-bit programs exactly like before WoW64 existed
+ * ("machine type mismatch"), so no WoW64 component is ever loaded.
+ * Missing value = enabled.
+ */
+static
+BOOLEAN
+BasepIsWow64Enabled(VOID)
+{
+    UNICODE_STRING KeyName = RTL_CONSTANT_STRING(L"\\Registry\\Machine\\SYSTEM\\CurrentControlSet\\Control\\Kush\\Wow64");
+    UNICODE_STRING ValueName = RTL_CONSTANT_STRING(L"Enabled");
+    OBJECT_ATTRIBUTES ObjectAttributes;
+    UCHAR Buffer[sizeof(KEY_VALUE_PARTIAL_INFORMATION) + sizeof(ULONG)];
+    PKEY_VALUE_PARTIAL_INFORMATION Info = (PKEY_VALUE_PARTIAL_INFORMATION)Buffer;
+    ULONG Length;
+    HANDLE KeyHandle;
+    NTSTATUS Status;
+    BOOLEAN Enabled = TRUE;
+
+    InitializeObjectAttributes(&ObjectAttributes, &KeyName, OBJ_CASE_INSENSITIVE, NULL, NULL);
+    Status = NtOpenKey(&KeyHandle, KEY_QUERY_VALUE, &ObjectAttributes);
+    if (!NT_SUCCESS(Status))
+        return TRUE;
+
+    Status = NtQueryValueKey(KeyHandle, &ValueName, KeyValuePartialInformation,
+                             Info, sizeof(Buffer), &Length);
+    if (NT_SUCCESS(Status) && Info->Type == REG_DWORD && Info->DataLength == sizeof(ULONG))
+        Enabled = (*(PULONG)Info->Data != 0);
+
+    NtClose(KeyHandle);
+    return Enabled;
+}
+#endif
+
 UNICODE_STRING BaseUnicodeCommandLine;
 ANSI_STRING BaseAnsiCommandLine;
 UNICODE_STRING BasePathVariableName = RTL_CONSTANT_STRING(L"PATH");
@@ -3768,8 +3805,8 @@ StartScan:
     }
 
 #if defined(_M_AMD64) || defined(BUILD_WOW6432)
-    /* Allow x86_32 */
-    if (ImageInformation.Machine == IMAGE_FILE_MACHINE_I386) {}
+    /* Allow x86_32 (WoW64), unless Kush's kill switch turned it off */
+    if (ImageInformation.Machine == IMAGE_FILE_MACHINE_I386 && BasepIsWow64Enabled()) {}
     else
 #endif
     /* Make sure the image was compiled for this processor */

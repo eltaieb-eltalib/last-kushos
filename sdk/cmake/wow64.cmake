@@ -110,6 +110,7 @@ function(setup_wow64)
             -DTARGET_BUILD_TYPE=${CMAKE_BUILD_TYPE}
             -DCMAKE_BUILD_TYPE=${WOW64_BUILD_TYPE}
             -DSYSWOW64_BUILD=1
+            -DDLL_EXPORT_VERSION=${DLL_EXPORT_VERSION}
             ${CMAKE_WOW64_TOOLS_EXTRA_ARGS}
         BUILD_ALWAYS TRUE
         DEPENDS host-tools
