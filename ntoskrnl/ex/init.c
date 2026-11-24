@@ -1355,6 +1355,59 @@ NTAPI
 MmFreeLoaderBlock(IN PLOADER_PARAMETER_BLOCK LoaderBlock);
 
 CODE_SEG("INIT")
+/*
+ * Kush 1.1: the Windows version published in KUSER_SHARED_DATA.
+ *
+ * Modern installers (NSIS 3 WinVer.nsh used by Firefox, and others) read
+ * NtMajorVersion/NtMinorVersion/NtBuildNumber straight from the shared page,
+ * ignoring manifests and compatibility shims, and refuse to run on "NT 5.2".
+ * Kush advertises Windows 10 22H2 (10.0.19045) there by default; Windows 11
+ * is also 10.0, with a build >= 22000, and would make programs use Windows 11
+ * only features. The kernel itself (RtlGetVersion for drivers) and the PEB of
+ * programs without a manifest keep the real ReactOS version.
+ *
+ * HKLM\SYSTEM\CurrentControlSet\Control\Kush\Version
+ *   ReportedMajor / ReportedMinor / ReportedBuild (REG_DWORD)
+ *   ReportedMajor = 0 keeps the native 5.2.
+ */
+static
+VOID
+ExpKushSetReportedVersion(VOID)
+{
+    ULONG Major = 10, Minor = 0, Build = 19045;
+    RTL_QUERY_REGISTRY_TABLE Table[4];
+    NTSTATUS Status;
+
+    RtlZeroMemory(Table, sizeof(Table));
+    Table[0].Flags = RTL_QUERY_REGISTRY_DIRECT | RTL_QUERY_REGISTRY_TYPECHECK;
+    Table[0].Name = L"ReportedMajor";
+    Table[0].EntryContext = &Major;
+    Table[0].DefaultType = (REG_DWORD << RTL_QUERY_REGISTRY_TYPECHECK_SHIFT) | REG_NONE;
+    Table[1] = Table[0];
+    Table[1].Name = L"ReportedMinor";
+    Table[1].EntryContext = &Minor;
+    Table[2] = Table[0];
+    Table[2].Name = L"ReportedBuild";
+    Table[2].EntryContext = &Build;
+
+    Status = RtlQueryRegistryValues(RTL_REGISTRY_CONTROL | RTL_REGISTRY_OPTIONAL,
+                                    L"Kush\\Version",
+                                    Table,
+                                    NULL,
+                                    NULL);
+    UNREFERENCED_PARAMETER(Status); /* defaults stay on failure */
+
+    if (Major == 0)
+        return;
+
+    SharedUserData->NtMajorVersion = Major;
+    SharedUserData->NtMinorVersion = Minor;
+    /* NtBuildNumber (offset 0x260, Windows 10+; Reserved2 in our NT 5.2 layout) */
+    C_ASSERT(FIELD_OFFSET(KUSER_SHARED_DATA, NtProductType) == 0x264);
+    *(volatile ULONG *)((PUCHAR)SharedUserData + 0x260) = Build;
+    DPRINT1("Kush: reporting Windows %lu.%lu.%lu to applications\n", Major, Minor, Build);
+}
+
 VOID
 NTAPI
 Phase1InitializationDiscard(IN PVOID Context)
@@ -1707,6 +1760,9 @@ Phase1InitializationDiscard(IN PVOID Context)
 
     /* Initialize the Registry */
     if (!CmInitSystem1()) KeBugCheck(CONFIG_INITIALIZATION_FAILED);
+
+    /* Kush 1.1: the version advertised to applications */
+    ExpKushSetReportedVersion();
 
     /* Initialize Prefetcher */
     CcPfInitializePrefetcher();
