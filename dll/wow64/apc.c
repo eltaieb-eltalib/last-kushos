@@ -60,13 +60,17 @@ Wow64ApcRoutine(ULONG_PTR SystemArgument1,
     {
         ULONG_PTR       Rip32;
         ULONG_PTR       SegCs32;
-        ULONG           FarReturn32;
+        /* Kush 1.1: the stack layout ReactOS' i386 KiUserApcDispatcher
+         * expects: [NormalRoutine][NormalContext][SysArg1][SysArg2][CONTEXT]
+         * [SEH registration]. The Wine layout used before (a return address
+         * and an "alertable" flag) made the dispatcher call FarReturn32 as
+         * the APC routine, and its SEH record overwrote Frame. */
         ULONG           Func;
         UINT            SystemArgument1;
         UINT            SystemArgument2;
         UINT            SystemArgument3;
-        UINT            Alertable;
-        WOW64_CONTEXT   Context32;
+        WOW64_CONTEXT   Context32;       /* CONTEXT_ALIGNED_SIZE (0x2cc) on i386 */
+        ULONG           SehRecord[2];    /* written by KiUserApcDispatcher */
         struct user_apc_frame Frame;
     };
     
@@ -88,7 +92,6 @@ Wow64ApcRoutine(ULONG_PTR SystemArgument1,
     enter = (struct Enter32*)(StackBuffer + sizeof(StackBuffer) - sizeof(*leave) - sizeof(*enter));
 #pragma pack(pop)
     
-    enter->FarReturn32 = PtrToUlong(FarReturn32);
     
     enter->Frame.prev_frame = NtCurrentTeb()->TlsSlots[WOW64_TLS_APCLIST];
     enter->Frame.context    = Context;
@@ -100,7 +103,6 @@ Wow64ApcRoutine(ULONG_PTR SystemArgument1,
     enter->SystemArgument1 = SystemArgument1;
     enter->SystemArgument2 = SystemArgument2;
     enter->SystemArgument3 = SystemArgument3;
-    enter->Alertable = TRUE;
     enter->Frame.wow_context = &enter->Context32;
 
     enter->Rip32 = (ULONG_PTR) NtDll32KiUserApcDispatcher;
@@ -113,4 +115,24 @@ Wow64ApcRoutine(ULONG_PTR SystemArgument1,
     
     /* We should never get here. */
     ASSERT(FALSE);
+}
+/* Kush 1.1: NtQueueApcThread had no thunk: QueueUserAPC from a 32-bit program
+ * returned STATUS_NOT_IMPLEMENTED and the APC never ran. Queue a native APC to
+ * Wow64ApcRoutine, which re-enters 32-bit KiUserApcDispatcher with the 32-bit
+ * routine and arguments (same packing as the async I/O APCs). */
+NTSTATUS
+WINAPI
+wow64_NtQueueApcThread(UINT *pArgs)
+{
+    HANDLE hThread = get_handle(&pArgs);
+    ULONG ApcRoutine = get_ulong(&pArgs);
+    ULONG ApcArgument1 = get_ulong(&pArgs);
+    ULONG ApcArgument2 = get_ulong(&pArgs);
+    ULONG ApcArgument3 = get_ulong(&pArgs);
+
+    return NtQueueApcThread(hThread,
+                            (PKNORMAL_ROUTINE)apc_32to64(ApcRoutine),
+                            apc_param_32to64(ApcRoutine, ApcArgument1),
+                            ULongToPtr(ApcArgument2),
+                            ULongToPtr(ApcArgument3));
 }

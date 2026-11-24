@@ -179,6 +179,7 @@ Wow64SystemServiceEx(ULONG syscallNum,
         WINE_WOW_IMPL_CASE(SignalAndWaitForSingleObject);
         WINE_WOW_IMPL_CASE(TerminateJobObject);
         WINE_WOW_IMPL_CASE(TestAlert);
+        WINE_WOW_IMPL_CASE(QueueApcThread); /* Kush 1.1 */
         WINE_WOW_IMPL_CASE(WaitForDebugEvent);
         WINE_WOW_IMPL_CASE(WaitForKeyedEvent);
         WINE_WOW_IMPL_CASE(WaitForMultipleObjects);
