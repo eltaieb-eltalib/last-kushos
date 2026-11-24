@@ -343,7 +343,17 @@ Wow64SystemServiceInner(ULONG syscallNum,
         {
             if (syscallNum >= 0x1000)
             {
+                /* Kush 1.1: win32k reports errors in the native TEB
+                 * (EngSetLastError), but the 32-bit program reads the 32-bit
+                 * TEB. Carry the value across like Windows' WOW64 does: the
+                 * 32-bit user32 decides on GetLastError() whether to register
+                 * a versioned (comctl32 v6) class and retry CreateWindowEx;
+                 * with a stale value the "Button" of the Firefox installer's
+                 * progress dialog failed and the installer deadlocked. */
+                PTEB32 Teb32 = NtCurrentTeb32();
+                NtCurrentTeb()->LastErrorValue = Teb32->LastErrorValue;
                 status = Wow64WinHandler(syscallNum - 0x1000, pArgs);
+                Teb32->LastErrorValue = NtCurrentTeb()->LastErrorValue;
                 Wow64FreeTempData();
                 return status;
             }
