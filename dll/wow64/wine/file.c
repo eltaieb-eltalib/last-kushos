@@ -44,6 +44,7 @@ AppendIosbStorage(PWOW64_IOSB_STORAGE Current,
                                                    sizeof(*NewBlock));
     
     NewBlock->StatusBlock64.Pointer = StatusBlock32;
+    NewBlock->StatusBlock64.Information = WOW64_IOSB_MAGIC; /* Kush 1.1 */
     NewBlock->Next = NULL;
     
     while (InterlockedCompareExchangePointer(&Current->Next,
@@ -74,6 +75,7 @@ AllocIosbStorage(PIO_STATUS_BLOCK32 StatusBlock32,
                                               NULL) == NULL)
         {
             *Result = Current;
+            Current->StatusBlock64.Information = WOW64_IOSB_MAGIC; /* Kush 1.1 */
             return &Current->StatusBlock64;
         }
 
@@ -94,7 +96,10 @@ FreeIosbStorage(PWOW64_IOSB_STORAGE Storage,
 {
     if (Status != STATUS_PENDING && Storage->StatusBlock64.Pointer != NULL)
     {
-        StatusBlock32->Information = Storage->StatusBlock64.Information;
+        /* Kush 1.1: never hand the marker to the program (the kernel did not
+         * write this IOSB, e.g. the call failed before an IRP was built) */
+        StatusBlock32->Information = (Storage->StatusBlock64.Information == WOW64_IOSB_MAGIC) ?
+                                     0 : Storage->StatusBlock64.Information;
         StatusBlock32->Status = Storage->StatusBlock64.Status;
         
         Storage->StatusBlock64.Pointer = NULL;

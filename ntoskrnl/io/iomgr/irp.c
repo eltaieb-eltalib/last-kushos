@@ -251,7 +251,14 @@ IopWriteAsyncUserIosb(PIRP Irp)
              * 32-bit address space, assume UserIosb->Pointer is a 32-bit IOSB
              * that has to be filled.
              */
-            if (Irp->RequestorMode == UserMode &&
+            /* Kush 1.1: only for IOSBs wow64.dll marked as carrying a
+             * 32-bit one (WOW64_IOSB_MAGIC in Information, see
+             * dll/wow64/ros_wow64_private.h). Native IOSBs used by 64-bit code
+             * of a WOW64 process hold a stale Status in Pointer; writing
+             * through it faulted here and bugchecked the system. */
+            if (Irp->UserIosb->Information == (ULONG_PTR)0x57303634494F5342ULL &&
+                (ULONG_PTR)Iosb32 >= 0x10000 && ((ULONG_PTR)Iosb32 & 3) == 0 &&
+                Irp->RequestorMode == UserMode &&
                 /*
                  * This is an APC - we're running in the correct thread context,
                  * and Irp->Tail is trashed. Don't bother with getting the thread

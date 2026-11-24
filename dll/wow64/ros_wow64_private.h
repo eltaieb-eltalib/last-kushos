@@ -253,10 +253,19 @@ apc_param_32to64(ULONG func, ULONG context)
     return (void *)(ULONG_PTR)(((ULONG64)func << 32) | context);
 }
 
+/* Kush 1.1: marks a native IO_STATUS_BLOCK whose Pointer is the caller's
+ * IO_STATUS_BLOCK32. The kernel (IopWriteAsyncUserIosb) only writes the
+ * 32-bit block when it sees this value; it used to guess, and wrote through
+ * the stale Status left in ordinary IOSBs of 64-bit code in the same process
+ * (bugcheck 0x1E while the Firefox installer ran). Keep in sync with
+ * ntoskrnl/io/iomgr/irp.c. */
+#define WOW64_IOSB_MAGIC ((ULONG_PTR)0x57303634494F5342ULL) /* "W064IOSB" */
+
 static inline IO_STATUS_BLOCK *iosb_32to64( IO_STATUS_BLOCK *io, IO_STATUS_BLOCK32 *io32 )
 {
     if (!io32) return NULL;
     io->Pointer = io32;
+    io->Information = WOW64_IOSB_MAGIC;
     return io;
 }
 
