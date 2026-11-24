@@ -23,13 +23,20 @@ Build (Linux, mingw-w64 **posix** toolchain, cmake, ninja, bison, flex, libgmp-d
 
 ## WoW64: برامج 32-bit بقت شغالة على Kush (24 نوفمبر 2026)
 
-دمجنا شغل WoW64 من فرع [`TheNNX/reactos` wow64sync](https://github.com/TheNNX/reactos/tree/wow64sync) وصلّحنا 17 مشكلة من جذورها
+دمجنا شغل WoW64 من فرع [`TheNNX/reactos` wow64sync](https://github.com/TheNNX/reactos/tree/wow64sync) وصلّحنا 28 مشكلة من جذورها
 (من ntdll والكيرنل لحد user32 وwin32k). النتيجة على QEMU:
 - `SysWOW64\cmd.exe` (نسخة x86) شغال ✅
 - `wow64test.exe`: نجح **12/12** ✅ (ملفات، ذاكرة، خيوط، SEH، CreateProcess، ريجستري)
 - نافذة 32-bit بزرار وcombobox وMessageBox ✅
 
 ![wow64test 12/12](docs/wow64/screenshots/02-wow64test-12-of-12.png)
+
+**وكمان: برنامج التثبيت الرسمي `Firefox Setup.exe` (‏32-bit) اتثبّت بالضغط على Next لحد الآخر، وFirefox اشتغل:**
+
+![Firefox installed](docs/wow64/screenshots/09-firefox-installed.png) ![Firefox running](docs/wow64/screenshots/10-firefox-installed-running.png)
+
+عشان نوصل للنقطة دي اتصلحت 28 مشكلة من جذورها. من أهمها خطأ في الكيرنل نفسه كان بيعمل شاشة زرقا لأي خطأ يتمسك بـ SEH جوه الكيرنل،
+حتى في برامج 64-bit (‏`.pushframe` كان بيشيل الـ error code). وKush بقى يعلن نفسه Windows 10 (‏10.0.19045) للبرامج اللي بتطلبه.
 
 التفاصيل كلها (المشاكل وأسبابها وحلولها، **والمشاكل اللي لسه ما اتحلّتش**) في [`docs/wow64/README.md`](docs/wow64/README.md).
 **مهم:** الـ ISO اللي بيطلع من الـ CI لسه **من غير** WoW64، لأن الـ CI ما فيهوش مترجم i386. عشان تبنيه بـ WoW64:

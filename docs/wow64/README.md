@@ -33,6 +33,21 @@ ninja bootcd
 فيه مفتاح لإيقاف WoW64 من غير إعادة بناء: `HKLM\SYSTEM\CurrentControlSet\Control\Kush\Wow64`، القيمة `Enabled`
 (0 يوقفه، والافتراضي 1).
 
+## تثبيت Firefox ببرنامج التثبيت الرسمي ✅ (24 نوفمبر 2026)
+
+`Firefox Setup 160.0.1.exe` (برنامج تثبيت 32-bit: ‏7-Zip SFX، وجواه NSIS) اتثبّت **بالضغط على Next** لحد آخر شاشة
+"Mozilla Firefox has been installed on your computer"، وبعدها Firefox اشتغل وفتح "Welcome to Firefox":
+
+| | |
+|---|---|
+| ![Welcome](screenshots/05-firefox-setup-welcome.png) | ![Location](screenshots/06-firefox-setup-location.png) |
+| ![Summary](screenshots/07-firefox-setup-summary.png) | ![Installing](screenshots/08-firefox-installing.png) |
+| ![Installed](screenshots/09-firefox-installed.png) | ![Running](screenshots/10-firefox-installed-running.png) |
+
+الاختبار ده اتعمل على الـ **Live CD** في QEMU، فكان لازم أعمل حاجتين بإيدي بسبب إن X: للقراية بس (على نظام متثبّت على الهارد مش هتحتاجهم):
+`set TEMP=C:\tmp`، وتحويل مجلدات AppData لـ C: (‏`User Shell Folders`)، ومسار التثبيت `C:\Firefox`.
+وزي الجلسات اللي فاتت، Firefox اشتغل وsandbox بتاعه مقفول (‏`MOZ_DISABLE_*_SANDBOX`)، لأن Kush لسه ما بيدعمش الـ sandbox.
+
 ## المشاكل وحلولها (بالترتيب اللي كانت بتوقّف بيه عملية 32-bit)
 
 | # | العَرَض | السبب الجذري | الحل | الملف |
@@ -81,7 +96,8 @@ ninja bootcd
 | 5 | ~~Common Controls 6 ناقصة لبرامج 32-bit~~ اتحلّت (#19) | | |
 | 6 | حالة الـ x87/SSE في `Wow64CopyContext32To64` لسه ناقصة في بعض المسارات (FloatSave القديم) | برامج 32-bit بتستخدم x87 مع استثناءات ممكن تتأثر | نكمّل التحويل |
 | 15 | **برامج 64-bit اللي بيشغّلها برنامج 32-bit بتقع**: `firefox.exe` لما بيشغّله برنامج التثبيت (‏"Launch Firefox now")، و`maintenanceservice.exe` و`default-browser-agent.exe`. نفس `firefox.exe` بيفتح عادي من cmd الـ 64-bit. ومسار خدمة الصيانة طلع `...\%SystemDrive%\Program Files\...` من غير ما المتغير يتفك | غالبًا بيئة العملية (environment) أو الـ process parameters اللي بتتبعت من عملية 32-bit لابن 64-bit | نقارن البيئة اللي بتوصل الابن في الحالتين |
-| 16 | على الـ Live CD، ‏Firefox بيقول "Profile Missing" حتى مع `-profile C:\ffprofile` على هارد FAT32 | بنتأكد منه دلوقتي (اختبار `proflock64.exe`) | |
+| 16 | على الـ Live CD، ‏Firefox بيقول "Profile Missing" | ‏Firefox بيجيب مكان AppData من `SHGetKnownFolderPath` (‏`User Shell Folders` في الريجستري)، وده بيشاور على X: اللي للقراية بس. ملفات القفل نفسها شغالة عادي على FAT32 (اختبار `proflock64.exe`) | على الـ Live CD: نخلّي `User Shell Folders` تشاور على RAM disk أو على هارد. على النظام المتثبّت مش مشكلة |
+| 17 | Firefox محتاج يتشغّل وsandbox بتاعه مقفول (`MOZ_DISABLE_*_SANDBOX`)، وإلا بيفضل شغال من غير نافذة | ده من قبل WoW64: Kush لسه ما بيدعمش sandbox بتاع Firefox (job objects/tokens) | مشروع لوحده |
 | 10 | برنامج تثبيت Firefox: مرحلة فك الضغط (‏7-Zip SFX، ‏32-bit) بتخلّص الـ 76 ملف (379 MB)، لكن بعدها بيفضل مستني وما بيشغّلش `setup.exe` | التثبيت بالدبل كليك على `Firefox Setup.exe` لسه ما بيكمّلش لوحده | نتتبّع إيه اللي الـ stub مستنيه (async I/O أو انتظار العملية الابن) |
 | 11 | ~~**‏`setup.exe` بتاع Firefox (‏NSIS) بيرفض التثبيت**~~ اتحلّت (#20) | | |
 | 11-old | **‏`setup.exe` بتاع Firefox (‏NSIS) بيرفض التثبيت**: "Setup" بأيقونة إيقاف وOK/Cancel (رسالة "محتاج Windows 10")، والنص فاضي | NSIS 3 بيقرا إصدار النظام مباشرة من `KUSER_SHARED_DATA` (‏`NtMajorVersion`/`NtMinorVersion`)، مش من الـ manifest. وKush بيكتب هناك **5.2** لكل البرامج | قرار تصميم: يا إما Kush يعلن 10.0 في الصفحة المشتركة (`ntoskrnl/ex/init.c`)، يا إما نسيبه 5.2 ونثبّت Firefox بفك الملفات زي ما بنعمل دلوقتي |
