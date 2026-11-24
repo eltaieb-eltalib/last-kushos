@@ -217,8 +217,12 @@ PUBLIC KiUserExceptionDispatcher
     lea rcx, [rsp + CONTEXT_FRAME_LENGTH] /* ExceptionRecord */
     lea rdx, [rsp] /* ContextRecord */
     call RtlDispatchException
-    pop rdx
-    pop rcx
+
+    /* Kush 1.1: no "pop rdx / pop rcx" here: nothing was pushed, so they
+       moved RSP 16 bytes into the CONTEXT, and every later use of [rsp]
+       (ZwContinue's ContextRecord, LdrpTryWow64Exception's arguments) was
+       wrong. In WoW64 processes LdrpTryWow64Exception then faulted on a
+       garbage pointer, recursively, until a stack overflow. */
 
     /* Check for success */
     or al, al
@@ -234,6 +238,8 @@ Fine:
     jmp Exit
     
 TryWow64:
+    lea rcx, [rsp] /* ContextRecord */
+    lea rdx, [rsp + CONTEXT_FRAME_LENGTH] /* ExceptionRecord */
     call LdrpTryWow64Exception
 
     or al, al

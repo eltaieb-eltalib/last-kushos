@@ -92,6 +92,37 @@ KeInitExceptions(VOID)
     __lidt(&KiIdtDescriptor.Limit);
 }
 
+/* Kush 1.1: name the file mapped at a user address (image or data section),
+ * for crashes that happen before the PEB loader list exists, e.g. early
+ * in a WoW64 process. */
+static
+VOID
+KushPrintMappedFile(
+    _In_ PCSTR What,
+    _In_ ULONG_PTR Address)
+{
+    UNICODE_STRING Name;
+    MEMORY_BASIC_INFORMATION Mbi;
+    ULONG_PTR Base = 0;
+
+    if (Address < 0x10000 || Address >= (ULONG_PTR)MmHighestUserAddress)
+        return;
+    if (NT_SUCCESS(ZwQueryVirtualMemory(NtCurrentProcess(), (PVOID)Address, MemoryBasicInformation,
+                                        &Mbi, sizeof(Mbi), NULL)))
+        Base = (ULONG_PTR)Mbi.AllocationBase;
+    if (NT_SUCCESS(MmGetFileNameForAddress((PVOID)Address, &Name)))
+    {
+        DbgPrint("KUSH-EXC: %s %p is in %wZ +0x%Ix\n", What, (PVOID)Address, &Name, Address - Base);
+        RtlFreeUnicodeString(&Name);
+    }
+    else
+    {
+        DbgPrint("KUSH-EXC: %s %p: no mapped file (allocation base %p, state %lx, protect %lx)\n",
+                 What, (PVOID)Address, (PVOID)Base,
+                 Base ? Mbi.State : 0, Base ? Mbi.Protect : 0);
+    }
+}
+
 static
 BOOLEAN
 KiDispatchExceptionToUser(
@@ -415,6 +446,11 @@ KiDispatchException(IN PEXCEPTION_RECORD ExceptionRecord,
                 }
             }
             _SEH2_EXCEPT(EXCEPTION_EXECUTE_HANDLER) {} _SEH2_END;
+
+            /* Also ask Mm what is mapped there (works before the loader list exists) */
+            KushPrintMappedFile("address", (ULONG_PTR)ExceptionRecord->ExceptionAddress);
+            if (ExceptionRecord->ExceptionCode == STATUS_ACCESS_VIOLATION && ExceptionRecord->NumberParameters >= 2)
+                KushPrintMappedFile("target", ExceptionRecord->ExceptionInformation[1]);
 
             /* Kush 1.1: likely call stack - every stack slot (from RSP up) that
              * points into a loaded module, as module+RVA, so the caller of a
