@@ -310,8 +310,29 @@ typedef struct { unsigned long _Fe_ctl, _Fe_stat; } kush_fenv_t;
 #define K_FE_INVALID   0x10
 #define K_FE_ALL       0x1f
 
+#if defined(__x86_64__) || defined(_M_AMD64) || defined(__SSE__)
 static unsigned int k_getcsr(void) { return __builtin_ia32_stmxcsr(); }
 static void k_setcsr(unsigned int v) { __builtin_ia32_ldmxcsr(v); }
+#else
+/* i386 without SSE (e.g. the SysWOW64 build, -march=pentium): keep the same
+ * MXCSR-shaped value on the x87 FPU. Flags are bits 0-5 in both; x87 masks
+ * are control word bits 0-5 (MXCSR 7-12), rounding is CW bits 10-11
+ * (MXCSR 13-14). */
+static unsigned int k_getcsr(void)
+{
+    unsigned short cw, sw;
+    __asm__ __volatile__("fnstcw %0\n\tfnstsw %1" : "=m"(cw), "=m"(sw));
+    return (sw & 0x3fu) | ((cw & 0x3fu) << 7) | (((cw >> 10) & 3u) << 13);
+}
+static void k_setcsr(unsigned int v)
+{
+    unsigned int env[7]; /* 32-bit protected-mode FPU environment */
+    __asm__ __volatile__("fnstenv %0" : "=m"(env));
+    env[0] = (env[0] & ~0x0c3fu) | ((v >> 7) & 0x3fu) | (((v >> 13) & 3u) << 10);
+    env[1] = (env[1] & ~0x3fu) | (v & 0x3fu);
+    __asm__ __volatile__("fldenv %0" : : "m"(env));
+}
+#endif
 
 static unsigned long k_csr_to_flags(unsigned int c)
 {
