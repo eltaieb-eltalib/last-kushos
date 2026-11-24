@@ -56,6 +56,7 @@ ninja bootcd
 | 17 | الأخطاء ما بتبانش | `DPRINT1` و`ASSERT` بيتشالوا في بناء Release | جوه wow64 بقوا بيكتبوا في السجل التسلسلي | `dll/wow64/ros_wow64_private.h` |
 
 | 18 | برنامج تثبيت Firefox (32-bit) بيقف وبيطلع من غير ما يفك أي ملف. في السجل: `RtlpWaitForCriticalSection ... Deadlock` على `LdrpLoaderLock` بنسختيه (64 و32) | **عكس ترتيب الأقفال**: الخيط الجديد بياخد loader lock الـ 64-bit، وبعدين يشغّل تهيئة الخيط الـ 32-bit كلها (وهي بتاخد lock الـ 32-bit). في نفس الوقت الخيط الرئيسي ماسك lock الـ 32-bit (‏LoadLibrary لـ ws2_32/rpcrt4) وطالب lock الـ 64-bit، فالاتنين بيستنوا بعض للأبد | `LdrpInitializeThread` بيسيب lock الـ 64-bit قبل ما يدخل WOW64 | `dll/ntdll/ldr/ldrinit.c` |
+| 19 | ‏`setup.exe` بتاع Firefox (‏NSIS 32-bit) بيشتغل، بس بيطلع "Setup" بأيقونة إيقاف (رسالة "نظام التشغيل مش مدعوم") | الـ manifest بتاع البرنامج طالب Common-Controls 6، ومافيش نسخة x86 منها في `winsxs`. فإنشاء الـ activation context بيفشل (`0xc0150002`)، والـ manifest كله بيتجاهل ومعاه `supportedOS`، فالبرنامج بيشوف إصدار النظام NT 5.2 بدل 10 | `add_cd_file`: في بناء WoW64، أي ملف في `winsxs` لـ amd64 بقى ليه نسخة x86 أوتوماتيك (comctl32 v5.82/v6، وgdiplus) | `sdk/cmake/CMakeMacros.cmake` |
 
 الإصلاحات بتاعة البناء نفسه (i386 SysWOW64 بـ GCC 13، وتعارضات الدمج الـ 24) موثّقة في commits الفرع
 (`b5a49c3b6`، `f6abaea4a`، `78cabbb8e`).
@@ -68,8 +69,9 @@ ninja bootcd
 | 2 | **فك تراجع (unwind) الـ SEH جوه الكيرنل بيفشل في حالات معيّنة** (`__C_specific_handler` ← `RtlUnwindEx` بيرجع ← `int3` ← 0x1E) | أي خطأ كيرنل بيتمسك بـ SEH في الحالات دي بيوقّع الجهاز كله. الحالتين اللي ظهروا (#13 و#14) اتقفلوا من جذرهم، لكن السبب في الـ unwinder لسه موجود | نتتبّع `RtlpUnwindInternal` في الكيرنل (حدود الـ stack لخيوط GUI/callbacks) |
 | 3 | `ThreadWow64Context` مش متطبّق في الكيرنل | `Get/SetThreadContext` من/على عملية 32-bit (debuggers، بعض الـ installers) مش حيشتغل | نطبّقها في `NtQuery/SetInformationThread` |
 | 4 | syscall ‏`NtSetInformationThread` (0xEE) مالوش thunk في wow64 | تحذير في السجل، والنداء بيرجع `STATUS_NOT_IMPLEMENTED` | نضيف thunk |
-| 5 | Common Controls 6 (manifest) ما بتتلقاش في SysWOW64 | البرامج اللي عايزة comctl32 v6 بتشتغل بالشكل القديم | نضيف assembly الـ comctl32 v6 للـ WinSxS الـ 32-bit |
+| 5 | ~~Common Controls 6 ناقصة لبرامج 32-bit~~ اتحلّت (#19) | | |
 | 6 | حالة الـ x87/SSE في `Wow64CopyContext32To64` لسه ناقصة في بعض المسارات (FloatSave القديم) | برامج 32-bit بتستخدم x87 مع استثناءات ممكن تتأثر | نكمّل التحويل |
+| 10 | برنامج تثبيت Firefox: مرحلة فك الضغط (‏7-Zip SFX، ‏32-bit) بتخلّص الـ 76 ملف (379 MB)، لكن بعدها بيفضل مستني وما بيشغّلش `setup.exe` | التثبيت بالدبل كليك على `Firefox Setup.exe` لسه ما بيكمّلش لوحده | نتتبّع إيه اللي الـ stub مستنيه (async I/O أو انتظار العملية الابن) |
 | 7 | ما جربناش لسه برامج تثبيت حقيقية (Firefox Setup 32-bit، InstallShield بتاع SPSS، vcredist x86) | ما نقدرش نقول إنها شغالة قبل ما نجرّبها | الاختبار الجاي |
 | 9 | **في وضع الـ Live CD مجلد `TEMP` (`X:\reactos\TEMP`) للقراية بس**، فبرنامج تثبيت Firefox بيطلع "Can not create temp folder archive" | المشكلة دي مش من WoW64، وبرامج 64-bit كمان بتتأثر بيها. على النظام المتثبّت الـ TEMP بيتكتب فيه عادي | للتجربة على الـ Live CD: `set TEMP=C:\tmp` (على هارد)، أو نعمل RAM disk للـ TEMP في وضع الـ Live |
 | 8 | الاختبار كله اتعمل على QEMU (‏Live CD)، مش على جهاز حقيقي ولا بعد التثبيت على الهارد | | نجرّب على نسخة متثبّتة وعلى جهاز حقيقي |
