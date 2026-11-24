@@ -74,6 +74,14 @@
   تصميم Fluent)، و`dll/win32/kernel32` (دوال Windows 8+ في `dll/win32/kernel32/kush/kush_win8.c` وغيرها)، و`ntoskrnl` (تشخيص `KUSH-EXC`،
   و`SystemBootEnvironmentInformation`، وإصلاحات Mm)، و`dll/ntdll` (الـ API sets). اقرا README عشان تعرف سبب كل تعديل.
 
+**الملفات اللي TheNNX وKush الاتنين عدّلوها (اتقاس في 24 نوفمبر 2026، أماكن التعارض المتوقعة):** 14 ملف بس من 311:
+`dll/ntdll/def/ntdll.spec`، و`dll/ntdll/ldr/ldrinit.c`، و`dll/ntdll/rtl/libsupp.c`، و`dll/win32/CMakeLists.txt`، و
+`dll/win32/kernel32/CMakeLists.txt`، و`dll/win32/kernel32/client/time.c`، و`dll/win32/kernel32/kernel32.spec`، و
+`drivers/setup/blue/CMakeLists.txt`، و`drivers/storage/port/storahci/CMakeLists.txt`، و`ntoskrnl/ke/amd64/trap.S`، و
+`sdk/cmake/CMakeMacros.cmake`، و`win32ss/drivers/miniport/vbe/CMakeLists.txt`، و`win32ss/user/ntuser/message.c`، و
+`win32ss/user/user32/windows/cursoricon.c`. كمان Kush مبني على ReactOS أحدث (`344ebfe5`، 17 نوفمبر 2026) من TheNNX
+(`e6d2efe9`، 6 أغسطس 2026)، يعني في 771 commit رسمية في النص ممكن تعمل تعارضات غير مباشرة.
+
 ## المراحل (بالترتيب، وكل مرحلة ليها اختبار قبول لازم يعدّي قبل اللي بعدها)
 
 **0. الخطة والبيئة:** اكتب `docs/wow64/README.md`: الخطة، ورقم commit TheNNX اللي بتاخده، وجدول الحالة. وجهّز بيئة
