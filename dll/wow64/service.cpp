@@ -12,10 +12,54 @@ Wow64WinHandler(ULONG syscallNum,
 
 extern "C"
 NTSTATUS
+Wow64SystemServiceInner(ULONG syscallNum,
+                        UINT* pArgs);
+
+/* Kush 1.1: set KUSH_WOW64_TRACE=1 in the environment of a 32-bit program to
+ * log each of its system calls (number, name, status) to the debug output. */
+static LONG Wow64TraceState = -1; /* -1 unknown, 0 off, 1 on */
+
+static
+BOOLEAN
+Wow64TraceEnabled(VOID)
+{
+    if (Wow64TraceState < 0)
+    {
+        WCHAR Value[8];
+        UNICODE_STRING Name = RTL_CONSTANT_STRING(L"KUSH_WOW64_TRACE");
+        UNICODE_STRING Result;
+        RtlInitEmptyUnicodeString(&Result, Value, sizeof(Value));
+        Wow64TraceState = (NT_SUCCESS(RtlQueryEnvironmentVariable_U(NULL, &Name, &Result)) &&
+                           Result.Length >= sizeof(WCHAR) && Value[0] == L'1') ? 1 : 0;
+    }
+    return Wow64TraceState == 1;
+}
+
+extern "C"
+NTSTATUS
 WINAPI
-Wow64SystemServiceEx(ULONG syscallNum, 
+Wow64SystemServiceEx(ULONG syscallNum,
                      UINT* pArgs)
-{   
+{
+    NTSTATUS status;
+    BOOLEAN Trace = Wow64TraceEnabled();
+
+    if (Trace)
+        DbgPrint("W64T %lx:%lx > %lx\n", HandleToUlong(NtCurrentTeb()->ClientId.UniqueProcess),
+                 HandleToUlong(NtCurrentTeb()->ClientId.UniqueThread), syscallNum);
+    status = Wow64SystemServiceInner(syscallNum, pArgs);
+    if (Trace)
+        DbgPrint("W64T %lx:%lx < %lx = %lx\n", HandleToUlong(NtCurrentTeb()->ClientId.UniqueProcess),
+                 HandleToUlong(NtCurrentTeb()->ClientId.UniqueThread), syscallNum, status);
+    return status;
+}
+
+/* extern "C": the thunks are declared at block scope below and must keep C linkage */
+extern "C"
+NTSTATUS
+Wow64SystemServiceInner(ULONG syscallNum,
+                        UINT* pArgs)
+{
     NTSTATUS status;
 
     static const char* mapping[] = 
