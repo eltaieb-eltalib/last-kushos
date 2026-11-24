@@ -44,13 +44,24 @@ Wow64SystemServiceEx(ULONG syscallNum,
     NTSTATUS status;
     BOOLEAN Trace = Wow64TraceEnabled();
 
+    ULONG Arg[3] = { 0 }, Out = 0;
+
     if (Trace)
-        DbgPrint("W64T %lx:%lx > %lx\n", HandleToUlong(NtCurrentTeb()->ClientId.UniqueProcess),
-                 HandleToUlong(NtCurrentTeb()->ClientId.UniqueThread), syscallNum);
+    {
+        /* first three 32-bit arguments (read safely, the stack is the caller's) */
+        NtReadVirtualMemory(NtCurrentProcess(), pArgs, Arg, sizeof(Arg), NULL);
+        DbgPrint("W64T %lx:%lx > %lx (%lx %lx %lx)\n", HandleToUlong(NtCurrentTeb()->ClientId.UniqueProcess),
+                 HandleToUlong(NtCurrentTeb()->ClientId.UniqueThread), syscallNum, Arg[0], Arg[1], Arg[2]);
+    }
     status = Wow64SystemServiceInner(syscallNum, pArgs);
     if (Trace)
-        DbgPrint("W64T %lx:%lx < %lx = %lx\n", HandleToUlong(NtCurrentTeb()->ClientId.UniqueProcess),
-                 HandleToUlong(NtCurrentTeb()->ClientId.UniqueThread), syscallNum, status);
+    {
+        /* if the first argument is a pointer (out handle...), what it points to now */
+        if (Arg[0] >= 0x10000 && Arg[0] < 0x80000000)
+            NtReadVirtualMemory(NtCurrentProcess(), UlongToPtr(Arg[0]), &Out, sizeof(Out), NULL);
+        DbgPrint("W64T %lx:%lx < %lx = %lx [%lx]\n", HandleToUlong(NtCurrentTeb()->ClientId.UniqueProcess),
+                 HandleToUlong(NtCurrentTeb()->ClientId.UniqueThread), syscallNum, status, Out);
+    }
     return status;
 }
 
