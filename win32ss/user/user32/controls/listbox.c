@@ -2253,7 +2253,7 @@ static LRESULT LISTBOX_HandleLButtonDown( LB_DESCR *descr, DWORD keys, INT x, IN
     if (!descr->in_focus)
     {
         if( !descr->lphc ) NtUserSetFocus( descr->self );
-        else NtUserSetFocus( (descr->lphc->hWndEdit) ? descr->lphc->hWndEdit : descr->lphc->self );
+        else NtUserSetFocus( (WOW64_CAST_TO_HANDLE(descr->lphc->hWndEdit)) ? WOW64_CAST_TO_HANDLE(descr->lphc->hWndEdit) : WOW64_CAST_TO_HANDLE(descr->lphc->self) );
     }
 
     if (index == -1) return 0;
@@ -2739,8 +2739,8 @@ static BOOL LISTBOX_Create( HWND hwnd, LPHEADCOMBO lphc )
 
     if( lphc )
     {
-        TRACE("[%p]: resetting owner %p -> %p\n", descr->self, descr->owner, lphc->self );
-        descr->owner = lphc->self;
+        TRACE("[%p]: resetting owner %p -> %p\n", descr->self, descr->owner, WOW64_CAST_TO_HANDLE(lphc->self) );
+        descr->owner = WOW64_CAST_TO_HANDLE(lphc->self);
     }
 
     set_control_state( descr->self, descr );
@@ -3427,7 +3427,7 @@ LRESULT WINAPI ListBoxWndProc_common( HWND hwnd, UINT msg,
 
     case WM_NCDESTROY:
         if( lphc && (lphc->dwStyle & CBS_DROPDOWNLIST) != CBS_SIMPLE )
-            lphc->hWndLBox = 0;
+            lphc->hWndLBox = WOW64_CAST_FROM_HANDLE(0);
 #ifdef __REACTOS__
         NtUserSetWindowFNID(hwnd, FNID_DESTROY);
 #endif

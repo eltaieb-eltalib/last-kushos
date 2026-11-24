@@ -140,6 +140,7 @@ add_library(kernel32 MODULE
     ${CMAKE_CURRENT_BINARY_DIR}/kernel32_stubs.c
     ${CMAKE_CURRENT_BINARY_DIR}/kernel32.def)
 
+
 set_module_type(kernel32 win32dll ENTRYPOINT DllMain 12)
 #############################################
 ## HACK FOR MSVC COMPILATION WITH win32dll ##

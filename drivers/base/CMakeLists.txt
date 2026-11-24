@@ -1,4 +1,5 @@
 
+if(NOT SYSWOW64_BUILD)
 add_subdirectory(beep)
 add_subdirectory(bootvid)
 add_subdirectory(condrv)
@@ -18,3 +19,4 @@ if(NOT ARCH STREQUAL "arm")
 add_subdirectory(nmidebug)
 endif()
 add_subdirectory(null)
+endif()

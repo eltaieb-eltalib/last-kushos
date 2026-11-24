@@ -4,7 +4,9 @@ set(USE_DIBLIB FALSE)
 # Give WIN32 subsystem its own project.
 PROJECT(WIN32SS)
 
+if(NOT SYSWOW64_BUILD)
 add_subdirectory(drivers)
+endif()
 
 if(USE_DIBLIB)
     add_subdirectory(gdi/diblib)
@@ -20,6 +22,7 @@ add_subdirectory(user/user32_vista)
 add_subdirectory(user/winsrv)
 add_subdirectory(win32u)
 
+if(NOT SYSWOW64_BUILD)
 spec2def(win32k.sys win32k.spec ADD_IMPORTLIB)
 
 # Link GCC stack protector lib
@@ -255,7 +258,8 @@ if(USE_DIBLIB)
 endif()
 
 add_importlibs(win32k ntoskrnl hal ftfd)
-add_cd_file(TARGET win32k DESTINATION reactos/system32 FOR all)
+add_cd_file(TARGET win32k DESTINATION reactos/system32 NO_WOW64 FOR all)
+endif()
 
 if(ARCH STREQUAL "amd64")
     set_source_files_properties(sys-stubs.S PROPERTIES OBJECT_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/w32ksvc64.h)

@@ -67,6 +67,10 @@ BaseGetNamedObjectDirectory(
     OBJECT_ATTRIBUTES ObjectAttributes;
     NTSTATUS Status;
     HANDLE DirHandle, BnoHandle, Token, NewToken;
+    UNICODE_STRING Temp;
+#ifdef BUILD_WOW6432
+    WCHAR TempBuffer[MAX_PATH];
+#endif
 
     *DirectoryHandle = BaseNamedObjectDirectory;
 
@@ -105,8 +109,32 @@ BaseGetNamedObjectDirectory(
     RtlAcquirePebLock();
     if (BaseNamedObjectDirectory) goto Quickie;
 
+    Temp.Length =
+        WOW64_READ_WORD_FIELD(BaseStaticServerData,
+                              BASE_STATIC_SERVER_DATA,
+                              NamedObjectDirectory.Length);
+    Temp.MaximumLength =
+        WOW64_READ_WORD_FIELD(BaseStaticServerData,
+                              BASE_STATIC_SERVER_DATA,
+                              NamedObjectDirectory.MaximumLength);
+#ifndef BUILD_WOW6432
+    Temp.Buffer = BaseStaticServerData->NamedObjectDirectory.Buffer;
+#else
+    Temp.Buffer = TempBuffer;
+
+    ASSERT(Temp.MaximumLength < sizeof(TempBuffer));
+
+    NtWow64ReadVirtualMemory64(NtCurrentProcess(),
+                               WOW64_READ_PTR_FIELD(BaseStaticServerData,
+                                                    BASE_STATIC_SERVER_DATA,
+                                                    NamedObjectDirectory.Buffer),
+                               TempBuffer,
+                               Temp.MaximumLength,
+                               NULL);
+#endif
+
     InitializeObjectAttributes(&ObjectAttributes,
-                               &BaseStaticServerData->NamedObjectDirectory,
+                               &Temp,
                                OBJ_CASE_INSENSITIVE,
                                NULL,
                                NULL);
@@ -395,8 +423,14 @@ BaseCreateStack(
             hProcess, StackReserve, StackCommit);
 
     /* Read page size */
-    PageSize = BaseStaticServerData->SysInfo.PageSize;
-    AllocationGranularity = BaseStaticServerData->SysInfo.AllocationGranularity;
+    PageSize =
+        WOW64_READ_ULONG_FIELD(BaseStaticServerData,
+                               BASE_STATIC_SERVER_DATA,
+                               SysInfo.PageSize);
+    AllocationGranularity =
+        WOW64_READ_ULONG_FIELD(BaseStaticServerData,
+                               BASE_STATIC_SERVER_DATA,
+                               SysInfo.AllocationGranularity);
 
     /* Get the Image Headers */
     Headers = RtlImageNtHeader(NtCurrentPeb()->ImageBaseAddress);

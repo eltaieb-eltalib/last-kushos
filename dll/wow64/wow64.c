@@ -1,0 +1,1009 @@
+/*
+ * Wine WOW64 ReactOS port 
+ *
+ * COPYRIGHT:       See COPYING in the top level directory
+ * PROJECT:         wow64.dll
+ * FILE:            dll/wow64/wow64.c
+ * PROGRAMMER:      Marcin Jabłoński
+ */
+
+#include "ros_wow64_private.h"
+#include "../wow64cpu/cpu.h"
+#include <ndk/rtlfuncs.h>
+
+//#define NDEBUG
+#include <debug.h>
+
+#include "entrypoint.h"
+
+typedef MEMORY_BASIC_INFORMATION32 *PMEMORY_BASIC_INFORMATION32;
+
+/* PEB Data */
+static USHORT UnicodeCopy[2048]; /* ??? */
+static UCHAR AnsiCopy[65536], OemCopy[65536]; /* ??? */
+static ULONG_PTR FixmeProcessHeaps[100]; /* FIXME */
+static BYTE UnicodeData[8192]; /* ??? */
+
+static PNLSTABLEINFO32 UnicodeNlsTable = (PVOID)&UnicodeData;
+static PCPTABLEINFO32 AnsiCpTable;
+static PCPTABLEINFO32 OemCpTable;
+
+static UNICODE_STRING NtDll32Str = RTL_CONSTANT_STRING(L"" TMP_WOW_DIR L"\\ntdll.dll");
+static UNICODE_STRING Kernel32Str = RTL_CONSTANT_STRING(L"" TMP_WOW_DIR L"\\kernel32.dll");
+static UNICODE_STRING Wow64CpuStr = RTL_CONSTANT_STRING(L"wow64cpu.dll");
+
+static PVOID NtDll32 = NULL, Wow64Cpu = NULL;
+
+PVOID NtDll32LdrpRoutine = NULL;
+PVOID NtDll32KiUserExceptionDispatcher = NULL;
+PVOID NtDll32KiUserApcDispatcher = NULL;
+
+NTSTATUS (NTAPI *pBTCpuGetContext)(HANDLE, HANDLE, PVOID, PVOID);
+NTSTATUS (NTAPI *pBTCpuSetContext)(HANDLE, HANDLE, PVOID, PVOID);
+
+void SetupFs(ULONG_PTR segSelector);
+void EnterApc32(PVOID pEnterCtx, SIZE_T cbCtxSize);
+__declspec(dllexport) void WINAPI Wow64LdrpInitialize(PCONTEXT pContext);
+
+NTSTATUS
+WINAPI
+Wow64SystemServiceEx(ULONG syscallNum, 
+                     UINT* pArgs);
+
+/* FIXME: this is an incomplete implementation */
+VOID
+Wow64CopyContext32To64(PCONTEXT pContext,
+                       PWOW64_CONTEXT pContext32)
+{
+    RtlZeroMemory(pContext, sizeof(*pContext));
+    pContext->ContextFlags = CONTEXT_FULL;
+    pContext->Rip = pContext32->Eip;
+    pContext->Rax = pContext32->Eax;
+    pContext->Rbx = pContext32->Ebx;
+    pContext->Rcx = pContext32->Ecx;
+    pContext->Rdx = pContext32->Edx;
+    pContext->Rsp = pContext32->Esp;
+    pContext->Rbp = pContext32->Ebp;
+    pContext->Rsi = pContext32->Esi;
+    pContext->Rdi = pContext32->Edi;
+    pContext->EFlags = pContext32->EFlags;
+    pContext->SegCs = pContext32->SegCs;
+    pContext->SegDs = pContext32->SegDs;
+    pContext->SegEs = pContext32->SegEs;
+    pContext->SegFs = pContext32->SegFs;
+    pContext->SegGs = pContext32->SegGs;
+    pContext->SegSs = pContext32->SegSs;
+    pContext->MxCsr = INITIAL_MXCSR;
+}
+
+VOID
+Wow64CopyContext64To32(PWOW64_CONTEXT pContext32,
+                       PCONTEXT pContext)
+{
+    pContext32->Eip = pContext->Rip;
+    pContext32->Eax = pContext->Rax;
+    pContext32->Ebx = pContext->Rbx;
+    pContext32->Ecx = pContext->Rcx;
+    pContext32->Edx = pContext->Rdx;
+    pContext32->Esi = pContext->Rdi;
+    pContext32->Edi = pContext->Rsi;
+    pContext32->Ebp = pContext->Rbp;
+    pContext32->Esp = pContext->Rsp;
+    pContext32->SegCs = pContext->SegCs;
+    pContext32->SegDs = pContext->SegDs;
+    pContext32->SegEs = pContext->SegEs;
+    pContext32->SegFs = pContext->SegFs;
+    pContext32->SegGs = pContext->SegGs;
+    pContext32->SegSs = pContext->SegSs;
+    pContext32->EFlags = pContext->EFlags;
+    pContext32->ContextFlags = pContext->ContextFlags;
+}
+
+/* From wine/dlls/ntdll/unix/env.c */
+static inline void dup_unicode_string( const UNICODE_STRING *src, WCHAR **dst, UNICODE_STRING32 *str )
+{
+    if (!src->Buffer) return;
+    str->Buffer = PtrToUlong( *dst );
+    str->Length = src->Length;
+    str->MaximumLength = src->MaximumLength;
+    memcpy( *dst, src->Buffer, src->MaximumLength );
+    *dst += (src->MaximumLength + 1) / sizeof(WCHAR);
+}
+
+static void *build_wow64_parameters( const RTL_USER_PROCESS_PARAMETERS *params )
+{
+    RTL_USER_PROCESS_PARAMETERS32 *wow64_params = NULL;
+
+    NTSTATUS status;
+    WCHAR *dst;
+    SIZE_T size = (sizeof(*wow64_params)
+                   + params->CurrentDirectory.DosPath.MaximumLength
+                   + params->DllPath.MaximumLength
+                   + params->ImagePathName.MaximumLength
+                   + params->CommandLine.MaximumLength
+                   + params->WindowTitle.MaximumLength
+                   + params->DesktopInfo.MaximumLength
+                   + params->ShellInfo.MaximumLength
+                   + ((params->RuntimeData.MaximumLength + 1) & ~1))
+                   + wcslen(params->Environment) * sizeof(*params->Environment);
+
+    status = NtAllocateVirtualMemory( NtCurrentProcess(), (void **)&wow64_params, 32, &size,
+                                      MEM_COMMIT, PAGE_READWRITE );
+    ASSERT( !status );
+
+    wow64_params->MaximumLength   = size;
+    wow64_params->Length          = size;
+    wow64_params->Flags           = params->Flags;
+    wow64_params->DebugFlags      = params->DebugFlags;
+    wow64_params->ConsoleHandle   = HandleToULong( params->ConsoleHandle );
+    wow64_params->ConsoleFlags    = params->ConsoleFlags;
+    wow64_params->StandardInput   = HandleToULong( params->StandardInput );
+    wow64_params->StandardOutput  = HandleToULong( params->StandardOutput );
+    wow64_params->StandardError   = HandleToULong( params->StandardError );
+    wow64_params->StartingX       = params->StartingX;
+    wow64_params->StartingY       = params->StartingY;
+    wow64_params->CountX          = params->CountX;
+    wow64_params->CountY          = params->CountY;
+    wow64_params->CountCharsX     = params->CountCharsX;
+    wow64_params->CountCharsY     = params->CountCharsY;
+    wow64_params->FillAttribute   = params->FillAttribute;
+    wow64_params->WindowFlags     = params->WindowFlags;
+    wow64_params->ShowWindowFlags = params->ShowWindowFlags;
+
+    dst = (WCHAR *)(wow64_params + 1);
+    dup_unicode_string( &params->CurrentDirectory.DosPath, &dst, &wow64_params->CurrentDirectory.DosPath );
+    dup_unicode_string( &params->DllPath, &dst, &wow64_params->DllPath );
+    dup_unicode_string( &params->ImagePathName, &dst, &wow64_params->ImagePathName );
+    dup_unicode_string( &params->CommandLine, &dst, &wow64_params->CommandLine );
+    dup_unicode_string( &params->WindowTitle, &dst, &wow64_params->WindowTitle );
+    dup_unicode_string( &params->DesktopInfo, &dst, &wow64_params->DesktopInfo );
+    dup_unicode_string( &params->ShellInfo, &dst, &wow64_params->ShellInfo );
+    dup_unicode_string( &params->RuntimeData, &dst, &wow64_params->RuntimeData );
+    
+    DPRINT1("WOW64: Converting native process parameters for image '%wZ', command line '%wZ'\n", 
+            &params->ImagePathName, 
+            &params->CommandLine);
+
+    wow64_params->Environment = PtrToUlong( params->Environment );
+    //DPRINT1("Original enviroment %ls\n", params->Environment);
+    //memcpy(dst, params->Environment, wcslen(params->Environment) * sizeof(*params->Environment));
+    return wow64_params;
+}
+
+NTSTATUS WINAPI wow64_NtQueryInformationProcess( UINT *args )
+{
+    HANDLE handle = get_handle( &args );
+    PROCESSINFOCLASS class = get_ulong( &args );
+    void *ptr = get_ptr( &args );
+    ULONG len = get_ulong( &args );
+    ULONG *retlen = get_ptr( &args );
+
+    NTSTATUS status;
+
+    switch (class)
+    {
+    case ProcessBasicInformation:  /* PROCESS_BASIC_INFORMATION */
+        if (len == sizeof(PROCESS_BASIC_INFORMATION32))
+        {
+            PROCESS_BASIC_INFORMATION info;
+            PROCESS_BASIC_INFORMATION32 *info32 = ptr;
+
+            if (!(status = NtQueryInformationProcess( handle, class, &info, sizeof(info), NULL )))
+            {
+                if (is_process_wow64( handle ))
+                    info32->PebBaseAddress = PtrToUlong( info.PebBaseAddress ) + 0x1000;
+                else
+                    info32->PebBaseAddress = 0;
+                info32->ExitStatus = info.ExitStatus;
+                info32->AffinityMask = info.AffinityMask;
+                info32->BasePriority = info.BasePriority;
+                info32->UniqueProcessId = info.UniqueProcessId;
+                info32->InheritedFromUniqueProcessId = info.InheritedFromUniqueProcessId;
+                if (retlen) *retlen = sizeof(*info32);
+            }
+            return status;
+        }
+        if (retlen) *retlen = sizeof(PROCESS_BASIC_INFORMATION32);
+        return STATUS_INFO_LENGTH_MISMATCH;
+
+    case ProcessIoCounters:  /* IO_COUNTERS */
+    case ProcessTimes:  /* KERNEL_USER_TIMES */
+    case ProcessDefaultHardErrorMode:  /* ULONG */
+    case ProcessPriorityClass:  /* PROCESS_PRIORITY_CLASS */
+    case ProcessHandleCount:  /* ULONG */
+    case ProcessSessionInformation:  /* ULONG */
+    case ProcessDebugFlags:  /* ULONG */
+    case ProcessExecuteFlags:  /* ULONG */
+    case ProcessCookie:  /* ULONG */
+    case ProcessCycleTime:  /* PROCESS_CYCLE_TIME_INFORMATION */
+#ifdef __REACTOS__
+    case ProcessDeviceMap:
+    case ProcessBreakOnTermination:
+#endif
+        /* FIXME: check buffer alignment */
+        return NtQueryInformationProcess( handle, class, ptr, len, retlen );
+
+    case ProcessQuotaLimits:  /* QUOTA_LIMITS */
+        if (len == sizeof(QUOTA_LIMITS32))
+        {
+            QUOTA_LIMITS info;
+            QUOTA_LIMITS32 *info32 = ptr;
+
+            if (!(status = NtQueryInformationProcess( handle, class, &info, sizeof(info), NULL )))
+            {
+                info32->PagedPoolLimit        = info.PagedPoolLimit;
+                info32->NonPagedPoolLimit     = info.NonPagedPoolLimit;
+                info32->MinimumWorkingSetSize = info.MinimumWorkingSetSize;
+                info32->MaximumWorkingSetSize = info.MaximumWorkingSetSize;
+                info32->PagefileLimit         = info.PagefileLimit;
+                info32->TimeLimit             = info.TimeLimit;
+                if (retlen) *retlen = len;
+            }
+            return status;
+        }
+        if (retlen) *retlen = sizeof(QUOTA_LIMITS32);
+        return STATUS_INFO_LENGTH_MISMATCH;
+
+    case ProcessVmCounters:  /* VM_COUNTERS_EX */
+        if (len == sizeof(VM_COUNTERS32) || len == sizeof(VM_COUNTERS_EX32))
+        {
+            VM_COUNTERS_EX info;
+            VM_COUNTERS_EX32 *info32 = ptr;
+
+            if (!(status = NtQueryInformationProcess( handle, class, &info, sizeof(info), NULL )))
+            {
+                put_vm_counters( info32, &info, len );
+                if (retlen) *retlen = len;
+            }
+            return status;
+        }
+        if (retlen) *retlen = sizeof(VM_COUNTERS_EX32);
+        return STATUS_INFO_LENGTH_MISMATCH;
+
+    case ProcessDebugPort:  /* ULONG_PTR */
+    case ProcessAffinityMask:  /* ULONG_PTR */
+    case ProcessWow64Information:  /* ULONG_PTR */
+    case ProcessDebugObjectHandle:  /* HANDLE */
+        if (len == sizeof(ULONG))
+        {
+            ULONG_PTR data;
+
+            if (!(status = NtQueryInformationProcess( handle, class, &data, sizeof(data), NULL )))
+            {
+                *(ULONG *)ptr = data;
+                if (retlen) *retlen = sizeof(ULONG);
+            }
+            else if (status == STATUS_PORT_NOT_SET)
+            {
+                *(ULONG *)ptr = 0;
+                if (retlen) *retlen = sizeof(ULONG);
+            }
+            return status;
+        }
+        return STATUS_INFO_LENGTH_MISMATCH;
+
+    case ProcessImageFileName:
+    case ProcessImageFileNameWin32:  /* UNICODE_STRING + string */
+        {
+            ULONG retsize, size = len + sizeof(UNICODE_STRING) - sizeof(UNICODE_STRING32);
+            UNICODE_STRING *str = Wow64AllocateTemp( size );
+            UNICODE_STRING32 *str32 = ptr;
+
+            if (!(status = NtQueryInformationProcess( handle, class, str, size, &retsize )))
+            {
+                str32->Length = str->Length;
+                str32->MaximumLength = str->MaximumLength;
+                str32->Buffer = PtrToUlong( str32 + 1 );
+                memcpy( str32 + 1, str->Buffer, str->MaximumLength );
+            }
+            if (retlen) *retlen = retsize + sizeof(UNICODE_STRING32) - sizeof(UNICODE_STRING);
+            return status;
+        }
+
+    case ProcessImageInformation:  /* SECTION_IMAGE_INFORMATION */
+        if (len == sizeof(SECTION_IMAGE_INFORMATION32))
+        {
+            SECTION_IMAGE_INFORMATION info;
+            SECTION_IMAGE_INFORMATION32 *info32 = ptr;
+
+            if (!(status = NtQueryInformationProcess( handle, class, &info, sizeof(info), NULL )))
+            {
+                put_section_image_info( info32, &info );
+                if (retlen) *retlen = sizeof(*info32);
+            }
+            return status;
+        }
+        if (retlen) *retlen = sizeof(SECTION_IMAGE_INFORMATION32);
+        return STATUS_INFO_LENGTH_MISMATCH;
+#ifndef __REACTOS__
+    case ProcessWineLdtCopy:
+        return STATUS_NOT_IMPLEMENTED;
+#endif
+    default:
+        FIXME( "unsupported class %u\n", class );
+        return STATUS_INVALID_INFO_CLASS;
+    }
+}
+
+WINAPI
+NTSTATUS
+wow64_NtOpenProcess(UINT* pArgs)
+{
+    ULONG* pProcessHandle32 = get_ptr(&pArgs);
+    ACCESS_MASK DesiredAcces = get_ulong(&pArgs);
+    POBJECT_ATTRIBUTES32 pObjectAttributes32 = get_ptr(&pArgs);
+    PCLIENT_ID32 pClientId32 = get_ptr(&pArgs);
+    
+    CLIENT_ID ClientId;
+    struct object_attr64 ObjectAttributes;
+    NTSTATUS Status;
+    
+    HANDLE ProcessHandle; 
+    
+    if (pProcessHandle32 == NULL)
+    {
+        return STATUS_INVALID_PARAMETER;
+    }
+    
+    Status = NtOpenProcess(&ProcessHandle,
+                           DesiredAcces,
+                           objattr_32to64(&ObjectAttributes, pObjectAttributes32),
+                           client_id_32to64(&ClientId, pClientId32));
+
+    if (NT_SUCCESS(Status))
+    {
+        *pProcessHandle32 = HandleToULong(ProcessHandle);
+    }
+
+    return Status;
+}
+
+WINAPI
+NTSTATUS
+wow64_NtOpenThread(UINT* pArgs)
+{
+    PULONG pThreadHandle32 = get_ptr(&pArgs);
+    ACCESS_MASK DesiredAcces = get_ulong(&pArgs);
+    POBJECT_ATTRIBUTES32 pObjectAttributes32 = get_ptr(&pArgs);
+    PCLIENT_ID32 pClientId32 = get_ptr(&pArgs);
+    
+    CLIENT_ID ClientId;
+    struct object_attr64 ObjectAttributes;
+    NTSTATUS Status;
+    
+    HANDLE ThreadHandle; 
+    
+    if (pThreadHandle32 == NULL)
+    {
+        return STATUS_INVALID_PARAMETER;
+    }
+    
+    Status = NtOpenThread(&ThreadHandle,
+                          DesiredAcces,
+                          objattr_32to64(&ObjectAttributes, pObjectAttributes32),
+                          client_id_32to64(&ClientId, pClientId32));
+
+    if (NT_SUCCESS(Status))
+    {
+        *pThreadHandle32 = HandleToULong(ThreadHandle);
+    }
+    
+    return Status;
+}
+
+NTSTATUS
+NTAPI
+wow64_NtCreateThread(UINT* pArgs)
+{
+    PULONG phThread32 = get_ptr(&pArgs);
+    ACCESS_MASK DesiredAccess = get_ulong(&pArgs);
+    POBJECT_ATTRIBUTES32 pObjectAttributes32 = get_ptr(&pArgs);
+    HANDLE hProcess = get_handle(&pArgs);
+    PCLIENT_ID32 pClientId32 = get_ptr(&pArgs);
+    PWOW64_CONTEXT pContext32 = get_ptr(&pArgs);
+    PINITIAL_TEB32 pInitialTeb = get_ptr(&pArgs);
+    BOOLEAN bCreateSuspended = get_ulong(&pArgs);
+
+    CLIENT_ID ClientId;
+    struct object_attr64 ObjAttr;
+    INITIAL_TEB InitialTeb;
+    CONTEXT Context;
+    NTSTATUS Status;
+    HANDLE hThread;
+
+    InitialTeb.AllocatedStackBase = UlongToPtr(pInitialTeb->AllocatedStackBase);
+    InitialTeb.PreviousStackBase = UlongToPtr(pInitialTeb->PreviousStackBase);
+    InitialTeb.PreviousStackLimit = UlongToPtr(pInitialTeb->PreviousStackLimit);
+    InitialTeb.StackBase = UlongToPtr(pInitialTeb->StackBase);
+    InitialTeb.StackLimit = UlongToPtr(pInitialTeb->StackLimit);
+
+    /* Convert the context to 64-bit */
+    Wow64CopyContext32To64(&Context, pContext32);
+    
+    Context.SegSs = 0x2b;
+    Context.SegEs = 0x2b;
+    Context.SegDs = 0x2b;
+    Context.SegFs = 0x53;
+    Context.SegGs = 0x2b;
+    Context.SegCs = 0x23;
+    
+    Status = Wow64TranslateEntrypoint32To64(hProcess, &Context, pContext32);
+    if (!NT_SUCCESS(Status))
+    {
+        return Status;
+    }
+
+    Status = NtCreateThread(&hThread,
+                            DesiredAccess,
+                            objattr_32to64(&ObjAttr,
+                                           pObjectAttributes32),
+                            hProcess,
+                            &ClientId,
+                            &Context,
+                            &InitialTeb,
+                            bCreateSuspended);
+
+    pClientId32->UniqueProcess = HandleToUlong(ClientId.UniqueProcess);
+    pClientId32->UniqueThread = HandleToUlong(ClientId.UniqueThread);
+    *phThread32 = HandleToUlong(hThread);
+
+    return Status;
+}
+
+NTSTATUS
+NTAPI
+wow64_NtCreateProcessEx(UINT *pArgs)
+{
+    HANDLE hProcessHandle;
+
+    PULONG phProcessHandle32 = get_ptr(&pArgs);
+    ACCESS_MASK DesiredAccess = get_ulong(&pArgs);
+    POBJECT_ATTRIBUTES32 pObjectAttributes32 = get_ptr(&pArgs);
+    HANDLE hParentProcess = get_handle(&pArgs);
+    ULONG ulFlags = get_ulong(&pArgs);
+    HANDLE hSectionHandle = get_handle(&pArgs);
+    HANDLE hDebugPort = get_handle(&pArgs);
+    HANDLE hExceptionPort = get_handle(&pArgs);
+    BOOLEAN bInJob = get_ulong(&pArgs);
+
+    struct object_attr64 attr;
+
+    NTSTATUS Status;
+
+    Status = NtCreateProcessEx(&hProcessHandle,
+                               DesiredAccess,
+                               objattr_32to64(&attr, pObjectAttributes32),
+                               hParentProcess,
+                               ulFlags,
+                               hSectionHandle,
+                               hDebugPort,
+                               hExceptionPort,
+                               bInJob);
+    if (NT_SUCCESS(Status))
+    {
+        NtCurrentTeb32()->NtTib.ArbitraryUserPointer = 
+            PtrToUlong(NtCurrentTeb()->NtTib.ArbitraryUserPointer);
+        *phProcessHandle32 = HandleToUlong(hProcessHandle);
+    }
+
+    return Status;
+}
+
+NTSTATUS
+NTAPI
+wow64_NtCreateProcess(UINT *pArgs)
+{
+    HANDLE hProcessHandle;
+
+    PULONG phProcessHandle32 = get_ptr(&pArgs);
+    ACCESS_MASK DesiredAccess = get_ulong(&pArgs);
+    POBJECT_ATTRIBUTES32 pObjectAttributes32 = get_ptr(&pArgs);
+    HANDLE hParentProcess = get_handle(&pArgs);
+    ULONG ulFlags = get_ulong(&pArgs);
+    HANDLE hSectionHandle = get_handle(&pArgs);
+    HANDLE hDebugPort = get_handle(&pArgs);
+    HANDLE hExceptionPort = get_handle(&pArgs);
+
+    struct object_attr64 attr;
+
+    NTSTATUS Status;
+
+    Status = NtCreateProcess(&hProcessHandle,
+                             DesiredAccess,
+                             objattr_32to64(&attr, pObjectAttributes32),
+                             hParentProcess,
+                             ulFlags,
+                             hSectionHandle,
+                             hDebugPort,
+                             hExceptionPort);
+    if (NT_SUCCESS(Status))
+    {
+        NtCurrentTeb32()->NtTib.ArbitraryUserPointer = 
+            PtrToUlong(NtCurrentTeb()->NtTib.ArbitraryUserPointer);
+        *phProcessHandle32 = HandleToUlong(hProcessHandle);
+    }
+  
+    return Status;
+}
+
+NTSTATUS
+NTAPI
+wow64_NtResumeThread(UINT* pArgs)
+{
+    HANDLE hThread = get_handle(&pArgs);
+    PULONG pSuspendCount = get_ptr(&pArgs);
+
+    return NtResumeThread(hThread, pSuspendCount);
+}
+
+NTSTATUS
+NTAPI
+wow64_NtSuspendThread(UINT* pArgs)
+{
+    HANDLE hThread = get_handle(&pArgs);
+    PULONG pSuspendCount = get_ptr(&pArgs);
+
+    return NtSuspendThread(hThread, pSuspendCount);
+}
+
+NTSTATUS
+NTAPI
+wow64_NtGetContextThread(UINT *pArgs)
+{
+    CONTEXT Context64;
+    PWOW64_CONTEXT pContext32;
+    NTSTATUS Status;
+    
+    HANDLE hThread = get_handle(&pArgs);
+    pContext32 = get_ptr(&pArgs);
+    
+    Context64.ContextFlags = CONTEXT_AMD64 | (pContext32->ContextFlags & 0xFFFF);
+    
+    Status = NtGetContextThread(hThread, &Context64);
+    if (!NT_SUCCESS(Status))
+    {
+        return Status;
+    }
+    
+    Wow64CopyContext64To32(pContext32, &Context64);
+    pContext32->ContextFlags &= 0xFFFF;
+    pContext32->ContextFlags |= 0x10000;
+    return STATUS_SUCCESS;
+}
+
+/**********************************************************************
+ * NtSetInformationProcess
+ *
+ * @implemented
+ */
+NTSTATUS
+NTAPI
+wow64_NtSetInformationProcess(UINT* pArgs)
+{
+    HANDLE Handle = get_handle(&pArgs);
+    PROCESSINFOCLASS Class = get_ulong(&pArgs);
+    PVOID Information = get_ptr(&pArgs);
+    ULONG Length = get_ulong(&pArgs);
+    
+    switch (Class)
+    {
+        case ProcessIoCounters:  /* IO_COUNTERS */
+        case ProcessTimes:  /* KERNEL_USER_TIMES */
+        case ProcessDefaultHardErrorMode:  /* ULONG */
+        case ProcessPriorityClass:  /* PROCESS_PRIORITY_CLASS */
+        case ProcessHandleCount:  /* ULONG */
+        case ProcessSessionInformation:  /* ULONG */
+        case ProcessDebugFlags:  /* ULONG */
+        case ProcessExecuteFlags:  /* ULONG */
+        case ProcessCookie:  /* ULONG */
+        case ProcessCycleTime:  /* PROCESS_CYCLE_TIME_INFORMATION */
+            return NtSetInformationProcess(Handle, Class, Information, Length);
+        default:
+            /* UNIMPLEMENTED */
+            __debugbreak();
+            return STATUS_NOT_IMPLEMENTED;
+    }
+    
+    return STATUS_SUCCESS;
+}
+
+
+/**********************************************************************
+ * wow64_NtApphelpCacheControl
+ *
+ * @implemented
+ */
+NTSTATUS
+NTAPI
+wow64_NtApphelpCacheControl(UINT* pArgs)
+{
+    APPHELP_CACHE_SERVICE_LOOKUP ServiceData;
+    
+    APPHELPCACHESERVICECLASS Service = get_ulong(&pArgs);
+    PAPPHELP_CACHE_SERVICE_LOOKUP32 ServiceData32 = get_ptr(&pArgs);
+    
+    ServiceData.ImageHandle = UlongToHandle(ServiceData32->ImageHandle);
+    unicode_str_32to64(&ServiceData.ImageName, &ServiceData32->ImageName);
+    
+    return NtApphelpCacheControl(Service, &ServiceData);
+}
+
+NTSTATUS
+NTAPI
+wow64_NtQueryInformationThread(UINT* pArgs)
+{
+    HANDLE hThread = get_handle(&pArgs);
+    THREADINFOCLASS InfoClass = get_ulong(&pArgs);
+    PVOID pThreadInfo32 = get_ptr(&pArgs);
+    ULONG uInfoLength32 = get_ulong(&pArgs);
+    PULONG pRetLen32 = get_ptr(&pArgs);
+
+    ULONG RetLen = 0;
+    NTSTATUS Status;
+    
+    switch (InfoClass)
+    {
+        case ThreadBasicInformation:
+        {
+            THREAD_BASIC_INFORMATION BasicInfo;
+            PTHREAD_BASIC_INFORMATION32 pBasicInfo32 = pThreadInfo32;
+
+            if (uInfoLength32 < sizeof(*pBasicInfo32))
+            {
+                return STATUS_BUFFER_TOO_SMALL;
+            }
+
+            Status = NtQueryInformationThread(hThread,
+                                              InfoClass,
+                                              &BasicInfo,
+                                              sizeof(BasicInfo),
+                                              &RetLen);
+
+            if (!NT_SUCCESS(Status))
+            {
+                return Status;
+            }
+
+            pBasicInfo32->AffinityMask = BasicInfo.AffinityMask;
+            pBasicInfo32->BasePriority = BasicInfo.BasePriority;
+            pBasicInfo32->ClientId.UniqueProcess =
+                HandleToUlong(BasicInfo.ClientId.UniqueProcess);
+            pBasicInfo32->ClientId.UniqueThread =
+                HandleToUlong(BasicInfo.ClientId.UniqueThread);
+            pBasicInfo32->ExitStatus = BasicInfo.ExitStatus;
+            pBasicInfo32->Priority = BasicInfo.Priority;
+            /* FIXME */
+            pBasicInfo32->TebBaseAddress =
+                ROUND_TO_PAGES((ULONG_PTR)((PTEB)BasicInfo.TebBaseAddress + 1));
+
+            if (pRetLen32 != NULL)
+            {
+                *pRetLen32 = sizeof(*pBasicInfo32);
+            }
+            
+            return Status;
+        }
+        case ThreadTimes:
+        case ThreadPerformanceCount:
+        case ThreadAmILastThread:
+        case ThreadIsIoPending:
+        case ThreadPriorityBoost:
+        case ThreadIsTerminated:
+            return NtQueryInformationThread(hThread,
+                                            InfoClass,
+                                            pThreadInfo32,
+                                            uInfoLength32,
+                                            pRetLen32);
+        default:
+            break;
+        /* TODO */
+    }
+
+    DPRINT1("Invalid class %X given to %s, investigate. \n", InfoClass, __FUNCTION__);
+    return STATUS_INVALID_INFO_CLASS;
+}
+
+BOOL
+WINAPI
+DllMain(HANDLE hDll,
+        DWORD dwReason,
+        LPVOID lpReserved)
+{
+    return TRUE;
+}
+
+static
+PULONG
+GetKernelCallbackTable32()
+{
+    return UlongToPtr(NtCurrentPeb32()->KernelCallbackTable);
+}
+
+NTSTATUS 
+WINAPI 
+Wow64KiUserCallbackDispatcher(ULONG nCallback, 
+                              PVOID IN pArgs, 
+                              ULONG nArgLen, 
+                              PVOID* OUT ppReturn, 
+                              PULONG OUT pnRetLen)
+{    
+    USER_CALLBACK_FRAME frame;
+    ULONG Args64[2];
+    
+    Args64[0] = PtrToUlong(pArgs);
+    Args64[1] = nArgLen;
+    
+    frame.prev_frame = NtCurrentTeb()->TlsSlots[WOW64_TLS_USERCALLBACKDATA];
+    frame.temp_list  = NtCurrentTeb()->TlsSlots[WOW64_TLS_TEMPLIST];
+    frame.ret_ptr    = ppReturn;
+    frame.ret_len    = pnRetLen;
+    frame.temp_list  = NULL;
+    
+    NtCurrentTeb()->TlsSlots[WOW64_TLS_USERCALLBACKDATA] = &frame;
+    NtCurrentTeb()->TlsSlots[WOW64_TLS_TEMPLIST] = NULL;
+    
+    if (!setjmp(frame.jmpbuf))
+    {
+        Call32(GetKernelCallbackTable32()[nCallback], 2, Args64);
+    }
+   
+    NtCurrentTeb()->TlsSlots[WOW64_TLS_USERCALLBACKDATA] = frame.prev_frame;
+    NtCurrentTeb()->TlsSlots[WOW64_TLS_TEMPLIST] = frame.temp_list;
+    return frame.status;
+}
+
+static
+VOID
+SetupNls(PPEB Peb, 
+         PPEB32 WowPeb)
+{
+    /* CHECKME */
+    WowPeb->OemCodePageData = PtrToUlong(&OemCopy);
+    WowPeb->AnsiCodePageData = PtrToUlong(&AnsiCopy);
+    WowPeb->UnicodeCaseTableData = PtrToUlong(&UnicodeCopy);
+    RtlCopyMemory(&OemCopy, Peb->OemCodePageData, sizeof(OemCopy));
+    RtlCopyMemory(&AnsiCopy, Peb->AnsiCodePageData, sizeof(AnsiCopy));
+    RtlCopyMemory(&UnicodeCopy, Peb->UnicodeCaseTableData, sizeof(UnicodeCopy));
+}
+
+static
+PVOID
+GetProcAddressByName(PVOID pModuleBase, const char* Name)
+{
+    ANSI_STRING NameStr;
+    PVOID Result;
+    NTSTATUS Status;
+
+    NameStr.Buffer = (char*)Name;
+    NameStr.Length = strlen(Name);
+    NameStr.MaximumLength = NameStr.Length;
+
+    Status = LdrGetProcedureAddress(pModuleBase, 
+                                    &NameStr, 
+                                    0, 
+                                    &Result);
+    if (!NT_SUCCESS(Status)) 
+    {
+        DPRINT1("Couldn't find %s.\n", Name);
+        ASSERT(FALSE);
+
+        return NULL;
+    }
+
+    return Result;
+}
+
+static
+VOID 
+Wow64InitProcess(PCONTEXT pContext)
+{
+    NTSTATUS Status;
+    PPEB32 WowPeb = NULL;
+    PRTL_USER_PROCESS_PARAMETERS32 ProcParams32 = NULL;
+    PPEB Peb = NtCurrentPeb();
+    IMAGE_NT_HEADERS32 *NtHeaders = NULL;
+    
+    Status = Wow64InitEntrypointTranslation();
+    ASSERT(NT_SUCCESS(Status));
+    
+    NtHeaders = (IMAGE_NT_HEADERS32 *)RtlImageNtHeader(Peb->ImageBaseAddress);
+
+    Status = LdrLoadDll(NtDll32Str.Buffer, 0, &NtDll32Str, &NtDll32);
+    if (!NT_SUCCESS(Status))
+    {
+        DPRINT1("32 bit NTDLL.DLL could not be loaded.\n");
+        ASSERT(FALSE);
+    }
+
+    Status = LdrLoadDll(NULL, 0, &Wow64CpuStr, &Wow64Cpu);
+    if (!NT_SUCCESS(Status))
+    {
+        DPRINT1("WOW64CPU.DLL could not be loaded.\n");
+        ASSERT(FALSE);
+    }
+
+    Status = NtQueryInformationProcess(NtCurrentProcess(),
+                                       ProcessWow64Information,
+                                       &WowPeb,
+                                       sizeof(WowPeb),
+                                       NULL);
+    if (!NT_SUCCESS(Status))
+    {
+        DPRINT1("Getting PEB32 info failed: %lx\n", Status);
+        ASSERT(FALSE);
+    }
+    
+    ProcParams32 = build_wow64_parameters(Peb->ProcessParameters);
+    WowPeb->ProcessParameters = PtrToUlong(ProcParams32);
+    
+    /* FIXME: hack for process heaps */
+    WowPeb->MaximumNumberOfHeaps = sizeof(FixmeProcessHeaps) / sizeof(*FixmeProcessHeaps);
+    WowPeb->ProcessHeaps = PtrToUlong(FixmeProcessHeaps);
+    
+    WowPeb->ImageBaseAddress = PtrToUlong(Peb->ImageBaseAddress);
+    
+    /* PEB OS Version Data */
+    WowPeb->OSMajorVersion = Peb->OSMajorVersion;
+    WowPeb->OSMinorVersion = Peb->OSMinorVersion;
+    WowPeb->OSBuildNumber  = Peb->OSBuildNumber;
+    WowPeb->OSPlatformId   = Peb->OSPlatformId;
+    
+    WowPeb->NtGlobalFlag = Peb->NtGlobalFlag;
+    
+    WowPeb->CriticalSectionTimeout = Peb->CriticalSectionTimeout;
+    WowPeb->NumberOfProcessors = Peb->NumberOfProcessors;
+    
+    /* Set up codepage translation data */
+    SetupNls(Peb, WowPeb);
+    
+    /* Change image path name */
+    ProcParams32->ImagePathName.Buffer = PtrToUlong(Peb->ProcessParameters->ImagePathName.Buffer);
+    ProcParams32->ImagePathName.Length = Peb->ProcessParameters->ImagePathName.Length;
+    ProcParams32->ImagePathName.MaximumLength = Peb->ProcessParameters->ImagePathName.MaximumLength;
+    ProcParams32->Flags |= RTL_USER_PROCESS_PARAMETERS_NORMALIZED;
+
+    NtDll32LdrpRoutine = GetProcAddressByName(NtDll32, "LdrInitializeThunk");
+    NtDll32KiUserExceptionDispatcher = GetProcAddressByName(NtDll32, "KiUserExceptionDispatcher");
+    NtDll32KiUserApcDispatcher = GetProcAddressByName(NtDll32, "KiUserApcDispatcher");
+
+    pBTCpuGetContext = GetProcAddressByName(Wow64Cpu, "BTCpuGetContext");
+    pBTCpuSetContext = GetProcAddressByName(Wow64Cpu, "BTCpuSetContext");
+
+    ASSERT(pBTCpuGetContext != NULL && pBTCpuSetContext != NULL);
+    
+    DPRINT("Getting init function ptr %p\n", NtDll32LdrpRoutine);
+}
+
+LONG
+Wow64UnhandledExceptionHandler(IN PEXCEPTION_POINTERS ExceptionInfo);
+
+static
+NTSTATUS
+Wow64Trampoline(PCONTEXT pContext)
+{
+    NTSTATUS Status;
+    
+#pragma pack(push, 1)
+    struct
+    {
+        ULONG_PTR ApcRoutine;
+        ULONG_PTR SegCs;
+        ULONG RetAddress32;
+        ULONG ApcContext;
+        ULONG SystemArgument1;
+        ULONG SystemArgument2;
+        WOW64_CONTEXT Context32;
+    } EnterApc32Stack;
+#pragma pack(pop)
+    
+    Wow64CopyContext64To32(&EnterApc32Stack.Context32, pContext);
+    Status = Wow64TranslateEntrypoint64To32(NtCurrentProcess(), 
+                                            &EnterApc32Stack.Context32, 
+                                            pContext);
+    if (!NT_SUCCESS(Status))
+    {
+        return Status;
+    }
+    
+    EnterApc32Stack.ApcRoutine = (ULONG_PTR)NtDll32LdrpRoutine;
+    EnterApc32Stack.SegCs = 0x23;
+    EnterApc32Stack.RetAddress32 = 0;
+    EnterApc32Stack.ApcContext = PtrToUlong(&EnterApc32Stack.Context32);
+    EnterApc32Stack.SystemArgument1 = PtrToUlong(NtDll32);
+    EnterApc32Stack.SystemArgument2 = 0;
+    
+    _SEH2_TRY
+    {
+        EnterApc32(&EnterApc32Stack, sizeof(EnterApc32Stack));
+    }
+    _SEH2_EXCEPT(Wow64UnhandledExceptionHandler(_SEH2_GetExceptionInformation()))
+    {
+         
+    }
+    _SEH2_END;
+
+    Wow64CopyContext32To64(pContext, &EnterApc32Stack.Context32);
+    return STATUS_SUCCESS;
+}
+
+static
+VOID 
+Wow64InitThread(PCONTEXT pContext)
+{
+    NTSTATUS Status;
+    PTEB32 WowTeb = NULL;
+    PPEB32 WowPeb = NULL;
+    PTEB Teb = NtCurrentTeb();
+
+    WowTeb = (PTEB32)ROUND_TO_PAGES((ULONG_PTR)(Teb + 1));
+
+    DPRINT1("WOW64 TEB %p, TEB %p\n", WowTeb, Teb);
+
+    WowTeb->NtTib.Self = PtrToUlong(WowTeb);
+    
+    WowTeb->NtTib.StackLimit = PtrToUlong(Teb->NtTib.StackLimit);
+    WowTeb->NtTib.StackBase = PtrToUlong(Teb->NtTib.StackBase);
+    WowTeb->NtTib.ExceptionList = PtrToUlong(EXCEPTION_CHAIN_END);
+    WowTeb->NtTib.Version = Teb->NtTib.Version;
+
+    WowTeb->StaticUnicodeString.Length = 0;
+    WowTeb->StaticUnicodeString.MaximumLength = sizeof(WowTeb->StaticUnicodeBuffer);
+    WowTeb->StaticUnicodeString.Buffer = PtrToUlong(WowTeb->StaticUnicodeBuffer);
+
+    Status = NtQueryInformationProcess(NtCurrentProcess(), 
+                                       ProcessWow64Information, 
+                                       &WowPeb, 
+                                       sizeof(WowPeb), 
+                                       NULL);
+    if (!NT_SUCCESS(Status))
+    {
+        DPRINT("Getting Wow64 info failed: %lx\n", Status);
+        ASSERT(FALSE);
+    }
+
+    WowTeb->ProcessEnvironmentBlock = PtrToUlong(WowPeb);
+
+    /* Point the FS segment register to the CMTEB entry in the GDT */
+    SetupFs(0x0053);
+
+    /* CMTEB GDT entry's fields are set on thread context switches, make sure 
+       correct values are loaded before executing. */
+    while(NtYieldExecution() == STATUS_NO_YIELD_PERFORMED);
+
+    /* Initialize WOW64 TLS entries in the 64-bit TEB */
+    NtCurrentTeb()->TlsSlots[WOW64_TLS_TEMPLIST] = NULL;
+    NtCurrentTeb()->TlsSlots[WOW64_TLS_APCLIST] = NULL;
+    NtCurrentTeb()->TlsSlots[WOW64_TLS_USERCALLBACKDATA] = NULL;
+    NtCurrentTeb()->TlsSlots[WOW64_TLS_FILESYSREDIR] = (PVOID)FALSE;
+
+    NtCurrentTeb()->NtTib.ExceptionList = (PVOID)NtCurrentTeb32();
+
+    /* Make sure the handler routine pointer fits into the 32-bit TEB */
+    ASSERT((((ULONG_PTR)Wow64SystemServiceEx) & ~0xFFFFFFFF) == 0);
+    WowTeb->WOW32Reserved = PtrToUlong(Wow64SystemServiceEx);
+
+    WowTeb->ClientId.UniqueProcess = HandleToULong(Teb->ClientId.UniqueProcess);
+    WowTeb->ClientId.UniqueThread = HandleToULong(Teb->ClientId.UniqueThread);
+
+    DPRINT1("Wow64 thread client id: %X:%X\n", WowTeb->ClientId.UniqueProcess, WowTeb->ClientId.UniqueThread);
+
+    Status = Wow64Trampoline(pContext);
+    ASSERT(NT_SUCCESS(Status));
+}
+
+void 
+WINAPI 
+Wow64LdrpInitialize(PCONTEXT pContext)
+{
+    static LONG ProcessInitialized = 0;
+
+    if (InterlockedCompareExchange(&ProcessInitialized,
+                                   1,
+                                   0) == 0)
+    {
+        __debugbreak();
+        Wow64InitProcess(pContext);
+    }
+    
+    Wow64InitThread(pContext);
+}

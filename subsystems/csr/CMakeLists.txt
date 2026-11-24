@@ -1,4 +1,5 @@
-
-add_subdirectory(csrlib)
-add_subdirectory(csrsrv)
-add_subdirectory(csrss)
+if(NOT SYSWOW64_BUILD)
+    add_subdirectory(csrlib)
+    add_subdirectory(csrsrv)
+    add_subdirectory(csrss)
+endif()

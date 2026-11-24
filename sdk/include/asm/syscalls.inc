@@ -53,6 +53,63 @@ $ZwFuncEndName
 SyscallId = 0
 
 #ifdef _M_IX86
+#ifdef BUILD_WOW6432
+#define KUSER_SHARED_SYSCALL HEX(7ffe0300)
+MACRO(STUBCODE_U, Name, SyscallId, ArgCount)
+LOCAL x, x2, x3
+    StackBytes = 4 * ArgCount
+    FPO 0, 0, 0, 0, 0, FRAME_FPO
+    push ecx
+    push edx
+    
+    mov ecx, SyscallId
+    mov edx, ArgCount
+    
+    push ebp
+    mov ebp, esp
+    
+    /* Align the stack, and allocate shadow space for the x64 calling convention */
+    sub esp, HEX(48)
+    and esp, HEX(FFFFFFF0)
+    
+    push 0
+    push ebp
+    
+    ljmp HEX(33), x
+x:
+    /* pop rdx */
+    .byte HEX(5a)
+
+    /* add rdx, 16 */
+    .byte HEX(48)
+    .byte HEX(83)
+    .byte HEX(c2)
+    .byte HEX(10)
+    
+    call x3
+    
+    push HEX(23)
+    push x2
+    .byte HEX(48)
+    retf
+x2:
+    mov esp, ebp
+    pop ebp
+    
+    pop edx
+    pop ecx
+    
+    ret StackBytes
+x3:
+    .long HEX(25048b64)
+    .long HEX(000000c0)
+    .byte HEX(50)
+    .byte HEX(c3)
+ENDM
+MACRO(STUBCODE_K, Name, SyscallId, ArgCount)
+    int 3
+ENDM
+#else
 #define KUSER_SHARED_SYSCALL HEX(7ffe0300)
 #define KGDT_R0_CODE 8
 MACRO(STUBCODE_U, Name, SyscallId, ArgCount)
@@ -73,6 +130,7 @@ MACRO(STUBCODE_K, Name, SyscallId, ArgCount)
     call _KiSystemService
     ret StackBytes
 ENDM
+#endif
 #elif defined(_M_AMD64)
 MACRO(STUBCODE_U, Name, SyscallId, ArgCount)
     .ENDPROLOG

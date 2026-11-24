@@ -98,7 +98,7 @@ typedef enum _PORT_INFORMATION_CLASS
 //
 // Maximum message size that can be sent through an LPC Port without a section
 //
-#ifdef _WIN64
+#if defined(_WIN64) || defined(USE_LPC6432)
 #define PORT_MAXIMUM_MESSAGE_LENGTH 512
 #else
 #define PORT_MAXIMUM_MESSAGE_LENGTH 256
@@ -107,7 +107,19 @@ typedef enum _PORT_INFORMATION_CLASS
 //
 // Portable LPC Types for 32/64-bit compatibility
 //
-#ifdef USE_LPC6432
+typedef struct _CLIENT_ID32
+{
+    ULONG UniqueProcess;
+    ULONG UniqueThread;
+} CLIENT_ID32, *PCLIENT_ID32;
+
+typedef struct _CLIENT_ID64
+{
+    ULONG64 UniqueProcess;
+    ULONG64 UniqueThread;
+} CLIENT_ID64, *PCLIENT_ID64;
+
+#if defined(USE_LPC6432)
 #define LPC_CLIENT_ID CLIENT_ID64
 #define LPC_SIZE_T ULONGLONG
 #define LPC_PVOID ULONGLONG

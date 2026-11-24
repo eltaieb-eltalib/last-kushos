@@ -39,7 +39,7 @@ IntAddConsoleAlias(LPCVOID Source,
         return FALSE;
     }
 
-    ConsoleAliasRequest->ConsoleHandle = NtCurrentPeb()->ProcessParameters->ConsoleHandle;
+    ConsoleAliasRequest->ConsoleHandle = TO_LPC_HANDLE(NtCurrentPeb()->ProcessParameters->ConsoleHandle);
 
     /* Determine the needed sizes */
     ConsoleAliasRequest->SourceLength = SourceBufferLength;
@@ -91,7 +91,7 @@ IntAddConsoleAlias(LPCVOID Source,
     }
     else
     {
-        ConsoleAliasRequest->Target = NULL;
+        ConsoleAliasRequest->Target = WOW64_CAST_FROM_PTR(NULL);
     }
 
     CsrClientCallServer((PCSR_API_MESSAGE)&ApiMessage,
@@ -189,7 +189,7 @@ IntGetConsoleAlias(LPCVOID Source,
         return 0;
     }
 
-    ConsoleAliasRequest->ConsoleHandle = NtCurrentPeb()->ProcessParameters->ConsoleHandle;
+    ConsoleAliasRequest->ConsoleHandle = TO_LPC_HANDLE(NtCurrentPeb()->ProcessParameters->ConsoleHandle);
 
     /* Determine the needed sizes */
     ConsoleAliasRequest->SourceLength = SourceBufferLength;
@@ -210,18 +210,22 @@ IntGetConsoleAlias(LPCVOID Source,
         return 0;
     }
 
+
     /* Capture the strings */
+    ConsoleAliasRequest->Source = 0;
     CsrCaptureMessageBuffer(CaptureBuffer,
                             (PVOID)Source,
                             ConsoleAliasRequest->SourceLength,
                             (PVOID*)&ConsoleAliasRequest->Source);
 
+    ConsoleAliasRequest->ExeName = 0;
     CsrCaptureMessageBuffer(CaptureBuffer,
                             (PVOID)ExeName,
                             ConsoleAliasRequest->ExeLength,
                             (PVOID*)&ConsoleAliasRequest->ExeName);
 
     /* Allocate space for the target buffer */
+    ConsoleAliasRequest->Target = 0;
     CsrAllocateMessagePointer(CaptureBuffer,
                               ConsoleAliasRequest->TargetLength,
                               (PVOID*)&ConsoleAliasRequest->Target);
@@ -243,7 +247,7 @@ IntGetConsoleAlias(LPCVOID Source,
 
     /* Copy the returned target string into the user buffer */
     RtlCopyMemory(Target,
-                  ConsoleAliasRequest->Target,
+                  WOW64_CAST_TO_PTR(ConsoleAliasRequest->Target),
                   ConsoleAliasRequest->TargetLength);
 
     /* Release the capture buffer and exit */
@@ -319,7 +323,7 @@ IntGetConsoleAliases(LPVOID AliasBuffer,
         return 0;
     }
 
-    GetAllAliasesRequest->ConsoleHandle = NtCurrentPeb()->ProcessParameters->ConsoleHandle;
+    GetAllAliasesRequest->ConsoleHandle = TO_LPC_HANDLE(NtCurrentPeb()->ProcessParameters->ConsoleHandle);
 
     /* Determine the needed sizes */
     GetAllAliasesRequest->ExeLength = NumChars * (bUnicode ? sizeof(WCHAR) : sizeof(CHAR));
@@ -361,7 +365,7 @@ IntGetConsoleAliases(LPVOID AliasBuffer,
 
     /* Copy the returned aliases string into the user buffer */
     RtlCopyMemory(AliasBuffer,
-                  GetAllAliasesRequest->AliasesBuffer,
+                  WOW64_CAST_TO_PTR(GetAllAliasesRequest->AliasesBuffer),
                   GetAllAliasesRequest->AliasesBufferLength);
 
     /* Release the capture buffer and exit */
@@ -428,7 +432,7 @@ IntGetConsoleAliasesLength(LPCVOID ExeName, BOOLEAN bUnicode)
         return 0;
     }
 
-    GetAllAliasesLengthRequest->ConsoleHandle = NtCurrentPeb()->ProcessParameters->ConsoleHandle;
+    GetAllAliasesLengthRequest->ConsoleHandle = TO_LPC_HANDLE(NtCurrentPeb()->ProcessParameters->ConsoleHandle);
     GetAllAliasesLengthRequest->ExeLength     = NumChars * (bUnicode ? sizeof(WCHAR) : sizeof(CHAR));
     GetAllAliasesLengthRequest->Unicode  =
     GetAllAliasesLengthRequest->Unicode2 = bUnicode;
@@ -498,7 +502,7 @@ IntGetConsoleAliasExes(PVOID lpExeNameBuffer,
     PCONSOLE_GETALIASESEXES GetAliasesExesRequest = &ApiMessage.Data.GetAliasesExesRequest;
     PCSR_CAPTURE_BUFFER CaptureBuffer;
 
-    GetAliasesExesRequest->ConsoleHandle = NtCurrentPeb()->ProcessParameters->ConsoleHandle;
+    GetAliasesExesRequest->ConsoleHandle = TO_LPC_HANDLE(NtCurrentPeb()->ProcessParameters->ConsoleHandle);
     GetAliasesExesRequest->Length        = ExeNameBufferLength;
     GetAliasesExesRequest->Unicode       = bUnicode;
 
@@ -510,6 +514,7 @@ IntGetConsoleAliasExes(PVOID lpExeNameBuffer,
         return 0;
     }
 
+    GetAliasesExesRequest->ExeNames = 0;
     CsrAllocateMessagePointer(CaptureBuffer,
                               ExeNameBufferLength,
                               (PVOID*)&GetAliasesExesRequest->ExeNames);
@@ -526,7 +531,7 @@ IntGetConsoleAliasExes(PVOID lpExeNameBuffer,
     }
 
     RtlCopyMemory(lpExeNameBuffer,
-                  GetAliasesExesRequest->ExeNames,
+                  WOW64_CAST_TO_PTR(GetAliasesExesRequest->ExeNames),
                   GetAliasesExesRequest->Length);
 
     CsrFreeCaptureBuffer(CaptureBuffer);
@@ -568,7 +573,7 @@ IntGetConsoleAliasExesLength(BOOLEAN bUnicode)
     CONSOLE_API_MESSAGE ApiMessage;
     PCONSOLE_GETALIASESEXESLENGTH GetAliasesExesLengthRequest = &ApiMessage.Data.GetAliasesExesLengthRequest;
 
-    GetAliasesExesLengthRequest->ConsoleHandle = NtCurrentPeb()->ProcessParameters->ConsoleHandle;
+    GetAliasesExesLengthRequest->ConsoleHandle = TO_LPC_HANDLE(NtCurrentPeb()->ProcessParameters->ConsoleHandle);
     GetAliasesExesLengthRequest->Unicode = bUnicode;
 
     CsrClientCallServer((PCSR_API_MESSAGE)&ApiMessage,

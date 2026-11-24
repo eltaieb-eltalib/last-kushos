@@ -26,7 +26,37 @@ WINAPI
 IsTimeZoneRedirectionEnabled(VOID)
 {
     /* Return if a TS Timezone ID is active */
-    return (BaseStaticServerData->TermsrvClientTimeZoneId != TIME_ZONE_ID_INVALID);
+    return (WOW64_READ_ULONG_FIELD(BaseStaticServerData,
+                                   BASE_STATIC_SERVER_DATA,
+                                   TermsrvClientTimeZoneId) != TIME_ZONE_ID_INVALID);
+}
+
+static
+VOID
+GetTimeZoneBias(OUT PLARGE_INTEGER pTimeZoneBias)
+{
+#ifndef BUILD_WOW6432
+    volatile KSYSTEM_TIME *TimePtr;
+
+    TimePtr = IsTimeZoneRedirectionEnabled() ?
+              &BaseStaticServerData->ktTermsrvClientBias :
+              &SharedUserData->TimeZoneBias;
+
+    *pTimeZoneBias = KiReadSystemTime(TimePtr);
+#else
+    UINT64 TimePtr;
+
+    TimePtr = IsTimeZoneRedirectionEnabled() ?
+              (BaseStaticServerData + offsetof(BASE_STATIC_SERVER_DATA, ktTermsrvClientBias)) :
+              WOW64_CAST_FROM_PTR(&SharedUserData->TimeZoneBias);
+
+    do
+    {
+        pTimeZoneBias->HighPart = (LONG)WOW64_READ_ULONG_FIELD(TimePtr, volatile KSYSTEM_TIME, High1Time);
+        pTimeZoneBias->LowPart = WOW64_READ_ULONG_FIELD(TimePtr, volatile KSYSTEM_TIME, LowPart);
+    }
+    while (pTimeZoneBias->HighPart != (LONG)WOW64_READ_ULONG_FIELD(TimePtr, volatile KSYSTEM_TIME, High2Time));
+#endif
 }
 
 /*
@@ -220,13 +250,7 @@ FileTimeToLocalFileTime(IN CONST FILETIME *lpFileTime,
                         OUT LPFILETIME lpLocalFileTime)
 {
     LARGE_INTEGER TimeZoneBias, FileTime;
-    volatile KSYSTEM_TIME *TimePtr;
-
-    TimePtr = IsTimeZoneRedirectionEnabled() ?
-              &BaseStaticServerData->ktTermsrvClientBias :
-              &SharedUserData->TimeZoneBias;
-
-    TimeZoneBias = KiReadSystemTime(TimePtr);
+    GetTimeZoneBias(&TimeZoneBias);
 
     FileTime.LowPart = lpFileTime->dwLowDateTime;
     FileTime.HighPart = lpFileTime->dwHighDateTime;
@@ -248,13 +272,7 @@ LocalFileTimeToFileTime(IN CONST FILETIME *lpLocalFileTime,
                         OUT LPFILETIME lpFileTime)
 {
     LARGE_INTEGER TimeZoneBias, FileTime;
-    volatile KSYSTEM_TIME *TimePtr;
-
-    TimePtr = IsTimeZoneRedirectionEnabled() ?
-              &BaseStaticServerData->ktTermsrvClientBias :
-              &SharedUserData->TimeZoneBias;
-
-    TimeZoneBias = KiReadSystemTime(TimePtr);
+    GetTimeZoneBias(&TimeZoneBias);
 
     FileTime.LowPart = lpLocalFileTime->dwLowDateTime;
     FileTime.HighPart = lpLocalFileTime->dwHighDateTime;
@@ -276,15 +294,10 @@ GetLocalTime(OUT LPSYSTEMTIME lpSystemTime)
 {
     LARGE_INTEGER SystemTime, TimeZoneBias;
     TIME_FIELDS TimeFields;
-    volatile KSYSTEM_TIME *TimePtr;
 
     SystemTime = KiReadSystemTime(&SharedUserData->SystemTime);
 
-    TimePtr = IsTimeZoneRedirectionEnabled() ?
-              &BaseStaticServerData->ktTermsrvClientBias :
-              &SharedUserData->TimeZoneBias;
-
-    TimeZoneBias = KiReadSystemTime(TimePtr);
+    GetTimeZoneBias(&TimeZoneBias);
 
     SystemTime.QuadPart -= TimeZoneBias.QuadPart;
     RtlTimeToTimeFields(&SystemTime, &TimeFields);
@@ -335,13 +348,8 @@ SetLocalTime(IN CONST SYSTEMTIME *lpSystemTime)
     ULONG Privilege = SE_SYSTEMTIME_PRIVILEGE;
     TIME_FIELDS TimeFields;
     PVOID State;
-    volatile KSYSTEM_TIME *TimePtr;
 
-    TimePtr = IsTimeZoneRedirectionEnabled() ?
-              &BaseStaticServerData->ktTermsrvClientBias :
-              &SharedUserData->TimeZoneBias;
-
-    TimeZoneBias = KiReadSystemTime(TimePtr);
+    GetTimeZoneBias(&TimeZoneBias);
 
     TimeFields.Year = lpSystemTime->wYear;
     TimeFields.Month = lpSystemTime->wMonth;
@@ -506,7 +514,7 @@ GetSystemTimes(OUT LPFILETIME lpIdleTime OPTIONAL,
     TotalUserTime.QuadPart = TotalKernTime.QuadPart = TotalIdleTime.QuadPart = 0;
 
     BufferSize = sizeof(SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION) *
-                 BaseStaticServerData->SysInfo.NumberOfProcessors;
+                 WOW64_READ_BYTE_FIELD(BaseStaticServerData, BASE_STATIC_SERVER_DATA, SysInfo.NumberOfProcessors);
 
     ProcPerfInfo = RtlAllocateHeap(RtlGetProcessHeap(), 0, BufferSize);
     if (!ProcPerfInfo)
@@ -523,7 +531,11 @@ GetSystemTimes(OUT LPFILETIME lpIdleTime OPTIONAL,
     {
         if (lpIdleTime)
         {
-            for (i = 0; i < BaseStaticServerData->SysInfo.NumberOfProcessors; i++)
+            for (i = 0;
+                 i < (CCHAR)WOW64_READ_BYTE_FIELD(BaseStaticServerData,
+                                                  BASE_STATIC_SERVER_DATA,
+                                                  SysInfo.NumberOfProcessors);
+                 i++)
             {
                 TotalIdleTime.QuadPart += ProcPerfInfo[i].IdleTime.QuadPart;
             }
@@ -534,7 +546,11 @@ GetSystemTimes(OUT LPFILETIME lpIdleTime OPTIONAL,
 
         if (lpKernelTime)
         {
-            for (i = 0; i < BaseStaticServerData->SysInfo.NumberOfProcessors; i++)
+            for (i = 0;
+                 i < (CCHAR)WOW64_READ_BYTE_FIELD(BaseStaticServerData,
+                                                  BASE_STATIC_SERVER_DATA,
+                                                  SysInfo.NumberOfProcessors);
+                 i++)
             {
                 TotalKernTime.QuadPart += ProcPerfInfo[i].KernelTime.QuadPart;
             }
@@ -545,7 +561,11 @@ GetSystemTimes(OUT LPFILETIME lpIdleTime OPTIONAL,
 
         if (lpUserTime)
         {
-            for (i = 0; i < BaseStaticServerData->SysInfo.NumberOfProcessors; i++)
+            for (i = 0;
+                 i < (CCHAR)WOW64_READ_BYTE_FIELD(BaseStaticServerData,
+                                                  BASE_STATIC_SERVER_DATA,
+                                                  SysInfo.NumberOfProcessors);
+                 i++)
             {
                 TotalUserTime.QuadPart += ProcPerfInfo[i].UserTime.QuadPart;
             }

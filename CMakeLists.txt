@@ -75,6 +75,10 @@ add_definitions(
     -D__REACTOS__
 )
 
+if (ARCH STREQUAL "amd64")
+    add_definitions(-DBUILD_WOW64_ENABLED)
+endif()
+
 # There doesn't seem to be a standard for __FILE__ being relative or absolute, so detect it at runtime.
 file(RELATIVE_PATH _PATH_PREFIX ${REACTOS_BINARY_DIR} ${REACTOS_SOURCE_DIR})
 if (NOT MSVC AND ((CMAKE_C_COMPILER_ID STREQUAL "GNU") AND (CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL "8.0.0")
@@ -132,7 +136,7 @@ if(MSVC_IDE)
     set(FLEX_EXECUTABLE "${CMAKE_BINARY_DIR}/flex_wrapper.cmd")
 endif()
 
-if(NOT CMAKE_CROSSCOMPILING)
+if(NOT SYSWOW64_BUILD AND NOT CMAKE_CROSSCOMPILING)
     set(TOOLS_FOLDER ${CMAKE_CURRENT_BINARY_DIR})
     add_definitions(-DTARGET_${ARCH})
 
@@ -169,6 +173,20 @@ else()
     # Add host tools target
     include(sdk/cmake/host-tools.cmake)
     setup_host_tools()
+
+    if (ARCH STREQUAL "amd64" AND BUILD_WOW64_ENABLED AND NOT SYSWOW64_BUILD)
+        # Add Wow64
+        include(sdk/cmake/wow64.cmake)
+        setup_wow64()
+    else()
+        # Dummy Wow64 target
+        add_custom_target(wow64-binaries)
+    endif()
+
+    if (SYSWOW64_BUILD)
+        add_definitions(-DBUILD_WOW6432)
+        add_definitions(-DUSE_LPC6432)
+    endif()
 
     # We don't need CMake importlib handling.
     unset(CMAKE_IMPORT_LIBRARY_SUFFIX)
@@ -362,11 +380,16 @@ Enable this if the module uses typeid or dynamic_cast. You will probably need to
     endif()
 
     #begin with boot so reactos_cab target is defined before all other modules
-    add_subdirectory(boot)
+
+    if(NOT SYSWOW64_BUILD)
+        add_subdirectory(boot)
+    endif()
     add_subdirectory(base)
     add_subdirectory(dll)
-    add_subdirectory(drivers)
-    add_subdirectory(hal)
+    if(NOT SYSWOW64_BUILD)
+        add_subdirectory(drivers)
+        add_subdirectory(hal)
+    endif()
     add_subdirectory(sdk/lib)
     add_subdirectory(media)
     add_subdirectory(modules)
@@ -375,11 +398,13 @@ Enable this if the module uses typeid or dynamic_cast. You will probably need to
     add_subdirectory(sdk/tools/wpp)
     add_subdirectory(win32ss)
 
-    # Create the registry hives
-    create_registry_hives()
+    if (NOT SYSWOW64_BUILD)
+        # Create the registry hives
+        create_registry_hives()
 
-    # Create {bootcd, bootcdregtest, livecd}.lst
-    create_iso_lists()
+        # Create {bootcd, bootcdregtest, livecd}.lst
+        create_iso_lists()
+    endif()
 
     file(MAKE_DIRECTORY ${REACTOS_BINARY_DIR}/sdk/include/reactos)
 

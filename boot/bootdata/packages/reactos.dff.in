@@ -102,6 +102,23 @@ Signature = "$Windows NT$"
 79 = winsxs\arm64_microsoft.windows.gdiplus_6595b64144ccf1df_1.1.7601.23038_none_deadbeef
 81 = winsxs\arm64_microsoft.windows.gdiplus_6595b64144ccf1df_1.0.14393.0_none_deadbeef
 
+82 = SysWOW64
+83 = SysWOW64\wbem
+84 = SysWOW64\wbem\Repository
+85 = SysWOW64\wbem\Repository\FS
+86 = SysWOW64\wbem\mof\good
+87 = SysWOW64\wbem\mof\bad
+88 = SysWOW64\wbem\AdStatus
+89 = SysWOW64\wbem\xml
+90 = SysWOW64\wbem\Logs
+91 = SysWOW64\wbem\AutoRecover
+92 = SysWOW64\wbem\snmp
+93 = SysWOW64\wbem\Performance
+94 = binwow64
+95 = binwow64\testdata
+96 = binwow64\suppl
+102 = SysWOW64\drivers\etc
+
 .InfEnd
 
 ; Contents of disk

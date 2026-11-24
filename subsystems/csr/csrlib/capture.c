@@ -7,7 +7,6 @@
  */
 
 /* INCLUDES *******************************************************************/
-
 #include "csrlib.h"
 
 #define NDEBUG
@@ -94,10 +93,10 @@ CsrAllocateCaptureBuffer(
 
     /* Validate the argument count. Note that on server side, CSRSRV
      * limits the count to MAXUSHORT; here we are a bit more lenient. */
-    if (ArgumentCount > (MAXLONG / sizeof(ULONG_PTR)))
+    if (ArgumentCount > (MAXLONG / sizeof(LPC_ULONG_PTR)))
         return NULL;
 
-    OffsetsArraySize = ArgumentCount * sizeof(ULONG_PTR);
+    OffsetsArraySize = ArgumentCount * sizeof(LPC_ULONG_PTR);
 
     /*
      * Validate the total buffer size.
@@ -137,8 +136,8 @@ CsrAllocateCaptureBuffer(
     RtlZeroMemory(CaptureBuffer->PointerOffsetsArray, OffsetsArraySize);
 
     /* Point to the start of the free buffer */
-    CaptureBuffer->BufferEnd = (PVOID)((ULONG_PTR)CaptureBuffer->PointerOffsetsArray +
-                                       OffsetsArraySize);
+    CaptureBuffer->BufferEnd = (LPC_PVOID)((LPC_ULONG_PTR)CaptureBuffer->PointerOffsetsArray +
+                                           OffsetsArraySize);
 
     /* Return the address of the buffer */
     return CaptureBuffer;
@@ -171,11 +170,11 @@ CsrAllocateMessagePointer(
         MessageLength = (MessageLength + 3) & ~3;
 
         /* Move our available buffer beyond this space */
-        CaptureBuffer->BufferEnd = (PVOID)((ULONG_PTR)CaptureBuffer->BufferEnd + MessageLength);
+        CaptureBuffer->BufferEnd = (LPC_PVOID)((ULONG_PTR)CaptureBuffer->BufferEnd + MessageLength);
     }
 
     /* Write down this pointer in the array and increase the count */
-    CaptureBuffer->PointerOffsetsArray[CaptureBuffer->PointerCount++] = (ULONG_PTR)CapturedData;
+    CaptureBuffer->PointerOffsetsArray[CaptureBuffer->PointerCount++] = (LPC_ULONG_PTR)CapturedData;
 
     /* Return the aligned length */
     return MessageLength;

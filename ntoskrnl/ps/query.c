@@ -2279,7 +2279,7 @@ NtSetInformationProcess(
             DPRINT1("Handle tracing not implemented\n");
             Status = STATUS_NOT_IMPLEMENTED;
             break;
-
+        
         /* Anything else is invalid */
         default:
 #if DBG

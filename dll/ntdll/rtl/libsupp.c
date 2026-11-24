@@ -16,6 +16,12 @@
 #define NDEBUG
 #include <debug.h>
 
+#ifdef BUILD_WOW6432
+void __writegsdword(ULONG offset, ULONG value);
+ULONG __readgsdword(ULONG offset);
+#include <wow64.h>
+#endif
+
 SIZE_T RtlpAllocDeallocQueryBufferSize = PAGE_SIZE;
 PTEB LdrpTopLevelDllBeingLoadedTeb = NULL;
 PVOID MmHighestUserAddress = (PVOID)MI_HIGHEST_USER_ADDRESS;
@@ -1147,8 +1153,11 @@ NTSTATUS
 NTAPI
 RtlWow64EnableFsRedirection(IN BOOLEAN Wow64FsEnableRedirection)
 {
-    /* This is what Windows returns on x86 */
+#ifdef BUILD_WOW6432
+    return RtlWow64EnableFsRedirectionEx((PVOID)!Wow64FsEnableRedirection, NULL);
+#else
     return STATUS_NOT_IMPLEMENTED;
+#endif
 }
 
 /*
@@ -1157,11 +1166,25 @@ RtlWow64EnableFsRedirection(IN BOOLEAN Wow64FsEnableRedirection)
 NTSYSAPI
 NTSTATUS
 NTAPI
-RtlWow64EnableFsRedirectionEx(IN PVOID Wow64FsEnableRedirection,
+RtlWow64EnableFsRedirectionEx(IN PVOID Wow64FsDisableRedirection,
                               OUT PVOID *OldFsRedirectionLevel)
 {
-    /* This is what Windows returns on x86 */
+#ifdef BUILD_WOW6432
+    LONG Offset = TEB64_TLS_OFFSET + sizeof(UINT64) * WOW64_TLS_FILESYSREDIR;
+
+    /* TODO: Refactor */
+    if (OldFsRedirectionLevel != NULL)
+    {
+        *OldFsRedirectionLevel = (PVOID)__readgsdword(Offset);
+    }
+    
+    DPRINT1("Setting offset %X (prev: %X) to %X\n", Offset, __readgsdword(Offset), Wow64FsDisableRedirection);
+    
+    __writegsdword(Offset, (ULONG)Wow64FsDisableRedirection);
+    return STATUS_SUCCESS;
+#else
     return STATUS_NOT_IMPLEMENTED;
+#endif
 }
 
 /*

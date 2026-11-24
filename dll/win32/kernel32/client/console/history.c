@@ -42,7 +42,7 @@ IntExpungeConsoleCommandHistory(LPCVOID lpExeName, BOOLEAN bUnicode)
         return;
     }
 
-    ExpungeCommandHistoryRequest->ConsoleHandle = NtCurrentPeb()->ProcessParameters->ConsoleHandle;
+    ExpungeCommandHistoryRequest->ConsoleHandle = TO_LPC_HANDLE(NtCurrentPeb()->ProcessParameters->ConsoleHandle);
     ExpungeCommandHistoryRequest->ExeLength     = NumChars * (bUnicode ? sizeof(WCHAR) : sizeof(CHAR));
     ExpungeCommandHistoryRequest->Unicode  =
     ExpungeCommandHistoryRequest->Unicode2 = bUnicode;
@@ -79,6 +79,7 @@ IntGetConsoleCommandHistory(LPVOID lpHistory, DWORD cbHistory, LPCVOID lpExeName
     CONSOLE_API_MESSAGE ApiMessage;
     PCONSOLE_GETCOMMANDHISTORY GetCommandHistoryRequest = &ApiMessage.Data.GetCommandHistoryRequest;
     PCSR_CAPTURE_BUFFER CaptureBuffer;
+    PVOID ExeName, History;
 
     USHORT NumChars = (USHORT)(lpExeName ? (bUnicode ? wcslen(lpExeName) : strlen(lpExeName)) : 0);
 
@@ -88,7 +89,7 @@ IntGetConsoleCommandHistory(LPVOID lpHistory, DWORD cbHistory, LPCVOID lpExeName
         return 0;
     }
 
-    GetCommandHistoryRequest->ConsoleHandle = NtCurrentPeb()->ProcessParameters->ConsoleHandle;
+    GetCommandHistoryRequest->ConsoleHandle = TO_LPC_HANDLE(NtCurrentPeb()->ProcessParameters->ConsoleHandle);
     GetCommandHistoryRequest->HistoryLength = cbHistory;
     GetCommandHistoryRequest->ExeLength     = NumChars * (bUnicode ? sizeof(WCHAR) : sizeof(CHAR));
     GetCommandHistoryRequest->Unicode  =
@@ -108,10 +109,12 @@ IntGetConsoleCommandHistory(LPVOID lpHistory, DWORD cbHistory, LPCVOID lpExeName
     CsrCaptureMessageBuffer(CaptureBuffer,
                             (PVOID)lpExeName,
                             GetCommandHistoryRequest->ExeLength,
-                            (PVOID)&GetCommandHistoryRequest->ExeName);
+                            &ExeName);
+    GetCommandHistoryRequest->ExeName = WOW64_CAST_FROM_PTR(ExeName);
 
     CsrAllocateMessagePointer(CaptureBuffer, GetCommandHistoryRequest->HistoryLength,
-                              (PVOID*)&GetCommandHistoryRequest->History);
+                              &History);
+    GetCommandHistoryRequest->History = WOW64_CAST_FROM_PTR(History);
 
     CsrClientCallServer((PCSR_API_MESSAGE)&ApiMessage,
                         CaptureBuffer,
@@ -125,7 +128,7 @@ IntGetConsoleCommandHistory(LPVOID lpHistory, DWORD cbHistory, LPCVOID lpExeName
     }
 
     RtlCopyMemory(lpHistory,
-                  GetCommandHistoryRequest->History,
+                  History,
                   GetCommandHistoryRequest->HistoryLength);
 
     CsrFreeCaptureBuffer(CaptureBuffer);
@@ -149,7 +152,7 @@ IntGetConsoleCommandHistoryLength(LPCVOID lpExeName, BOOL bUnicode)
         return 0;
     }
 
-    GetCommandHistoryLengthRequest->ConsoleHandle = NtCurrentPeb()->ProcessParameters->ConsoleHandle;
+    GetCommandHistoryLengthRequest->ConsoleHandle = TO_LPC_HANDLE(NtCurrentPeb()->ProcessParameters->ConsoleHandle);
     GetCommandHistoryLengthRequest->ExeLength     = NumChars * (bUnicode ? sizeof(WCHAR) : sizeof(CHAR));
     GetCommandHistoryLengthRequest->Unicode  =
     GetCommandHistoryLengthRequest->Unicode2 = bUnicode;
@@ -202,7 +205,7 @@ IntSetConsoleNumberOfCommands(DWORD dwNumCommands,
         return FALSE;
     }
 
-    SetHistoryNumberCommandsRequest->ConsoleHandle = NtCurrentPeb()->ProcessParameters->ConsoleHandle;
+    SetHistoryNumberCommandsRequest->ConsoleHandle = TO_LPC_HANDLE(NtCurrentPeb()->ProcessParameters->ConsoleHandle);
     SetHistoryNumberCommandsRequest->NumCommands   = dwNumCommands;
     SetHistoryNumberCommandsRequest->ExeLength     = NumChars * (bUnicode ? sizeof(WCHAR) : sizeof(CHAR));
     SetHistoryNumberCommandsRequest->Unicode  =
@@ -354,7 +357,7 @@ SetConsoleCommandHistoryMode(IN DWORD dwMode)
     CONSOLE_API_MESSAGE ApiMessage;
     PCONSOLE_SETHISTORYMODE SetHistoryModeRequest = &ApiMessage.Data.SetHistoryModeRequest;
 
-    SetHistoryModeRequest->ConsoleHandle = NtCurrentPeb()->ProcessParameters->ConsoleHandle;
+    SetHistoryModeRequest->ConsoleHandle = TO_LPC_HANDLE(NtCurrentPeb()->ProcessParameters->ConsoleHandle);
     SetHistoryModeRequest->Mode          = dwMode;
 
     CsrClientCallServer((PCSR_API_MESSAGE)&ApiMessage,

@@ -2041,8 +2041,7 @@ IoSetTopLevelIrp(IN PIRP Irp)
  */
 BOOLEAN
 NTAPI
-IoIs32bitProcess(
-    IN PIRP Irp OPTIONAL)
+IoIs32bitProcess(IN PIRP Irp OPTIONAL)
 {
     PETHREAD pThread;
     PEPROCESS pProcess;
