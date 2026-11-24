@@ -29,11 +29,12 @@ WINE_DEFAULT_DEBUG_CHANNEL(combo);
  * Additional combo box definitions
  */
 
+/* WOW64_CAST_TO_HANDLE is a no-op in native builds (SysWOW64 keeps UINT64 handles) */
 #define CB_NOTIFY( lphc, code ) \
-    (SendMessageW((lphc)->owner, WM_COMMAND, \
-                  MAKEWPARAM(GetWindowLongPtrW((lphc)->self,GWLP_ID), (code)), (LPARAM)(lphc)->self))
+    (SendMessageW(WOW64_CAST_TO_HANDLE((lphc)->owner), WM_COMMAND, \
+                  MAKEWPARAM(GetWindowLongPtrW(WOW64_CAST_TO_HANDLE((lphc)->self),GWLP_ID), (code)), (LPARAM)WOW64_CAST_TO_HANDLE((lphc)->self)))
 
-#define CB_DISABLED( lphc )   (!IsWindowEnabled((lphc)->self))
+#define CB_DISABLED( lphc )   (!IsWindowEnabled(WOW64_CAST_TO_HANDLE((lphc)->self)))
 #define CB_OWNERDRAWN( lphc ) ((lphc)->dwStyle & (CBS_OWNERDRAWFIXED | CBS_OWNERDRAWVARIABLE))
 #define CB_HASSTRINGS( lphc ) ((lphc)->dwStyle & CBS_HASSTRINGS)
 #define CB_HWND( lphc )       ((lphc)->self)

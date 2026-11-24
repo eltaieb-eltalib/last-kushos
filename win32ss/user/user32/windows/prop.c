@@ -69,7 +69,8 @@ IntGetProp(HWND hWnd, ATOM Atom, BOOLEAN SystemProp)
   pWnd = ValidateHwnd(hWnd);
   if (!pWnd) return NULL;
 
-  ListEntry = SharedPtrToUser(WOW64_READ_PTR_FIELD(pWnd, WND, PropListHead[0]));
+  /* pWnd is a 32-bit pointer: go through ULONG_PTR before widening */
+  ListEntry = SharedPtrToUser(WOW64_READ_PTR_FIELD((ULONG_PTR)pWnd, WND, PropListHead[0]));
   for (i = 0; i < pWnd->PropListItems; i++ )
   {
       Property = WOW64_CONTAINING_RECORD(ListEntry, PROPERTY, PropListEntry);

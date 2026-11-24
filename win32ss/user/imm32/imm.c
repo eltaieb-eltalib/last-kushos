@@ -15,7 +15,11 @@
 WINE_DEFAULT_DEBUG_CHANNEL(imm);
 
 HMODULE ghImm32Inst = NULL; /* The IMM32 instance */
+#if defined(_M_IX86) && defined(BUILD_WOW6432)
+UINT64 gpsi = 0; /* native (64-bit) address, read through WOW64_READ_*_FIELD */
+#else
 PSERVERINFO gpsi = NULL;
+#endif
 SHAREDINFO gSharedInfo = { 0 };
 BYTE gfImmInitialized = FALSE; /* Is IMM32 initialized? */
 ULONG_PTR gHighestUserAddress = 0;
@@ -60,7 +64,11 @@ ImmRegisterClient(
     _In_ HINSTANCE hMod)
 {
     gSharedInfo = *ptr;
+#if defined(_M_IX86) && defined(BUILD_WOW6432)
+    gpsi = gSharedInfo.psi; /* keep all 64 bits; casting to a 32-bit pointer truncated it */
+#else
     gpsi = WOW64_CAST_TO_PTR(gSharedInfo.psi);
+#endif
     return ImmInitializeGlobals(hMod);
 }
 

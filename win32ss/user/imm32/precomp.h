@@ -86,7 +86,11 @@
 extern HMODULE ghImm32Inst;
 extern RTL_CRITICAL_SECTION gcsImeDpi;
 extern PIMEDPI gpImeDpiList;
+#if defined(_M_IX86) && defined(BUILD_WOW6432)
+extern UINT64 gpsi;
+#else
 extern PSERVERINFO gpsi;
+#endif
 extern SHAREDINFO gSharedInfo;
 extern HANDLE ghImmHeap;
 extern DWORD g_aimm_compat_flags;
