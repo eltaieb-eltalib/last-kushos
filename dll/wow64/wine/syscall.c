@@ -491,6 +491,15 @@ NTSTATUS WINAPI wow64_NtCallbackReturn( UINT *args )
     *frame->ret_ptr = ret_ptr;
     *frame->ret_len = ret_len;
     frame->status = status;
+#if defined(__REACTOS__) && defined(_M_AMD64)
+    /* Kush 1.1: jump without an SEH unwind. With Frame != 0 the x64 longjmp
+     * calls RtlUnwind, which has to walk through the 32-bit frames of the
+     * callback (no x64 unwind data) and fails (int3 in RtlpUnwindInternal):
+     * every window procedure callback of a 32-bit program that returned
+     * through here from deep enough killed the program (Firefox installer,
+     * CreateWindowEx). The frames in between have no handlers to run. */
+    ((_JUMP_BUFFER *)frame->jmpbuf)->Frame = 0;
+#endif
     longjmp( frame->jmpbuf, 1 );
     return STATUS_SUCCESS;
 }
