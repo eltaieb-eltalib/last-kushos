@@ -645,7 +645,15 @@ ObQueryDeviceMapInformation(
     /* Copy back data */
     _SEH2_TRY
     {
-        RtlCopyMemory(DeviceMapInfo, &MapInfo, sizeof(PROCESS_DEVICEMAP_INFORMATION));
+        /* Kush 1.1: copy only the Query part. Callers pass exactly
+         * RTL_FIELD_SIZE(PROCESS_DEVICEMAP_INFORMATION, Query) bytes (36);
+         * on x64 the whole union is 40 (it also holds a HANDLE), so copying
+         * sizeof(PROCESS_DEVICEMAP_INFORMATION) wrote 4 bytes of uninitialized
+         * kernel stack past the user buffer. In 32-bit (WOW64) programs that
+         * overwrote the saved EBP of GetLogicalDrives' caller (EBP became
+         * 0xFFFFFA80, the high half of a kernel pointer) and they crashed:
+         * the Firefox installer, Explorer-style drive enumeration... */
+        RtlCopyMemory(DeviceMapInfo, &MapInfo.Query, sizeof(MapInfo.Query));
     }
     _SEH2_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
     {
