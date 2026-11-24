@@ -615,9 +615,17 @@ LdrpInitializeThread(IN PCONTEXT Context)
             DbgPrint("LDR: loading WOW64.DLL failed, status 0x%08lx\n", Status);
             NtTerminateThread(NtCurrentThread(), Status);
         }
-        
+
+        /* Kush 1.1: release the native loader lock before entering WOW64.
+         * The 32-bit thread initialization takes the 32-bit loader lock; doing
+         * it while holding this one inverted the lock order against a thread
+         * that holds the 32-bit lock (LoadLibrary) and needs a native loader
+         * call (WOW64 loading wow64win.dll, ...): both waited forever
+         * (RtlpWaitForCriticalSection "Deadlock", seen with the Firefox
+         * installer). WOW64 thread init does not use native loader state. */
+        RtlLeaveCriticalSection(&LdrpLoaderLock);
         LdrpWow64LdrpInitialize(Context);
-        goto Exit;
+        return;
     }
 #endif
 
