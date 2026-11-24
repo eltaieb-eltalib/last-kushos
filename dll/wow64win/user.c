@@ -2106,6 +2106,17 @@ NTSTATUS WINAPI wow64_NtUserCreateWindowEx( UINT *args )
                                 instance, params, flags, client_instance, unk, ansi );
 #else
                                 instance, params, flags, pCtx);
+    /* Kush 1.1: say which window of a 32-bit program could not be created */
+    if (!ret)
+    {
+        if (IS_ATOM(plstrClassName32))
+            DbgPrint("WOW64WIN: CreateWindowEx failed: class #%lx style %lx ex %lx parent %p error %lu\n",
+                     PtrToUlong(plstrClassName32), style, ex_style, parent, NtCurrentTeb()->LastErrorValue);
+        else if (plstrClassName32)
+            DbgPrint("WOW64WIN: CreateWindowEx failed: class \"%.*ls\" style %lx ex %lx parent %p error %lu\n",
+                     (int)(lstrClassName.Length / sizeof(WCHAR)), (PCWSTR)lstrClassName.Buffer,
+                     style, ex_style, parent, NtCurrentTeb()->LastErrorValue);
+    }
 #endif
     return HandleToUlong( ret );
 }
