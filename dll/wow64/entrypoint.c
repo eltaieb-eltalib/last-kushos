@@ -475,8 +475,13 @@ FixupStartupThunks(HANDLE hProcess,
             pContext->Rcx = pContext32->Eax;
             pContext->Rdx = pContext32->Ebx;
             pContext->SegCs = 0x33;
+            /* Kush 1.1: same initial stack as the native BaseInitializeContext
+             * (Rsp = 16-byte aligned stack top, see kernel32 client/utils.c).
+             * The extra "- 8" left every 64-bit program started by a 32-bit
+             * one with a stack misaligned by 8 for its whole life: the first
+             * movaps on the stack faulted (Firefox started by its installer,
+             * maintenanceservice.exe, default-browser-agent.exe). */
             pContext->Rsp &= (~0xFULL);
-            pContext->Rsp -= 8;
             
             /* Manually fixup the entrypoint; see wow64_NtQuerySection */
             if (pContext->Rcx == 0x81231234)

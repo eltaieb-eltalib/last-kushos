@@ -8,6 +8,13 @@
 #include <winternl.h>
 #include <stdio.h>
 
+static __attribute__((noinline)) unsigned long long rsp_mod16(void)
+{
+    unsigned long long rsp;
+    __asm__ __volatile__("movq %%rsp, %0" : "=r"(rsp));
+    return rsp & 15; /* after our own call: 8 when the caller's stack is aligned */
+}
+
 int wmain(int argc, wchar_t **argv)
 {
     FILE *f = _wfopen(argc > 1 ? argv[1] : L"C:\\envdump.txt", L"w");
@@ -36,6 +43,7 @@ int wmain(int argc, wchar_t **argv)
     fwprintf(f, L"std handles: in %p out %p err %p\n", GetStdHandle(STD_INPUT_HANDLE), GetStdHandle(STD_OUTPUT_HANDLE), GetStdHandle(STD_ERROR_HANDLE));
     fwprintf(f, L"ProcessParameters %p: ImagePath [%.*ls] CmdLine len %u\n", pp,
              pp->ImagePathName.Length / 2, pp->ImagePathName.Buffer, pp->CommandLine.Length);
+    fwprintf(f, L"stack: rsp%%16 inside a callee = %llu (8 = correctly aligned)\n", rsp_mod16());
     fwprintf(f, L"RESULT: ok\n");
     fclose(f);
     return 0;
