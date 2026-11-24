@@ -21,15 +21,20 @@ Build (Linux, mingw-w64 **posix** toolchain, cmake, ninja, bison, flex, libgmp-d
    `uefildr.efi` to `EFI/BOOT/BOOTX64.EFI`, `freeldr.ini` to the root, and the
    `reactos` tree. Write it with Rufus in DD mode, UEFI only, Secure Boot off.
 
-## الخطوة الجاية: WoW64 (تشغيل برامج 32-bit)
+## WoW64: برامج 32-bit بقت شغالة على Kush (24 نوفمبر 2026)
 
-برامج التثبيت بتاعة Firefox وSPSS وvcredist كلها **32-bit**، وKush ما بيشغّل برامج 32-bit لسه ("Machine Type Mismatch").
-الحل على مستوى النظام هو طبقة **WoW64**. التقدير حوالي شهرين لـ 3 شهور شغل متواصل، على 5 مراحل كل واحدة ليها اختبار قبول.
-الـ prompt الجاهز لوكيل برمجة يشتغل عليها لوحده: [`docs/wow64/AGENT_PROMPT.md`](docs/wow64/AGENT_PROMPT.md).
-**نقطة البداية:** فرع [`wow64sync`](https://github.com/TheNNX/reactos/tree/wow64sync) بتاع Marcin Jabłoński (TheNNX):
-حوالي 27 ألف سطر WoW64 جاهزة (`wow64.dll`، و`wow64win.dll`، وبناء i386 لـ `SysWOW64`)، لسه تجريبي. فرع
-[mateo-cogeanu/ReactOS](https://github.com/mateo-cogeanu/ReactOS) اتفحص واترفض: README بتاعه بيقول إن برامج 32-bit
-متوقفة في تهيئة أول عملية، والإصلاح موجود عند TheNNX.
+دمجنا شغل WoW64 من فرع [`TheNNX/reactos` wow64sync](https://github.com/TheNNX/reactos/tree/wow64sync) وصلّحنا 17 مشكلة من جذورها
+(من ntdll والكيرنل لحد user32 وwin32k). النتيجة على QEMU:
+- `SysWOW64\cmd.exe` (نسخة x86) شغال ✅
+- `wow64test.exe`: نجح **12/12** ✅ (ملفات، ذاكرة، خيوط، SEH، CreateProcess، ريجستري)
+- نافذة 32-bit بزرار وcombobox وMessageBox ✅
+
+![wow64test 12/12](docs/wow64/screenshots/02-wow64test-12-of-12.png)
+
+التفاصيل كلها (المشاكل وأسبابها وحلولها، **والمشاكل اللي لسه ما اتحلّتش**) في [`docs/wow64/README.md`](docs/wow64/README.md).
+**مهم:** الـ ISO اللي بيطلع من الـ CI لسه **من غير** WoW64، لأن الـ CI ما فيهوش مترجم i386. عشان تبنيه بـ WoW64:
+`-DBUILD_WOW64_ENABLED=1 -DWOW64_MINGW_TOOLCHAIN_SUFFIX=-win32`. لإيقاف WoW64 على جهاز:
+`HKLM\SYSTEM\CurrentControlSet\Control\Kush\Wow64` و`Enabled=0`.
 
 ## Firefox فتح Google وبحث عن "ok" على Kush (23 نوفمبر 2026)
 

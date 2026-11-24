@@ -624,6 +624,33 @@ wow64_NtUserAlterWindowStyle(ULONG* pArgs)
     return NtUserAlterWindowStyle(hWnd, Index, NewValue);
 }
 
+static
+VOID
+cursordata_32to64(PCURSORDATA pCursorData, const CURSORDATA32 *pCursorData32)
+{
+    pCursorData->lpName = UlongToPtr(pCursorData32->lpName);
+    pCursorData->lpModName = UlongToPtr(pCursorData32->lpModName);
+    pCursorData->rt = pCursorData32->rt;
+    pCursorData->dummy = pCursorData32->dummy;
+    pCursorData->CURSORF_flags = pCursorData32->CURSORF_flags;
+    pCursorData->xHotspot = pCursorData32->xHotspot;
+    pCursorData->yHotspot = pCursorData32->yHotspot;
+    pCursorData->hbmMask = UlongToHandle(pCursorData32->hbmMask);
+    pCursorData->hbmColor = UlongToHandle(pCursorData32->hbmColor);
+    pCursorData->hbmAlpha = UlongToHandle(pCursorData32->hbmAlpha);
+    pCursorData->rcBounds = pCursorData32->rcBounds;
+    pCursorData->hbmUserAlpha = UlongToHandle(pCursorData32->hbmUserAlpha);
+    pCursorData->bpp = pCursorData32->bpp;
+    pCursorData->cx = pCursorData32->cx;
+    pCursorData->cy = pCursorData32->cy;
+    pCursorData->cpcur = pCursorData32->cpcur;
+    pCursorData->cicur = pCursorData32->cicur;
+    pCursorData->aspcur = NULL;
+    pCursorData->aicur = UlongToPtr(pCursorData32->aicur);     /* DWORD[], same layout */
+    pCursorData->ajifRate = UlongToPtr(pCursorData32->ajifRate); /* INT[], same layout */
+    pCursorData->iicur = pCursorData32->iicur;
+}
+
 NTSTATUS 
 WINAPI 
 wow64_NtUserSetCursorIconData(UINT *pArgs)
@@ -636,27 +663,27 @@ wow64_NtUserSetCursorIconData(UINT *pArgs)
     UNICODE_STRING usModule, usResName;
     CURSORDATA CursorData;
 
-    CursorData.lpName = UlongToPtr(pCursorData32->lpName);
-    CursorData.lpModName = UlongToPtr(pCursorData32->lpModName);
-    CursorData.rt = pCursorData32->rt;
-    CursorData.dummy = pCursorData32->dummy;
-    CursorData.CURSORF_flags = pCursorData32->CURSORF_flags;
-    CursorData.xHotspot = pCursorData32->xHotspot;
-    CursorData.yHotspot = pCursorData32->yHotspot;
-    CursorData.hbmMask = UlongToHandle(pCursorData32->hbmMask);
-    CursorData.hbmColor = UlongToHandle(pCursorData32->hbmColor);
-    CursorData.hbmAlpha = UlongToHandle(pCursorData32->hbmAlpha);
-    CursorData.rcBounds = pCursorData32->rcBounds;
-    CursorData.hbmUserAlpha = UlongToHandle(pCursorData32->hbmUserAlpha);
-    CursorData.bpp = pCursorData32->bpp;
-    CursorData.cx = pCursorData32->cx;
-    CursorData.cy = pCursorData32->cy;
-    CursorData.cpcur = pCursorData32->cpcur;
-    CursorData.cicur = pCursorData32->cicur;
-    CursorData.aspcur = UlongToPtr(pCursorData32->aspcur);
-    CursorData.aicur = UlongToPtr(pCursorData32->aicur);
-    CursorData.ajifRate = UlongToPtr(pCursorData32->ajifRate);
-    CursorData.iicur = pCursorData32->iicur;
+    cursordata_32to64(&CursorData, pCursorData32);
+
+    /* Kush 1.1: animated cursors (Kush's default cursors are .ani) carry an
+     * array of frames, each a CURSORDATA. It was passed through unconverted:
+     * win32k read the 32-bit frames as 64-bit structures, followed garbage
+     * pointers and faulted inside its SEH, which bugchecked the system. */
+    if ((CursorData.CURSORF_flags & CURSORF_ACON) && pCursorData32->aspcur && CursorData.cpcur)
+    {
+        const CURSORDATA32 *Frames32 = UlongToPtr(pCursorData32->aspcur);
+        PCURSORDATA Frames;
+        UINT i;
+
+        if (CursorData.cpcur > 0x10000)
+            return FALSE;
+        Frames = Wow64AllocateTemp(CursorData.cpcur * sizeof(*Frames));
+        if (!Frames)
+            return FALSE;
+        for (i = 0; i < CursorData.cpcur; i++)
+            cursordata_32to64(&Frames[i], &Frames32[i]);
+        CursorData.aspcur = Frames;
+    }
 
     return NtUserSetCursorIconData(hCursor,
                                    unicode_str_32to64(&usModule, pusModule32),

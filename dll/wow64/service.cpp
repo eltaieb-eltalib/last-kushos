@@ -260,7 +260,7 @@ Wow64SystemServiceEx(ULONG syscallNum,
             HANDLE hThread = get_handle(&pArgs);
             ULONG uCode = get_ulong(&pArgs);
             
-            DPRINT1("Terminating thread %p with a WOW64 call from %p\n", hThread, NtCurrentProcess());
+            DPRINT("Terminating thread %p with a WOW64 call from %p\n", hThread, NtCurrentProcess());
             
             status = NtTerminateThread(hThread, uCode);
             break;
@@ -270,7 +270,7 @@ Wow64SystemServiceEx(ULONG syscallNum,
             HANDLE hProcess = get_handle(&pArgs);
             ULONG uCode = get_ulong(&pArgs);
             
-            DPRINT1("Terminating process %p with a WOW64 call from %p\n", hProcess, NtCurrentProcess());
+            DPRINT("Terminating process %p with a WOW64 call from %p\n", hProcess, NtCurrentProcess());
             
             status = NtTerminateProcess(hProcess, uCode);
             break;
@@ -350,7 +350,7 @@ Wow64WinHandler(ULONG syscallNum,
             ASSERT(FALSE);
         }
         
-        DPRINT1("Loaded service table %p from %p.\n", pServiceTable, Wow64WinDll);
+        DPRINT("Loaded service table %p from %p.\n", pServiceTable, Wow64WinDll);
     }
     
     HandlerTable = pServiceTable->ServiceTable;

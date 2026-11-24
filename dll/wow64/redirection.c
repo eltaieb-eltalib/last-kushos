@@ -31,6 +31,21 @@ RedirectPath(const WOW64_PATH_REDIRECTION* Redirection,
                                            NULL);
     ASSERT(NT_SUCCESS(Status));
     
+    /* Kush 1.1: the name must really start with From (within its Length; the
+     * buffer may hold a longer string past Length) and end there or at a path
+     * separator ("system32x" is not "system32"). Without the length check,
+     * Length - From.Length went negative and the copy below overran the heap. */
+    if (ObjectName->Length < From.Length ||
+        (ObjectName->Length > From.Length &&
+         ObjectName->Buffer[From.Length / sizeof(WCHAR)] != L'\\'))
+    {
+        return FALSE;
+    }
+    if ((ULONG)ObjectName->Length - From.Length + To.Length > MAXUSHORT - sizeof(WCHAR))
+    {
+        return FALSE;
+    }
+
     NewLength = ObjectName->Length - From.Length + To.Length;
 
     Buffer = Wow64AllocateTemp(sizeof(*Buffer) + NewLength);
@@ -41,6 +56,7 @@ RedirectPath(const WOW64_PATH_REDIRECTION* Redirection,
     if (_wcsnicmp(ObjectName->Buffer, From.Buffer, From.Length / sizeof(WCHAR)) == 0)
     {
         Buffer->Length = NewLength;
+        Buffer->MaximumLength = NewLength; /* Kush 1.1: was left uninitialized */
         
         RtlCopyMemory(Buffer->Buffer, To.Buffer, To.Length);
         

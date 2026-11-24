@@ -226,7 +226,7 @@ Wow64InitEntrypointTranslation(VOID)
     wcscat(Directory64, Buffer);
     wcscat(Directory64, L"\\System32");
     
-    DPRINT1("Translation directories %ls and %ls\n", Directory32, Directory64);
+    DPRINT("Translation directories %ls and %ls\n", Directory32, Directory64);
     
     HANDLE hCurrentSection32 = NULL, hCurrentSection64 = NULL;
     
@@ -280,7 +280,7 @@ Wow64InitEntrypointTranslation(VOID)
         }
         pTranslation->SymbolAddress64 = (ULONG_PTR)Temp;
         
-        DbgPrint("WOW64: translating %ls!%s=%llX <-> %ls!%s=%lX\n", 
+        DPRINT("WOW64: translating %ls!%s=%llX <-> %ls!%s=%lX\n", 
                pTranslation->LibraryName64,
                pTranslation->SymbolName64,
                pTranslation->SymbolAddress64, 

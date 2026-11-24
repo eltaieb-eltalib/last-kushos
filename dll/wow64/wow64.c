@@ -75,6 +75,20 @@ Wow64CopyContext32To64(PCONTEXT pContext,
     pContext->SegGs = pContext32->SegGs;
     pContext->SegSs = pContext32->SegSs;
     pContext->MxCsr = INITIAL_MXCSR;
+
+    /* Kush 1.1: CONTEXT_FULL includes the floating point state. Restoring a
+     * zeroed FltSave set the x87 control word to 0 (every FP exception
+     * unmasked) and wiped the XMM registers of the 32-bit code. Only claim
+     * floating point state when the 32-bit context carries it (FXSAVE
+     * format, identical in both). */
+    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER; /* CS/SS are part of CONTROL */
+    if ((pContext32->ContextFlags & WOW64_CONTEXT_EXTENDED_REGISTERS) == WOW64_CONTEXT_EXTENDED_REGISTERS)
+    {
+        C_ASSERT(sizeof(pContext->FltSave) == sizeof(pContext32->ExtendedRegisters));
+        RtlCopyMemory(&pContext->FltSave, pContext32->ExtendedRegisters, sizeof(pContext->FltSave));
+        pContext->MxCsr = pContext->FltSave.MxCsr;
+        pContext->ContextFlags |= CONTEXT_FLOATING_POINT;
+    }
 }
 
 VOID
@@ -97,7 +111,13 @@ Wow64CopyContext64To32(PWOW64_CONTEXT pContext32,
     pContext32->SegGs = pContext->SegGs;
     pContext32->SegSs = pContext->SegSs;
     pContext32->EFlags = pContext->EFlags;
-    pContext32->ContextFlags = pContext->ContextFlags;
+    /* Kush 1.1: the AMD64 CONTEXT_* bits differ from the i386 ones */
+    pContext32->ContextFlags = WOW64_CONTEXT_CONTROL | WOW64_CONTEXT_INTEGER | WOW64_CONTEXT_SEGMENTS;
+    if ((pContext->ContextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
+    {
+        RtlCopyMemory(pContext32->ExtendedRegisters, &pContext->FltSave, sizeof(pContext32->ExtendedRegisters));
+        pContext32->ContextFlags |= WOW64_CONTEXT_EXTENDED_REGISTERS;
+    }
 }
 
 /* From wine/dlls/ntdll/unix/env.c */
@@ -161,7 +181,7 @@ static void *build_wow64_parameters( const RTL_USER_PROCESS_PARAMETERS *params )
     dup_unicode_string( &params->ShellInfo, &dst, &wow64_params->ShellInfo );
     dup_unicode_string( &params->RuntimeData, &dst, &wow64_params->RuntimeData );
     
-    DPRINT1("WOW64: Converting native process parameters for image '%wZ', command line '%wZ'\n", 
+    DPRINT("WOW64: Converting native process parameters for image '%wZ', command line '%wZ'\n", 
             &params->ImagePathName, 
             &params->CommandLine);
 
@@ -949,12 +969,6 @@ Wow64Trampoline(PCONTEXT pContext)
     /* Kush 1.1: the 32-bit kernel32 may have been loaded at another base */
     EnterApc32Stack.Context32.Eip = Wow64FixupRelocatedEntrypoint32(EnterApc32Stack.Context32.Eip);
     Wow64CopyContext32To64(pContext, &EnterApc32Stack.Context32);
-    {
-        MEMORY_BASIC_INFORMATION mbi = {0};
-        NtQueryVirtualMemory(NtCurrentProcess(), (PVOID)pContext->Rip, MemoryBasicInformation, &mbi, sizeof(mbi), NULL);
-        DbgPrint("WOW64: 32-bit init returned, continuing at %p cs %x esp %x (alloc %p state %lx prot %lx type %lx)\n",
-                 (PVOID)pContext->Rip, pContext->SegCs, (ULONG)pContext->Rsp, mbi.AllocationBase, mbi.State, mbi.Protect, mbi.Type);
-    }
     return STATUS_SUCCESS;
 }
 
@@ -969,7 +983,7 @@ Wow64InitThread(PCONTEXT pContext)
 
     WowTeb = (PTEB32)ROUND_TO_PAGES((ULONG_PTR)(Teb + 1));
 
-    DPRINT1("WOW64 TEB %p, TEB %p\n", WowTeb, Teb);
+    DPRINT("WOW64 TEB %p, TEB %p\n", WowTeb, Teb);
 
     WowTeb->NtTib.Self = PtrToUlong(WowTeb);
     
@@ -1017,7 +1031,7 @@ Wow64InitThread(PCONTEXT pContext)
     WowTeb->ClientId.UniqueProcess = HandleToULong(Teb->ClientId.UniqueProcess);
     WowTeb->ClientId.UniqueThread = HandleToULong(Teb->ClientId.UniqueThread);
 
-    DPRINT1("Wow64 thread client id: %X:%X\n", WowTeb->ClientId.UniqueProcess, WowTeb->ClientId.UniqueThread);
+    DPRINT("Wow64 thread client id: %X:%X\n", WowTeb->ClientId.UniqueProcess, WowTeb->ClientId.UniqueThread);
 
     Status = Wow64Trampoline(pContext);
     ASSERT(NT_SUCCESS(Status));
@@ -1028,8 +1042,6 @@ WINAPI
 Wow64LdrpInitialize(PCONTEXT pContext)
 {
     static LONG ProcessInitialized = 0;
-
-    DbgPrint("WOW64: initializing thread, start address %p\n", (PVOID)pContext->Rip);
 
     if (InterlockedCompareExchange(&ProcessInitialized,
                                    1,

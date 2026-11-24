@@ -10,7 +10,6 @@ wow64_NtContinue(UINT *pArgs)
     NTSTATUS Status = pContext32->Eax;
     struct user_apc_frame *Frame = NtCurrentTeb()->TlsSlots[WOW64_TLS_APCLIST];
 
-    DbgPrint("WOW64: NtContinue eip %x esp %x cs %x\n", pContext32->Eip, pContext32->Esp, pContext32->SegCs);
     pBTCpuSetContext(NtCurrentThread(), NtCurrentProcess(), NULL, pContext32);
 
     while (Frame && Frame->wow_context != pContext32)
@@ -23,6 +22,26 @@ wow64_NtContinue(UINT *pArgs)
     if (Frame) 
     {   
         NtContinue(Frame->context, bRasieAlert);
+    }
+    else
+    {
+        /* Kush 1.1: an ordinary 32-bit NtContinue (KiUserExceptionDispatcher
+         * after a handled exception, SetThreadContext-style resumes...).
+         * BTCpuSetContext relies on ThreadWow64Context, which the kernel does
+         * not implement, so nothing happened and ZwContinue simply returned
+         * to its caller: every handled 32-bit exception then became a nested
+         * "exception 0x0". Continue directly with a native context in
+         * compatibility mode (CS 0x23), like the thread start does. */
+        CONTEXT Context;
+
+        Wow64CopyContext32To64(&Context, pContext32);
+        Context.SegCs = 0x23;
+        Context.SegSs = 0x2b;
+        Context.SegDs = 0x2b;
+        Context.SegEs = 0x2b;
+        Context.SegGs = 0x2b;
+        Context.SegFs = 0x53;
+        return NtContinue(&Context, bRasieAlert);
     }
 
     if (bRasieAlert) NtTestAlert();

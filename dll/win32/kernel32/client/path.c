@@ -2432,7 +2432,9 @@ GetSystemWindowsDirectoryW(OUT LPWSTR lpBuffer,
 }
 
 /*
- * @unimplemented
+ * @implemented
+ * Kush 1.1: %SystemRoot%\SysWOW64, no longer a hardcoded C:\ReactOS path
+ * (wrong on the Live CD, X:\reactos, and on any other install directory).
  */
 UINT
 WINAPI
@@ -2440,16 +2442,22 @@ GetSystemWow64DirectoryW(OUT LPWSTR lpBuffer,
                          IN UINT uSize)
 {
 #if defined(_WIN64) || defined(BUILD_WOW6432)
-    const WCHAR WowDir[] = L"C:\\ReactOS\\SysWOW64";
+    static const WCHAR Suffix[] = L"\\SysWOW64";
+    UINT WinLen = BaseWindowsDirectory.Length / sizeof(WCHAR);
+    UINT Needed;
 
-    /* FIXME */
-    if (uSize < sizeof(WowDir) / sizeof(WCHAR))
+    /* Drop a trailing backslash of the Windows directory, if any */
+    if (WinLen && BaseWindowsDirectory.Buffer[WinLen - 1] == L'\\') WinLen--;
+    Needed = WinLen + _countof(Suffix); /* includes the terminating NUL */
+
+    if (!lpBuffer || uSize < Needed)
     {
         SetLastError(ERROR_INSUFFICIENT_BUFFER);
-        return 0;
+        return Needed;
     }
-    RtlCopyMemory(lpBuffer, WowDir, sizeof(WowDir));
-    return sizeof(WowDir) / sizeof(WCHAR) - 1;
+    RtlCopyMemory(lpBuffer, BaseWindowsDirectory.Buffer, WinLen * sizeof(WCHAR));
+    RtlCopyMemory(lpBuffer + WinLen, Suffix, sizeof(Suffix));
+    return Needed - 1;
 #else
     SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return 0;
@@ -2457,7 +2465,7 @@ GetSystemWow64DirectoryW(OUT LPWSTR lpBuffer,
 }
 
 /*
- * @unimplemented
+ * @implemented
  */
 UINT
 WINAPI
@@ -2465,16 +2473,19 @@ GetSystemWow64DirectoryA(OUT LPSTR lpBuffer,
                          IN UINT uSize)
 {
 #if defined(_WIN64) || defined(BUILD_WOW6432)
-    const char WowDir[] = "C:\\ReactOS\\SysWOW64";
+    WCHAR Buffer[MAX_PATH];
+    UINT Len = GetSystemWow64DirectoryW(Buffer, _countof(Buffer));
+    int Needed;
 
-    /* FIXME */
-    if (uSize < sizeof(WowDir))
+    if (Len == 0 || Len >= _countof(Buffer)) return 0;
+    Needed = WideCharToMultiByte(CP_ACP, 0, Buffer, Len + 1, NULL, 0, NULL, NULL);
+    if (!lpBuffer || uSize < (UINT)Needed)
     {
         SetLastError(ERROR_INSUFFICIENT_BUFFER);
-        return 0;
+        return Needed;
     }
-    RtlCopyMemory(lpBuffer, WowDir, sizeof(WowDir));
-    return sizeof(WowDir) - 1;
+    WideCharToMultiByte(CP_ACP, 0, Buffer, Len + 1, lpBuffer, uSize, NULL, NULL);
+    return Needed - 1;
 #else
     SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return 0;

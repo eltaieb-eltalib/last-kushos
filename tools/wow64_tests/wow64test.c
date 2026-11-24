@@ -22,10 +22,20 @@ static DWORD WINAPI thread_proc(LPVOID p)
     return 7;
 }
 
-static LONG WINAPI filter(EXCEPTION_POINTERS *ep)
+/* Raw i386 SEH handler (mingw's __try1 registers a handler, not a filter).
+ * The faulting instruction is "mov eax, [eax]" (8B 00, 2 bytes): skip it. */
+static volatile LONG g_seh_hits;
+static EXCEPTION_DISPOSITION __cdecl seh_handler(EXCEPTION_RECORD *rec, void *frame,
+                                                 CONTEXT *ctx, void *disp)
 {
-    return ep->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION
-           ? EXCEPTION_EXECUTE_HANDLER : EXCEPTION_CONTINUE_SEARCH;
+    (void)frame; (void)disp;
+    if (rec->ExceptionCode == EXCEPTION_ACCESS_VIOLATION && !(rec->ExceptionFlags & 6))
+    {
+        g_seh_hits++;
+        ctx->Eip += 2;
+        return ExceptionContinueExecution;
+    }
+    return ExceptionContinueSearch;
 }
 
 int main(void)
@@ -101,18 +111,14 @@ int main(void)
         check("CreateThread + wait", ok, NULL);
     }
 
-    /* Structured exceptions (32-bit SEH chain) */
+    /* Structured exceptions (32-bit SEH chain through FS:[0]) */
     {
-        BOOL caught = FALSE;
-        __try1(filter)
+        __try1(seh_handler)
         {
-            *(volatile int *)0 = 1;
+            __asm__ __volatile__("xorl %%eax, %%eax\n\t.byte 0x8b, 0x00" ::: "eax", "memory");
         }
-        __except1
-        {
-            caught = TRUE;
-        }
-        check("SEH catches access violation", caught, NULL);
+        __except1;
+        check("SEH catches access violation", g_seh_hits == 1, NULL);
     }
 
     /* Child process: run cmd /c (32-bit cmd from SysWOW64 if redirection works) */

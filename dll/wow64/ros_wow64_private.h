@@ -120,7 +120,13 @@ Wow64ApcRoutine(ULONG_PTR SystemArgument1,
                 PCONTEXT  Context);
 
 /* TODO: Refactor, all of this could be done in a cleaner way */
+/* Kush 1.1: never inline. The 32-bit code runs on a stack that starts at
+ * StackBuffer and grows down; inlined, GCC could place StackBuffer above the
+ * caller's locals (e.g. the EXCEPTION_RECORD32/WOW64_CONTEXT handed to the
+ * 32-bit KiUserExceptionDispatcher), which the 32-bit code then overwrote.
+ * As a separate frame it is always below every caller local. */
 static
+__attribute__((noinline))
 ULONG_PTR
 CallOrJump32(ULONG Address, ULONG nArgc, PULONG Args, BOOL bJump)
 {    
