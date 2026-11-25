@@ -254,6 +254,33 @@ XhciQueryPciIdentity(
     Id->PciSubsystemVendorId = Config.u.type0.SubVendorID;
     Id->PciSubsystemId = Config.u.type0.SubSystemID;
 
+    /*
+     * Kush: Intel 7/8/9 series PCHs (Panther, Lynx and Wildcat Point) wire the
+     * same physical USB ports to both the EHCI and the xHCI controller; the
+     * firmware usually leaves them on EHCI and the OS must route them to xHCI
+     * (Linux: usb_enable_intel_xhci_ports). Without this, devices on those
+     * ports never appear on the xHCI root hub: a ThinkPad L440 (Lynx Point)
+     * booted from a USB stick stopped with INACCESSIBLE_BOOT_DEVICE (0x7B,
+     * C0000034). USB3PRM/USB2PRM say which ports the OS may switch; writing
+     * them to USB3_PSSEN/XUSB2PR enables SuperSpeed and moves USB 2.0 to xHCI.
+     */
+    if (Id->PciVendorId == 0x8086 &&
+        (Id->PciDeviceId == 0x1E31 ||                              /* Panther Point */
+         Id->PciDeviceId == 0x8C31 || Id->PciDeviceId == 0x9C31 || /* Lynx Point (-LP) */
+         Id->PciDeviceId == 0x8CB1 || Id->PciDeviceId == 0x9CB1))  /* Wildcat Point (-LP) */
+    {
+        ULONG Usb3Prm = 0, Usb2Prm = 0;
+
+        if (Bus->GetBusData(Bus->Context, PCI_WHICHSPACE_CONFIG, &Usb3Prm, 0xDC, sizeof(ULONG)) == sizeof(ULONG) &&
+            Bus->GetBusData(Bus->Context, PCI_WHICHSPACE_CONFIG, &Usb2Prm, 0xD4, sizeof(ULONG)) == sizeof(ULONG))
+        {
+            Bus->SetBusData(Bus->Context, PCI_WHICHSPACE_CONFIG, &Usb3Prm, 0xD8, sizeof(ULONG)); /* USB3_PSSEN */
+            Bus->SetBusData(Bus->Context, PCI_WHICHSPACE_CONFIG, &Usb2Prm, 0xD0, sizeof(ULONG)); /* XUSB2PR */
+            DPRINT1("Intel switchable xHCI %04x: ports routed to xHCI (USB3 %lx, USB2 %lx)\n",
+                    Id->PciDeviceId, Usb3Prm, Usb2Prm);
+        }
+    }
+
     /* VIA keeps its firmware version in config space */
     if (Id->PciVendorId == 0x1106 && Id->PciDeviceId == 0x3432)
     {
