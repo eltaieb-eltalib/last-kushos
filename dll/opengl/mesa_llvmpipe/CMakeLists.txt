@@ -27,14 +27,30 @@ set(_mesa_archive ${_mesa_dir}/mesa3d-mingw.7z)
 if(NOT EXISTS ${_mesa_dir}/x64/libgallium_wgl.dll)
     file(MAKE_DIRECTORY ${_mesa_dir})
     message(STATUS "Kush: downloading Mesa ${KUSH_MESA_VERSION} (llvmpipe)")
-    file(DOWNLOAD ${KUSH_MESA_URL} ${_mesa_archive}
-         EXPECTED_HASH SHA256=${KUSH_MESA_SHA256}
-         STATUS _mesa_status
-         TLS_VERIFY ON)
+    # No EXPECTED_HASH here: a failed download must only warn, and some
+    # CMake builds (RosBE's) have no HTTPS at all ("Unsupported protocol").
+    file(DOWNLOAD ${KUSH_MESA_URL} ${_mesa_archive} STATUS _mesa_status TLS_VERIFY ON)
     list(GET _mesa_status 0 _mesa_code)
     if(NOT _mesa_code EQUAL 0)
         list(GET _mesa_status 1 _mesa_msg)
-        message(WARNING "Kush: Mesa download failed (${_mesa_msg}); building without llvmpipe.")
+        message(STATUS "Kush: CMake could not download Mesa (${_mesa_msg}), trying curl/wget")
+        file(REMOVE ${_mesa_archive})
+        find_program(KUSH_CURL curl)
+        find_program(KUSH_WGET wget)
+        if(KUSH_CURL)
+            execute_process(COMMAND ${KUSH_CURL} -fsSL --retry 3 -o ${_mesa_archive} ${KUSH_MESA_URL}
+                            RESULT_VARIABLE _mesa_code)
+        elseif(KUSH_WGET)
+            execute_process(COMMAND ${KUSH_WGET} -q -O ${_mesa_archive} ${KUSH_MESA_URL}
+                            RESULT_VARIABLE _mesa_code)
+        endif()
+    endif()
+    set(_mesa_hash "")
+    if(EXISTS ${_mesa_archive})
+        file(SHA256 ${_mesa_archive} _mesa_hash)
+    endif()
+    if(NOT _mesa_hash STREQUAL KUSH_MESA_SHA256)
+        message(WARNING "Kush: Mesa download failed or its SHA256 does not match; building without llvmpipe.")
         file(REMOVE ${_mesa_archive})
         return()
     endif()
@@ -42,8 +58,19 @@ if(NOT EXISTS ${_mesa_dir}/x64/libgallium_wgl.dll)
                             x64/libgallium_wgl.dll x86/libgallium_wgl.dll
                     WORKING_DIRECTORY ${_mesa_dir}
                     RESULT_VARIABLE _mesa_x)
+    if(NOT EXISTS ${_mesa_dir}/x64/libgallium_wgl.dll)
+        # Older CMake (libarchive) may not read every 7z filter; use 7-Zip.
+        find_program(KUSH_7Z NAMES 7z 7za 7zr)
+        if(KUSH_7Z)
+            execute_process(COMMAND ${KUSH_7Z} x -y ${_mesa_archive}
+                                    x64/libgallium_wgl.dll x86/libgallium_wgl.dll
+                            WORKING_DIRECTORY ${_mesa_dir}
+                            OUTPUT_QUIET
+                            RESULT_VARIABLE _mesa_x)
+        endif()
+    endif()
     file(REMOVE ${_mesa_archive})
-    if(NOT _mesa_x EQUAL 0 OR NOT EXISTS ${_mesa_dir}/x64/libgallium_wgl.dll)
+    if(NOT EXISTS ${_mesa_dir}/x64/libgallium_wgl.dll)
         message(WARNING "Kush: could not extract Mesa; building without llvmpipe.")
         return()
     endif()
