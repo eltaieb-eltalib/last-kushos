@@ -507,3 +507,53 @@ BOOL WINAPI KushQueryThreadCycleTime(HANDLE Thread, PULONG64 CycleTime)
     *CycleTime = KushFileTimeToCycles(&k, &u);
     return TRUE;
 }
+
+
+/*
+ * Kush 1.1: Windows 7 processor-group and module APIs used by Mesa's
+ * llvmpipe (libgallium_wgl.dll, the system OpenGL). Kush has a single
+ * processor group (group 0), like ReactOS' GetActiveProcessorGroupCount.
+ */
+BOOL
+WINAPI
+GetProcessGroupAffinity(
+    _In_ HANDLE hProcess,
+    _Inout_ PUSHORT GroupCount,
+    _Out_writes_to_(*GroupCount, *GroupCount) PUSHORT GroupArray)
+{
+    UNREFERENCED_PARAMETER(hProcess);
+
+    if (!GroupCount)
+    {
+        SetLastError(ERROR_INVALID_PARAMETER);
+        return FALSE;
+    }
+    if (*GroupCount < 1 || !GroupArray)
+    {
+        *GroupCount = 1;
+        SetLastError(ERROR_INSUFFICIENT_BUFFER);
+        return FALSE;
+    }
+    GroupArray[0] = 0;
+    *GroupCount = 1;
+    return TRUE;
+}
+
+BOOL
+WINAPI
+EnumProcessModules(HANDLE hProcess, HMODULE *lphModule, DWORD cb, LPDWORD lpcbNeeded);
+
+/* LIST_MODULES_DEFAULT/32BIT/64BIT/ALL: a native process sees its own
+ * modules either way; WOW64 cross-bitness listing is not supported here. */
+BOOL
+WINAPI
+K32EnumProcessModulesEx(
+    _In_ HANDLE hProcess,
+    _Out_writes_bytes_(cb) HMODULE *lphModule,
+    _In_ DWORD cb,
+    _Out_ LPDWORD lpcbNeeded,
+    _In_ DWORD dwFilterFlag)
+{
+    UNREFERENCED_PARAMETER(dwFilterFlag);
+    return EnumProcessModules(hProcess, lphModule, cb, lpcbNeeded);
+}

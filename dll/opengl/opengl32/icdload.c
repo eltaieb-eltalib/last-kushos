@@ -38,6 +38,54 @@ static const WCHAR CustomDrivers_Key[] = L"SOFTWARE\\ReactOS\\OpenGL";
 static Drv_Opengl_Info CustomDrvInfo;
 static CUSTOM_DRIVER_STATE CustomDriverState = OGL_CD_NOT_QUERIED;
 
+/* Kush 1.1: machine-wide default ICD for display drivers without OpenGL
+ * (VBE/GOP framebuffer, virtual machines): HKLM\SOFTWARE\Kush\OpenGL
+ * "DefaultICD" names an OpenGLDrivers subkey (Mesa llvmpipe, OpenGL 4.5).
+ * Without it such DCs got the built-in Mesa 2.6 (OpenGL 1.1), and wined3d
+ * (Direct3D) refused to run ("ReactOS DirectX Needs at least OpenGL 2.0"). */
+static const WCHAR KushOpenGL_Key[] = L"SOFTWARE\\Kush\\OpenGL";
+static Drv_Opengl_Info DefaultDrvInfo;
+static LONG DefaultDrvState = -1; /* -1 not queried, 0 none, 1 found */
+
+static pDrv_Opengl_Info IntGetDefaultIcdInfo(void)
+{
+    HKEY KushKey = NULL, OglKey = NULL, DrvKey = NULL;
+    DWORD dwType, dwSize;
+    LONG ret;
+
+    if (DefaultDrvState >= 0)
+        return DefaultDrvState ? &DefaultDrvInfo : NULL;
+
+    DefaultDrvState = 0;
+    memset(&DefaultDrvInfo, 0, sizeof(DefaultDrvInfo));
+
+    if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, KushOpenGL_Key, 0, KEY_READ, &KushKey) != ERROR_SUCCESS)
+        return NULL;
+    dwSize = sizeof(DefaultDrvInfo.DriverName);
+    ret = RegQueryValueExW(KushKey, L"DefaultICD", 0, &dwType, (LPBYTE)DefaultDrvInfo.DriverName, &dwSize);
+    RegCloseKey(KushKey);
+    if (ret != ERROR_SUCCESS || dwType != REG_SZ || !DefaultDrvInfo.DriverName[0])
+        return NULL;
+
+    if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, OpenGLDrivers_Key, 0, KEY_READ, &OglKey) != ERROR_SUCCESS)
+        return NULL;
+    ret = RegOpenKeyExW(OglKey, DefaultDrvInfo.DriverName, 0, KEY_READ, &DrvKey);
+    RegCloseKey(OglKey);
+    if (ret != ERROR_SUCCESS)
+        return NULL;
+
+    dwSize = sizeof(DefaultDrvInfo.Version);
+    ret = RegQueryValueExW(DrvKey, L"Version", 0, &dwType, (LPBYTE)&DefaultDrvInfo.Version, &dwSize);
+    if (ret == ERROR_SUCCESS && dwType == REG_DWORD)
+    {
+        dwSize = sizeof(DefaultDrvInfo.DriverVersion);
+        RegQueryValueExW(DrvKey, L"DriverVersion", 0, &dwType, (LPBYTE)&DefaultDrvInfo.DriverVersion, &dwSize);
+        DefaultDrvState = 1;
+    }
+    RegCloseKey(DrvKey);
+    return DefaultDrvState ? &DefaultDrvInfo : NULL;
+}
+
 static void APIENTRY wglSetCurrentValue(PVOID value)
 {
     IntSetCurrentICDPrivate(value);
@@ -142,9 +190,14 @@ custom_end:
         dwInput = OPENGL_GETINFO;
         ret = ExtEscape(hdc, QUERYESCSUPPORT, sizeof(DWORD), (LPCSTR)&dwInput, 0, NULL);
 
-        /* Driver doesn't support opengl */
+        /* Driver doesn't support opengl: Kush 1.1 default ICD, else ROSSWI */
         if(ret <= 0)
-            return NULL;
+        {
+            pDrvInfo = IntGetDefaultIcdInfo();
+            if (!pDrvInfo)
+                return NULL;
+            goto have_driver;
+        }
 
         /* Query for the ICD DLL name and version */
         dwInput = OPENGL_GETINFO_DRVNAME;
@@ -159,6 +212,7 @@ custom_end:
         pDrvInfo = &DrvInfo;
     }
 
+have_driver:
     /* Protect the list while we are loading*/
     EnterCriticalSection(&icdload_cs);
 

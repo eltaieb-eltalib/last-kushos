@@ -340,8 +340,8 @@
 @ stdcall FreeUserPhysicalPages(long long long)
 @ stdcall GenerateConsoleCtrlEvent(long long)
 @ stdcall GetACP()
-@ stdcall -version=0x601+ GetActiveProcessorCount(long)
-@ stdcall -version=0x601+ GetActiveProcessorGroupCount()
+@ stdcall GetActiveProcessorCount(long) ; Kush 1.1 ungated (Mesa llvmpipe)
+@ stdcall GetActiveProcessorGroupCount() ; Kush 1.1 ungated
 @ stdcall -version=0x600+ GetApplicationRecoveryCallback(ptr ptr ptr ptr ptr)
 @ stdcall GetApplicationRestartSettings(ptr ptr ptr ptr) KushGetApplicationRestartSettings ; Kush 1.1 (was a stub)
 @ stdcall GetAtomNameA(long ptr long)
@@ -561,7 +561,7 @@
 @ stdcall GetPrivateProfileStructW(wstr wstr ptr long wstr)
 @ stdcall GetProcAddress(long str)
 @ stdcall GetProcessAffinityMask(long ptr ptr)
-@ stdcall -stub -version=0x601+ GetProcessGroupAffinity(ptr ptr ptr)
+@ stdcall GetProcessGroupAffinity(ptr ptr ptr) ; Kush 1.1 (kush/kush_win8.c)
 @ stdcall GetProcessDEPPolicy(ptr ptr ptr)
 @ stdcall GetProcessHandleCount(long ptr)
 @ stdcall -norelay GetProcessHeap()
@@ -765,7 +765,7 @@
 @ stdcall -version=0x601+ K32EnumPageFilesA(ptr ptr) EnumPageFilesA
 @ stdcall -version=0x601+ K32EnumPageFilesW(ptr ptr) EnumPageFilesW
 @ stdcall K32EnumProcessModules(long ptr long ptr) EnumProcessModules ; Kush 1.1 ungated
-@ stdcall -stub -version=0x601+ K32EnumProcessModulesEx(long ptr long ptr long); EnumProcessModulesEx
+@ stdcall K32EnumProcessModulesEx(long ptr long ptr long) ; Kush 1.1 (kush/kush_win8.c)
 @ stdcall -version=0x601+ K32EnumProcesses(ptr long ptr) EnumProcesses
 @ stdcall -version=0x601+ K32GetDeviceDriverBaseNameA(ptr ptr long) GetDeviceDriverBaseNameA
 @ stdcall -version=0x601+ K32GetDeviceDriverBaseNameW(ptr ptr long) GetDeviceDriverBaseNameW
