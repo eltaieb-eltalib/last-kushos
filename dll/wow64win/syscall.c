@@ -205,6 +205,7 @@ static VOID InitServiceTable(VOID)
     IMPLEMENT_SERVICE(GdiSwapBuffers);
     IMPLEMENT_SERVICE(GdiExtEscape);
     IMPLEMENT_SERVICE(GdiGetDCDword);
+    IMPLEMENT_SERVICE(UserSetWindowsHookEx); /* Kush: + the hook callback in user_ros.c */
     IMPLEMENT_SERVICE(GdiGetCharWidthW);
     IMPLEMENT_SERVICE(UserAlterWindowStyle);
     IMPLEMENT_SERVICE(UserSetWindowRgn);

@@ -70,3 +70,33 @@ typedef struct _LPK_CALLBACK_ARGUMENTS32
     UINT count;
     BOOL bRect;
 } LPK_CALLBACK_ARGUMENTS32, *PLPK_CALLBACK_ARGUMENTS32;
+
+/* Kush: window hooks for 32-bit programs (User32CallHookProcFromKernel) */
+typedef struct _HOOKPROC_CALLBACK_ARGUMENTS32
+{
+    INT HookId;
+    INT Code;
+    ULONG wParam;
+    ULONG lParam;       /* offset of the extra data from the start, or a value */
+    ULONG Proc;
+    INT Mod;
+    ULONG offPfn;
+    BOOLEAN Ansi;
+    LONG Result;
+    UINT lParamSize;
+    WCHAR ModuleName[512];
+} HOOKPROC_CALLBACK_ARGUMENTS32, *PHOOKPROC_CALLBACK_ARGUMENTS32;
+
+typedef struct _K32_MSG32 { ULONG hwnd; UINT message; ULONG wParam; ULONG lParam; DWORD time; POINT pt; } K32_MSG32;
+typedef struct _K32_MOUSEHOOKSTRUCT32 { POINT pt; ULONG hwnd; UINT wHitTestCode; ULONG dwExtraInfo; } K32_MOUSEHOOKSTRUCT32;
+typedef struct _K32_KBDLLHOOKSTRUCT32 { DWORD vkCode; DWORD scanCode; DWORD flags; DWORD time; ULONG dwExtraInfo; } K32_KBDLLHOOKSTRUCT32;
+typedef struct _K32_MSLLHOOKSTRUCT32 { POINT pt; DWORD mouseData; DWORD flags; DWORD time; ULONG dwExtraInfo; } K32_MSLLHOOKSTRUCT32;
+typedef struct _K32_CBTACTIVATESTRUCT32 { BOOL fMouse; ULONG hWndActive; } K32_CBTACTIVATESTRUCT32;
+typedef struct _K32_CREATESTRUCTW32
+{
+    ULONG lpCreateParams; ULONG hInstance; ULONG hMenu; ULONG hwndParent;
+    int cy; int cx; int y; int x; LONG style; ULONG lpszName; ULONG lpszClass; DWORD dwExStyle;
+} K32_CREATESTRUCTW32;
+typedef struct _K32_HOOKPROC_CBT_CREATEWND_EXTRA_ARGUMENTS32 { K32_CREATESTRUCTW32 Cs; ULONG WndInsertAfter; } K32_HOOKPROC_CBT_CREATEWND_EXTRA_ARGUMENTS32;
+typedef struct _K32_CWPSTRUCT32 { ULONG lParam; ULONG wParam; UINT message; ULONG hwnd; } K32_CWPSTRUCT32;
+typedef struct _K32_CWPRETSTRUCT32 { LONG lResult; ULONG lParam; ULONG wParam; UINT message; ULONG hwnd; } K32_CWPRETSTRUCT32;

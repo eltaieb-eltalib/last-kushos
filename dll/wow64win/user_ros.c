@@ -167,12 +167,244 @@ wow64win_NtUser32SetupDefaultCursors(PVOID Arguments, ULONG ArgumentLength)
     return STATUS_NOT_IMPLEMENTED;
 }
 
+/*
+ * Kush: window hooks (SetWindowsHookEx) in 32-bit programs. win32k builds a
+ * 64-bit HOOKPROC_CALLBACK_ARGUMENTS with the hook's data after it; the
+ * 32-bit user32 expects the same thing in 32-bit layout. Convert, call it,
+ * then write the result (and what a hook may change: the MSG of WH_GETMESSAGE,
+ * the rectangle of HCBT_MOVESIZE, the window position of HCBT_CREATEWND) back
+ * into the 64-bit buffer, which win32k reads back.
+ */
+/* NtUserSetWindowsHookEx(HINSTANCE, PUNICODE_STRING, DWORD ThreadId, int HookId, HOOKPROC, BOOL Ansi) */
+NTSTATUS WINAPI wow64_NtUserSetWindowsHookEx(UINT *args)
+{
+    HINSTANCE Mod = get_ptr(&args);
+    UNICODE_STRING32 *Module32 = get_ptr(&args);
+    DWORD ThreadId = get_ulong(&args);
+    INT HookId = get_ulong(&args);
+    HOOKPROC Proc = get_ptr(&args);
+    BOOL Ansi = get_ulong(&args);
+    UNICODE_STRING Module, *pModule = NULL;
+
+    if (Module32)
+    {
+        Module.Length = Module32->Length;
+        Module.MaximumLength = Module32->MaximumLength;
+        Module.Buffer = ULongToPtr(Module32->Buffer);
+        pModule = &Module;
+    }
+    return HandleToUlong(NtUserSetWindowsHookEx(Mod, pModule, ThreadId, HookId, Proc, Ansi));
+}
+
+static ULONG PtrTo32(ULONG_PTR p) { return (p >> 32) ? 0 : (ULONG)p; }
+
 NTSTATUS
 WINAPI
 wow64win_NtUser32CallHookProcFromKernel(PVOID Arguments, ULONG ArgumentLength)
 {
-    DPRINT1("UNHANDLED USER CALLBACK " __FILE__ ":%d\n", __LINE__);
-    return STATUS_NOT_IMPLEMENTED;
+    PHOOKPROC_CALLBACK_ARGUMENTS C64 = Arguments;
+    PHOOKPROC_CALLBACK_ARGUMENTS32 C32;
+    PCHAR Extra64, Extra32;
+    ULONG Size32, Extra64Len;
+    PVOID pResult = NULL;
+    ULONG nRetLen = 0;
+    NTSTATUS Status;
+
+    if (ArgumentLength < sizeof(*C64))
+        return NtCallbackReturn(NULL, 0, STATUS_INVALID_PARAMETER);
+
+    Extra64Len = ArgumentLength - sizeof(*C64);
+    /* 32-bit data is never larger than the 64-bit one */
+    Size32 = sizeof(*C32) + Extra64Len + 64;
+    C32 = RtlAllocateHeap(RtlGetProcessHeap(), HEAP_ZERO_MEMORY, Size32);
+    if (!C32)
+        return NtCallbackReturn(NULL, 0, STATUS_NO_MEMORY);
+
+    C32->HookId = C64->HookId;
+    C32->Code = C64->Code;
+    C32->wParam = (ULONG)C64->wParam;
+    C32->lParam = (ULONG)C64->lParam;
+    C32->Proc = PtrToUlong(C64->Proc);
+    C32->Mod = C64->Mod;
+    C32->offPfn = (ULONG)C64->offPfn;
+    C32->Ansi = C64->Ansi;
+    C32->lParamSize = C64->lParamSize;
+    RtlCopyMemory(C32->ModuleName, C64->ModuleName, sizeof(C32->ModuleName));
+
+    Extra64 = (PCHAR)C64 + sizeof(*C64);
+    Extra32 = (PCHAR)C32 + sizeof(*C32);
+    Size32 = sizeof(*C32);
+
+#define EXTRA32_AT_LPARAM() (C32->lParam = (ULONG)(Extra32 - (PCHAR)C32))
+    switch (C64->HookId)
+    {
+        case WH_CBT:
+            switch (C64->Code)
+            {
+                case HCBT_CREATEWND:
+                {
+                    HOOKPROC_CBT_CREATEWND_EXTRA_ARGUMENTS *e64 = (PVOID)((PCHAR)C64 + C64->lParam);
+                    K32_HOOKPROC_CBT_CREATEWND_EXTRA_ARGUMENTS32 *e32 = (PVOID)Extra32;
+                    e32->Cs.lpCreateParams = PtrTo32((ULONG_PTR)e64->Cs.lpCreateParams);
+                    e32->Cs.hInstance = PtrTo32((ULONG_PTR)e64->Cs.hInstance);
+                    e32->Cs.hMenu = HandleToUlong(e64->Cs.hMenu);
+                    e32->Cs.hwndParent = HandleToUlong(e64->Cs.hwndParent);
+                    e32->Cs.cy = e64->Cs.cy; e32->Cs.cx = e64->Cs.cx;
+                    e32->Cs.y = e64->Cs.y; e32->Cs.x = e64->Cs.x;
+                    e32->Cs.style = e64->Cs.style;
+                    e32->Cs.lpszName = PtrTo32((ULONG_PTR)e64->Cs.lpszName);
+                    e32->Cs.lpszClass = PtrTo32((ULONG_PTR)e64->Cs.lpszClass);
+                    e32->Cs.dwExStyle = e64->Cs.dwExStyle;
+                    e32->WndInsertAfter = HandleToUlong(e64->WndInsertAfter);
+                    EXTRA32_AT_LPARAM();
+                    Size32 += sizeof(*e32);
+                    break;
+                }
+                case HCBT_CLICKSKIPPED:
+                {
+                    MOUSEHOOKSTRUCT *m64 = (PVOID)((PCHAR)C64 + C64->lParam);
+                    K32_MOUSEHOOKSTRUCT32 *m32 = (PVOID)Extra32;
+                    m32->pt = m64->pt; m32->hwnd = HandleToUlong(m64->hwnd);
+                    m32->wHitTestCode = m64->wHitTestCode; m32->dwExtraInfo = (ULONG)m64->dwExtraInfo;
+                    EXTRA32_AT_LPARAM();
+                    Size32 += sizeof(*m32);
+                    break;
+                }
+                case HCBT_MOVESIZE:
+                    RtlCopyMemory(Extra32, (PCHAR)C64 + C64->lParam, sizeof(RECTL));
+                    EXTRA32_AT_LPARAM();
+                    Size32 += sizeof(RECTL);
+                    break;
+                case HCBT_ACTIVATE:
+                {
+                    CBTACTIVATESTRUCT *a64 = (PVOID)((PCHAR)C64 + C64->lParam);
+                    K32_CBTACTIVATESTRUCT32 *a32 = (PVOID)Extra32;
+                    a32->fMouse = a64->fMouse; a32->hWndActive = HandleToUlong(a64->hWndActive);
+                    EXTRA32_AT_LPARAM();
+                    Size32 += sizeof(*a32);
+                    break;
+                }
+                default: /* values only */
+                    break;
+            }
+            break;
+        case WH_KEYBOARD_LL:
+        {
+            KBDLLHOOKSTRUCT *k64 = (PVOID)((PCHAR)C64 + C64->lParam);
+            K32_KBDLLHOOKSTRUCT32 *k32 = (PVOID)Extra32;
+            k32->vkCode = k64->vkCode; k32->scanCode = k64->scanCode; k32->flags = k64->flags;
+            k32->time = k64->time; k32->dwExtraInfo = (ULONG)k64->dwExtraInfo;
+            EXTRA32_AT_LPARAM();
+            Size32 += sizeof(*k32);
+            break;
+        }
+        case WH_MOUSE_LL:
+        {
+            MSLLHOOKSTRUCT *m64 = (PVOID)((PCHAR)C64 + C64->lParam);
+            K32_MSLLHOOKSTRUCT32 *m32 = (PVOID)Extra32;
+            m32->pt = m64->pt; m32->mouseData = m64->mouseData; m32->flags = m64->flags;
+            m32->time = m64->time; m32->dwExtraInfo = (ULONG)m64->dwExtraInfo;
+            EXTRA32_AT_LPARAM();
+            Size32 += sizeof(*m32);
+            break;
+        }
+        case WH_MOUSE:
+        {
+            MOUSEHOOKSTRUCT *m64 = (PVOID)((PCHAR)C64 + C64->lParam);
+            K32_MOUSEHOOKSTRUCT32 *m32 = (PVOID)Extra32;
+            m32->pt = m64->pt; m32->hwnd = HandleToUlong(m64->hwnd);
+            m32->wHitTestCode = m64->wHitTestCode; m32->dwExtraInfo = (ULONG)m64->dwExtraInfo;
+            EXTRA32_AT_LPARAM();
+            Size32 += sizeof(*m32);
+            break;
+        }
+        case WH_CALLWNDPROC:
+        {
+            PCWP_Struct p64 = (PCWP_Struct)C64;
+            K32_CWPSTRUCT32 *c32 = (PVOID)Extra32;
+            c32->lParam = (ULONG)p64->cwps.lParam; c32->wParam = (ULONG)p64->cwps.wParam;
+            c32->message = p64->cwps.message; c32->hwnd = HandleToUlong(p64->cwps.hwnd);
+            Size32 += sizeof(*c32);
+            /* lParam buffer copied as is (the hook gets the message's data) */
+            if (C64->lParamSize && C64->lParamSize <= ArgumentLength - FIELD_OFFSET(CWP_Struct, Extra))
+            {
+                RtlCopyMemory(Extra32 + sizeof(*c32), &p64->Extra, C64->lParamSize);
+                Size32 += C64->lParamSize;
+            }
+            else C32->lParamSize = 0;
+            break;
+        }
+        case WH_CALLWNDPROCRET:
+        {
+            PCWPR_Struct p64 = (PCWPR_Struct)C64;
+            K32_CWPRETSTRUCT32 *c32 = (PVOID)Extra32;
+            c32->lResult = (LONG)p64->cwprs.lResult; c32->lParam = (ULONG)p64->cwprs.lParam;
+            c32->wParam = (ULONG)p64->cwprs.wParam; c32->message = p64->cwprs.message;
+            c32->hwnd = HandleToUlong(p64->cwprs.hwnd);
+            Size32 += sizeof(*c32);
+            if (C64->lParamSize && C64->lParamSize <= ArgumentLength - FIELD_OFFSET(CWPR_Struct, Extra))
+            {
+                RtlCopyMemory(Extra32 + sizeof(*c32), &p64->Extra, C64->lParamSize);
+                Size32 += C64->lParamSize;
+            }
+            else C32->lParamSize = 0;
+            break;
+        }
+        case WH_MSGFILTER:
+        case WH_SYSMSGFILTER:
+        case WH_GETMESSAGE:
+        {
+            MSG *m64 = (PVOID)((PCHAR)C64 + C64->lParam);
+            K32_MSG32 *m32 = (PVOID)Extra32;
+            m32->hwnd = HandleToUlong(m64->hwnd); m32->message = m64->message;
+            m32->wParam = (ULONG)m64->wParam; m32->lParam = (ULONG)m64->lParam;
+            m32->time = m64->time; m32->pt = m64->pt;
+            EXTRA32_AT_LPARAM();
+            Size32 += sizeof(*m32);
+            break;
+        }
+        default: /* WH_KEYBOARD, WH_SHELL, WH_FOREGROUNDIDLE: values only */
+            break;
+    }
+#undef EXTRA32_AT_LPARAM
+    UNREFERENCED_PARAMETER(Extra64);
+
+    Status = Wow64KiUserCallbackDispatcher(NumUser32CallHookProcFromKernel,
+                                           C32, Size32, &pResult, &nRetLen);
+
+    /* user32 returns its (32-bit) argument buffer with the result filled in */
+    if (pResult && nRetLen >= sizeof(*C32))
+    {
+        PHOOKPROC_CALLBACK_ARGUMENTS32 R32 = pResult;
+        C64->Result = R32->Result;
+        if (C64->HookId == WH_GETMESSAGE)
+        {
+            MSG *m64 = (PVOID)((PCHAR)C64 + C64->lParam);
+            K32_MSG32 *m32 = (PVOID)((PCHAR)R32 + R32->lParam);
+            m64->hwnd = UlongToHandle(m32->hwnd); m64->message = m32->message;
+            m64->wParam = m32->wParam; m64->lParam = (LONG)m32->lParam;
+            m64->time = m32->time; m64->pt = m32->pt;
+        }
+        else if (C64->HookId == WH_CBT && C64->Code == HCBT_MOVESIZE)
+        {
+            RtlCopyMemory((PCHAR)C64 + C64->lParam, (PCHAR)R32 + R32->lParam, sizeof(RECTL));
+        }
+        else if (C64->HookId == WH_CBT && C64->Code == HCBT_CREATEWND)
+        {
+            HOOKPROC_CBT_CREATEWND_EXTRA_ARGUMENTS *e64 = (PVOID)((PCHAR)C64 + C64->lParam);
+            K32_HOOKPROC_CBT_CREATEWND_EXTRA_ARGUMENTS32 *e32 = (PVOID)((PCHAR)R32 + R32->lParam);
+            e64->Cs.x = e32->Cs.x; e64->Cs.y = e32->Cs.y;
+            e64->Cs.cx = e32->Cs.cx; e64->Cs.cy = e32->Cs.cy;
+            e64->WndInsertAfter = UlongToHandle(e32->WndInsertAfter);
+        }
+    }
+    else
+    {
+        C64->Result = 0;
+    }
+
+    RtlFreeHeap(RtlGetProcessHeap(), 0, C32);
+    return NtCallbackReturn(Arguments, ArgumentLength, Status);
 }
 
 NTSTATUS
