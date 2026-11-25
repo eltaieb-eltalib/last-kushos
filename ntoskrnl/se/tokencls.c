@@ -76,7 +76,7 @@ static const INFORMATION_CLASS_INFO SeTokenInformationClass[] = {
     /* TokenMandatoryPolicy */
     IQS_SAME(TOKEN_MANDATORY_POLICY, ULONG, ICIF_QUERY),
     /* TokenLogonSid */
-    IQS_NONE,
+    IQS_SAME(TOKEN_GROUPS, ULONG, ICIF_QUERY | ICIF_QUERY_SIZE_VARIABLE),
     /* TokenIsAppContainer */
     IQS_SAME(ULONG, ULONG, ICIF_QUERY),
     /* TokenCapabilities */
@@ -1142,6 +1142,62 @@ NtQueryInformationToken(
                         *RtlSubAuthoritySid(Sid, 0) = SepGetTokenIntegrityRid(Token);
                         Label->Label.Sid = Sid;
                         Label->Label.Attributes = SE_GROUP_INTEGRITY | SE_GROUP_INTEGRITY_ENABLED;
+                    }
+                    else
+                    {
+                        Status = STATUS_BUFFER_TOO_SMALL;
+                    }
+                    *ReturnLength = RequiredLength;
+                }
+                _SEH2_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
+                {
+                    Status = _SEH2_GetExceptionCode();
+                }
+                _SEH2_END;
+                break;
+            }
+
+            case TokenLogonSid:
+            {
+                /* The logon SID group(s); STATUS_NOT_FOUND when the token has none,
+                   which callers (Chromium's sandbox) expect as ERROR_NOT_FOUND */
+                PTOKEN_GROUPS Groups = (PTOKEN_GROUPS)TokenInformation;
+                ULONG i, Count = 0, SidLength = 0, Out = 0;
+                PUCHAR SidArea;
+
+                for (i = 1; i < Token->UserAndGroupCount; i++)
+                {
+                    if (Token->UserAndGroups[i].Attributes & SE_GROUP_LOGON_ID)
+                    {
+                        Count++;
+                        SidLength += RtlLengthSid(Token->UserAndGroups[i].Sid);
+                    }
+                }
+                if (Count == 0)
+                {
+                    Status = STATUS_NOT_FOUND;
+                    break;
+                }
+
+                RequiredLength = FIELD_OFFSET(TOKEN_GROUPS, Groups[Count]) + SidLength;
+                _SEH2_TRY
+                {
+                    if (TokenInformationLength >= RequiredLength)
+                    {
+                        Groups->GroupCount = Count;
+                        SidArea = (PUCHAR)&Groups->Groups[Count];
+                        for (i = 1; i < Token->UserAndGroupCount; i++)
+                        {
+                            ULONG Length;
+                            if (!(Token->UserAndGroups[i].Attributes & SE_GROUP_LOGON_ID))
+                                continue;
+                            Length = RtlLengthSid(Token->UserAndGroups[i].Sid);
+                            RtlCopyMemory(SidArea, Token->UserAndGroups[i].Sid, Length);
+                            Groups->Groups[Out].Sid = (PSID)SidArea;
+                            Groups->Groups[Out].Attributes = Token->UserAndGroups[i].Attributes;
+                            SidArea += Length;
+                            Out++;
+                        }
                     }
                     else
                     {

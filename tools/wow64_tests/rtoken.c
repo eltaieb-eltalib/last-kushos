@@ -25,6 +25,12 @@ int main(void)
 
     STEP("OpenProcessToken", OpenProcessToken(GetCurrentProcess(), TOKEN_ALL_ACCESS, &tok));
     STEP("GetTokenInformation(Groups)", GetTokenInformation(tok, TokenGroups, buf, sizeof(buf), &len));
+    {
+        BOOL ok = GetTokenInformation(tok, TokenLogonSid, buf2, sizeof(buf2), &len);
+        DWORD e = ok ? 0 : GetLastError();
+        printf("%-34s %s (err %lu)\n", "GetTokenInformation(LogonSid)",
+               (ok || e == ERROR_NOT_FOUND) ? "ok" : "FAILED", e);
+    }
     STEP("GetTokenInformation(User)", GetTokenInformation(tok, TokenUser, userbuf, sizeof(userbuf), &len));
     for (i = 0; i < groups->GroupCount && nDeny < 64; i++)
     {

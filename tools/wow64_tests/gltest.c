@@ -4,6 +4,19 @@
 #include <GL/gl.h>
 #include <stdio.h>
 
+/* Show OutputDebugString text (Mesa's messages) on stdout */
+static LONG CALLBACK DebugStringHandler(EXCEPTION_POINTERS *ep)
+{
+    if (ep->ExceptionRecord->ExceptionCode == 0x40010006 /* DBG_PRINTEXCEPTION_C */ &&
+        ep->ExceptionRecord->NumberParameters >= 2)
+    {
+        printf("[debug] %.*s", (int)ep->ExceptionRecord->ExceptionInformation[0],
+               (const char *)ep->ExceptionRecord->ExceptionInformation[1]);
+        return EXCEPTION_CONTINUE_EXECUTION;
+    }
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+
 int main(void)
 {
     WNDCLASSA wc = {0};
@@ -13,6 +26,8 @@ int main(void)
     int pf;
     PIXELFORMATDESCRIPTOR pfd = {0};
 
+    AddVectoredExceptionHandler(1, DebugStringHandler);
+    printf("%d-bit GetConsoleWindow()=%p\n", (int)sizeof(void*) * 8, (void*)GetConsoleWindow());
     {
         /* What opengl32 needs for the default ICD (Kush 1.1) */
         char name[64] = "";
