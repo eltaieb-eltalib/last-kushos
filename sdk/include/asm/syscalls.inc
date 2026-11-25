@@ -135,12 +135,37 @@ MACRO(STUBCODE_K, Name, SyscallId, ArgCount)
 ENDM
 #endif
 #elif defined(_M_AMD64)
+#ifdef _USE_ML
+#define KUSH_STUB_BYTES DB
+#else
+#define KUSH_STUB_BYTES .byte
+#endif
+/*
+ * Kush: the Windows 10 x64 stub layout, byte for byte:
+ *   4C 8B D1             mov r10, rcx
+ *   B8 xx xx 00 00       mov eax, SyscallId
+ *   F6 04 25 08 03 FE 7F 01  test byte ptr [7FFE0308h], 1
+ *   75 03                jne (int 2Eh)
+ *   0F 05                syscall
+ *   C3                   ret
+ *   CD 2E                int 2Eh
+ *   C3                   ret
+ * one stub every 32 bytes. Chromium's sandbox (Firefox, Chrome, Edge,
+ * Electron) only intercepts ntdll functions whose bytes look like this:
+ * it copies the stub into its thunk and writes a 12-byte jump over it in
+ * the sandboxed child. With ReactOS' 11-byte stubs it refused to start
+ * sandboxed children (or would have overwritten the next stub).
+ * KUSER_SHARED_DATA+0x308 is 0 on Kush, so the syscall path is taken.
+ */
 MACRO(STUBCODE_U, Name, SyscallId, ArgCount)
     .ENDPROLOG
+    KUSH_STUB_BYTES HEX(4C), HEX(8B), HEX(D1) /* mov r10, rcx (GAS would pick 49 89 CA) */
     mov eax, SyscallId
-    mov r10, rcx
+    KUSH_STUB_BYTES HEX(F6), HEX(04), HEX(25), HEX(08), HEX(03), HEX(FE), HEX(7F), HEX(01)
+    KUSH_STUB_BYTES HEX(75), HEX(03)
     syscall
     ret
+    KUSH_STUB_BYTES HEX(CD), HEX(2E), HEX(C3)
 ENDM
 MACRO(STUBCODE_K, Name, SyscallId, ArgCount)
     .ENDPROLOG
@@ -198,6 +223,9 @@ ENDM
 #endif
 
 MACRO(STUB_U, Name, ArgCount)
+#ifdef _M_AMD64
+    ALIGN 32
+#endif
     MAKE_LABEL Zw&Name, %ArgCount * 4
     START_PROC Nt&Name, %ArgCount * 4
     STUBCODE_U Name, SyscallId, %ArgCount
