@@ -19,6 +19,10 @@
 UNICODE_STRING IoArcHalDeviceName, IoArcBootDeviceName;
 PCHAR IoLoaderArcBootDeviceName;
 
+/* Kush: set before the INACCESSIBLE_BOOT_DEVICE bugcheck to print, even in
+   release builds, what the loader expected and what the kernel found. */
+BOOLEAN IopArcDiagnose = FALSE;
+
 /* FUNCTIONS *****************************************************************/
 
 CODE_SEG("INIT")
@@ -463,6 +467,22 @@ IopCreateArcNamesDisk(IN PLOADER_PARAMETER_BLOCK LoaderBlock,
     /* Save symbolic link list address in order to free it after */
     lSymbolicLinkList = SymbolicLinkList;
 
+    if (IopArcDiagnose)
+    {
+        DbgPrint("KUSH-ARC: boot device %s, kernel sees %lu disk(s), %lu enabled (status %lx)\n",
+                 LoaderBlock->ArcBootDeviceName, DiskCount, EnabledDisks, Status);
+        for (NextEntry = ArcDiskInformation->DiskSignatureListHead.Flink;
+             NextEntry != &ArcDiskInformation->DiskSignatureListHead;
+             NextEntry = NextEntry->Flink)
+        {
+            ArcDiskSignature = CONTAINING_RECORD(NextEntry, ARC_DISK_SIGNATURE, ListEntry);
+            DbgPrint("KUSH-ARC: loader disk %s sig %08lx checksum %08lx gpt %d valid %d\n",
+                     ArcDiskSignature->ArcName, ArcDiskSignature->Signature,
+                     (ULONG)(0 - ArcDiskSignature->CheckSum), ArcDiskSignature->IsGpt,
+                     ArcDiskSignature->ValidPartitionTable);
+        }
+    }
+
     /* Build the boot strings */
     RtlInitAnsiString(&ArcBootString, LoaderBlock->ArcBootDeviceName);
     RtlInitAnsiString(&ArcSystemString, LoaderBlock->ArcHalDeviceName);
@@ -691,6 +711,17 @@ IopCreateArcNamesDisk(IN PLOADER_PARAMETER_BLOCK LoaderBlock,
         /* Release now unnecessary resources */
         ExFreePoolWithTag(PartitionBuffer, TAG_IO);
         ObDereferenceObject(FileObject);
+
+        if (IopArcDiagnose)
+        {
+            DbgPrint("KUSH-ARC: kernel disk %lu (%s): style %s sig %08lx checksum %08lx sector %lu read %lx\n",
+                     (DeviceNumber.DeviceNumber != ULONG_MAX) ? DeviceNumber.DeviceNumber : DiskNumber,
+                     DeviceObject->DriverObject ? "drv" : "?",
+                     DriveLayout->PartitionStyle == PARTITION_STYLE_GPT ? "GPT" :
+                     DriveLayout->PartitionStyle == PARTITION_STYLE_MBR ? "MBR" : "RAW",
+                     DriveLayout->PartitionStyle == PARTITION_STYLE_MBR ? DriveLayout->Mbr.Signature : 0,
+                     CheckSum, DiskGeometry.BytesPerSector, Status);
+        }
 
         /* If we failed, release drive layout before going to next disk */
         if (!NT_SUCCESS(Status))

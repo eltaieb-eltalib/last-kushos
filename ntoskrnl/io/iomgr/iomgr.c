@@ -525,6 +525,12 @@ IopMarkBootPartition(IN PLOADER_PARAMETER_BLOCK LoaderBlock)
 
     if (!NT_SUCCESS(Status))
     {
+        /* Kush: say why before stopping (shown with /DEBUGPORT=SCREEN) */
+        extern BOOLEAN IopArcDiagnose;
+        DbgPrint("KUSH-ARC: cannot open %wZ (%lx) after waiting %ld ms\n",
+                 &DeviceName, Status, IopGetBootPartitionTimeout());
+        IopArcDiagnose = TRUE;
+        IopCreateArcNames(LoaderBlock);
         KeBugCheckEx(INACCESSIBLE_BOOT_DEVICE,
                      (ULONG_PTR)&DeviceName,
                      Status,
