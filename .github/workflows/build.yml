@@ -60,28 +60,44 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ccache
-          key: ccache-gcc-amd64-Release-${{github.sha}}
+          key: ccache-gcc-amd64-wow64-Release-${{github.sha}}
           restore-keys: |
+            ccache-gcc-amd64-wow64-Release-
             ccache-gcc-amd64-Release-
 
       - name: Set ccache settings
         run: |
           echo "CCACHE_BASEDIR=${{github.workspace}}" >> $GITHUB_ENV
           echo "CCACHE_DIR=${{github.workspace}}/ccache" >> $GITHUB_ENV
-          echo "CCACHE_MAXSIZE=1G" >> $GITHUB_ENV
+          echo "CCACHE_MAXSIZE=2G" >> $GITHUB_ENV
           echo "CCACHE_SLOPPINESS=time_macros" >> $GITHUB_ENV
 
       - name: Ease ccache compiler check (GCC)
         run: echo "CCACHE_COMPILERCHECK=string:${{steps.get_rosbe_spec.outputs.git-sha}}-${{hashfiles('./build_rosbe_ci.sh')}}" >> $GITHUB_ENV
 
+      # Kush 1.1: BUILD_WOW64_ENABLED=1 also builds the i386 side (SysWOW64,
+      # wow64.dll, wow64win.dll, wow64cpu.dll) so the ISO runs 32-bit programs.
+      # The i386 sub-build switches to RosBE's i686 toolchain with
+      # "charch.sh i386" (RosBE-CI builds both targets) and inherits the build
+      # type and DBG from this one (sdk/cmake/wow64.cmake).
       - name: Configure
-        run: echo 'cmake -S ${{github.workspace}} -B ${{github.workspace}}/build -G Ninja -DCMAKE_TOOLCHAIN_FILE:FILEPATH=toolchain-gcc.cmake -DARCH:STRING=amd64 -DCMAKE_BUILD_TYPE=Release -DENABLE_CCACHE=1 -DDLL_EXPORT_VERSION=0x600' | ${{github.workspace}}/RosBE-CI/RosBE.sh . 0 amd64
+        run: echo 'cmake -S ${{github.workspace}} -B ${{github.workspace}}/build -G Ninja -DCMAKE_TOOLCHAIN_FILE:FILEPATH=toolchain-gcc.cmake -DARCH:STRING=amd64 -DCMAKE_BUILD_TYPE=Release -DENABLE_CCACHE=1 -DDLL_EXPORT_VERSION=0x600 -DBUILD_WOW64_ENABLED=1' | ${{github.workspace}}/RosBE-CI/RosBE.sh . 0 amd64
 
       - name: Build bootcd
         run: echo 'cmake --build ${{github.workspace}}/build --target bootcd' | ${{github.workspace}}/RosBE-CI/RosBE.sh . 0 amd64
 
       - name: Print ccache statistics
         run: ccache -s
+
+      - name: Check that the ISO carries WoW64
+        run: |
+          # 32-bit system DLLs in SysWOW64 and the 64-bit WOW64 layer
+          for f in build/wow64/dll/ntdll/ntdll.dll build/dll/wow64/wow64.dll build/dll/wow64win/wow64win.dll; do
+            test -f "$f" || { echo "missing $f"; exit 1; }
+          done
+          n=$(grep -c -i 'SysWOW64' build/boot/bootcd.Release.lst || true)
+          echo "SysWOW64 entries in the ISO: $n"
+          test "$n" -gt 500
 
       - name: Record ISO hash
         run: sha256sum build/bootcd.iso | tee build-sha256.txt
