@@ -1,0 +1,59 @@
+name: Publish ISO as a release
+
+# Manual trigger only. Takes the ISO built by a successful "Build Kush bootcd"
+# run and attaches it to a public GitHub release, so anyone can download it
+# without a GitHub account (workflow artifacts need one, and expire).
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Run id of a successful 'Build Kush bootcd' run"
+        required: true
+      tag:
+        description: "Release tag to create, e.g. v1.1-20261125-usb8gb"
+        required: true
+      title:
+        description: "Release title"
+        required: true
+      notes:
+        description: "Release notes (shown on the release page)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download the ISO artifact of the build run
+        uses: actions/download-artifact@v4
+        with:
+          name: kush-bootcd-${{ inputs.run_id }}
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: iso
+
+      - name: Name the files after the release
+        run: |
+          ls -la iso
+          test -f iso/bootcd.iso
+          mv iso/bootcd.iso "iso/kush-${{ inputs.tag }}.iso"
+          (cd iso && sha256sum "kush-${{ inputs.tag }}.iso" > "kush-${{ inputs.tag }}.iso.sha256")
+          cat iso/*.sha256
+
+      - name: Create the release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag }}
+          name: ${{ inputs.title }}
+          body: |
+            ${{ inputs.notes }}
+
+            Built by run https://github.com/${{ github.repository }}/actions/runs/${{ inputs.run_id }}
+          target_commitish: ${{ github.sha }}
+          files: |
+            iso/kush-${{ inputs.tag }}.iso
+            iso/kush-${{ inputs.tag }}.iso.sha256
