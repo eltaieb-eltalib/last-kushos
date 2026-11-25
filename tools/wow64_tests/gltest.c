@@ -13,6 +13,19 @@ int main(void)
     int pf;
     PIXELFORMATDESCRIPTOR pfd = {0};
 
+    {
+        /* What opengl32 needs for the default ICD (Kush 1.1) */
+        char name[64] = "";
+        DWORD size = sizeof(name);
+        HMODULE icd = LoadLibraryA("libgallium_wgl.dll");
+        LONG r = RegGetValueA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Kush\\OpenGL", "DefaultICD",
+                              RRF_RT_REG_SZ, NULL, name, &size);
+        printf("%d-bit DefaultICD=%s (reg %ld), LoadLibrary(libgallium_wgl.dll)=%p err %lu\n",
+               (int)sizeof(void*) * 8, name, r, (void*)icd, icd ? 0 : GetLastError());
+        if (icd)
+            printf("%d-bit DrvValidateVersion=%p\n", (int)sizeof(void*) * 8,
+                   (void*)GetProcAddress(icd, "DrvValidateVersion"));
+    }
     wc.lpfnWndProc = DefWindowProcA;
     wc.hInstance = GetModuleHandleA(NULL);
     wc.lpszClassName = "kushgltest";
