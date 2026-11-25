@@ -175,6 +175,18 @@ wow64win_NtUser32SetupDefaultCursors(PVOID Arguments, ULONG ArgumentLength)
  * the rectangle of HCBT_MOVESIZE, the window position of HCBT_CREATEWND) back
  * into the 64-bit buffer, which win32k reads back.
  */
+/* Kush: win32k keeps the thread's hook bits (fsHooks) in the 64-bit TEB's
+   CLIENTINFO. 32-bit user32 reads its own copy to decide whether SendMessage
+   must go through win32k (where hooks run); keep it in step. phkCurrent is
+   left 0: it is a desktop heap pointer 32-bit code cannot translate, and with
+   0 CallNextHookEx simply ends the chain. */
+VOID KushSyncHookFlags(VOID)
+{
+    PCLIENTINFO pClientInfo = (PCLIENTINFO)&NtCurrentTeb()->Win32ClientInfo;
+    PCLIENTINFO32 pClientInfo32 = (PCLIENTINFO32)&NtCurrentTeb32()->Win32ClientInfo;
+    pClientInfo32->fsHooks = pClientInfo->fsHooks;
+}
+
 /* NtUserSetWindowsHookEx(HINSTANCE, PUNICODE_STRING, DWORD ThreadId, int HookId, HOOKPROC, BOOL Ansi) */
 NTSTATUS WINAPI wow64_NtUserSetWindowsHookEx(UINT *args)
 {
@@ -193,7 +205,9 @@ NTSTATUS WINAPI wow64_NtUserSetWindowsHookEx(UINT *args)
         Module.Buffer = ULongToPtr(Module32->Buffer);
         pModule = &Module;
     }
-    return HandleToUlong(NtUserSetWindowsHookEx(Mod, pModule, ThreadId, HookId, Proc, Ansi));
+    HHOOK Hook = NtUserSetWindowsHookEx(Mod, pModule, ThreadId, HookId, Proc, Ansi);
+    KushSyncHookFlags();
+    return HandleToUlong(Hook);
 }
 
 static ULONG PtrTo32(ULONG_PTR p) { return (p >> 32) ? 0 : (ULONG)p; }
@@ -369,6 +383,7 @@ wow64win_NtUser32CallHookProcFromKernel(PVOID Arguments, ULONG ArgumentLength)
 #undef EXTRA32_AT_LPARAM
     UNREFERENCED_PARAMETER(Extra64);
 
+    KushSyncHookFlags();
     Status = Wow64KiUserCallbackDispatcher(NumUser32CallHookProcFromKernel,
                                            C32, Size32, &pResult, &nRetLen);
 

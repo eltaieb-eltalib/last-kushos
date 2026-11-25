@@ -5250,8 +5250,14 @@ NTSTATUS WINAPI wow64_NtUserUnhookWinEvent( UINT *args )
 NTSTATUS WINAPI wow64_NtUserUnhookWindowsHookEx( UINT *args )
 {
     HHOOK handle = get_handle( &args );
-
+#ifdef __REACTOS__
+    extern VOID KushSyncHookFlags(VOID);
+    BOOL ret = NtUserUnhookWindowsHookEx( handle );
+    KushSyncHookFlags();
+    return ret;
+#else
     return NtUserUnhookWindowsHookEx( handle );
+#endif
 }
 
 #ifndef __REACTOS__
