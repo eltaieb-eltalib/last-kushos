@@ -5,6 +5,13 @@
 #include <stdio.h>
 
 /* Show OutputDebugString text (Mesa's messages) on stdout */
+static int hook_calls;
+static LRESULT CALLBACK CallWndHook(int code, WPARAM wp, LPARAM lp)
+{
+    hook_calls++;
+    return CallNextHookEx(NULL, code, wp, lp);
+}
+
 static LONG CALLBACK DebugStringHandler(EXCEPTION_POINTERS *ep)
 {
     if (ep->ExceptionRecord->ExceptionCode == 0x40010006 /* DBG_PRINTEXCEPTION_C */ &&
@@ -47,6 +54,15 @@ int main(void)
     RegisterClassA(&wc);
     hwnd = CreateWindowA("kushgltest", "gl", WS_OVERLAPPEDWINDOW, 0, 0, 64, 64,
                          NULL, NULL, wc.hInstance, NULL);
+    {
+        /* Mesa's WGL needs a WH_CALLWNDPROC hook on every thread */
+        HHOOK h = SetWindowsHookExA(WH_CALLWNDPROC, CallWndHook, NULL, GetCurrentThreadId());
+        DWORD e = h ? 0 : GetLastError();
+        if (h) SendMessageA(hwnd, WM_NULL, 0, 0);
+        printf("%d-bit SetWindowsHookEx(WH_CALLWNDPROC)=%p err %lu, hook called %d times\n",
+               (int)sizeof(void*) * 8, (void*)h, e, hook_calls);
+        if (h) UnhookWindowsHookEx(h);
+    }
     hdc = GetDC(hwnd);
     {
         DWORD q = 0x1101; /* OPENGL_GETINFO */
