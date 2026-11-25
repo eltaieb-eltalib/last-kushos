@@ -103,7 +103,7 @@
 ### 4.1 تشغيل الآلة
 ```bash
 qemu-system-x86_64 \
-  -enable-kvm -cpu host -smp 2 -m 4096 \
+  -accel kvm -cpu host -smp 2 -m 4096 \   # يتغير حسب المسرّع المتاح، انظر 4.5
   -machine q35 \
   -drive file=user-123.qcow2,if=virtio,cache=writeback \   # طبقة فوق الصورة الذهبية (backing file)
   -netdev user,id=n0,restrict=off -device virtio-net,netdev=n0 \
@@ -147,6 +147,42 @@ snapshot(name) / restore(name)       → عبر QMP
 - بروتوكول: JSON-RPC سطري (`{"id":1,"method":"run","params":{...}}`).
 - الوظائف: `run`, `read_file`, `write_file`, `list_windows`, `ui_tree` (عبر EnumWindows/Accessibility)، `clipboard_set/get`, `type_unicode`, `ping`.
 - **ملاحظة:** qemu-guest-agent الرسمي لويندوز قد لا يعمل على ReactOS، لذا نكتب وكيلاً خاصاً بسيطاً.
+
+### 4.5 التسريع بالهاردوير (KVM / WHPX / HVF / TCG) — قيد أساسي
+
+سرعة الجهاز الافتراضي تعتمد كلياً على وجود **تسريع بالهاردوير**، والتسريع يحتاج أن يكشف المعالج خاصية المحاكاة الافتراضية (Intel VT-x / AMD-V) للنظام المضيف:
+
+| المسرّع | المضيف | متى يعمل |
+|---|---|---|
+| **KVM** | Linux | المعالج يكشف `vmx`/`svm` و`/dev/kvm` موجود (bare-metal، أو سحابة تدعم Nested Virtualization). |
+| **WHPX** (Windows Hypervisor Platform) | Windows فقط | ويندوز حقيقي + VT-x مفعّل في الـ BIOS + تفعيل ميزة "Windows Hypervisor Platform". |
+| **HVF** | macOS | أجهزة ماك (Intel/Apple Silicon مع ملاحظات المعمارية). |
+| **TCG** | أي مضيف | محاكاة بالبرنامج بالكامل، **بدون أي تسريع** ← أبطأ بكثير (5–20 مرة تقريباً). |
+
+**الوضع الحالي المُثبت:** بيئة التطوير السحابية الحالية (Linux) **لا تكشف** خاصية المحاكاة (`/dev/kvm` غير موجود، ولا يوجد `vmx`/`svm` في `/proc/cpuinfo`)،
+لذلك لا KVM ولا WHPX (غير موجود أصلاً على لينكس) ولا HAXM — **TCG هو الخيار الوحيد هناك**. هذا مقبول للتطوير والاختبار الآلي (CI)، لكنه **غير مقبول للإنتاج**.
+
+**القرارات المترتبة على ذلك:**
+1. **Node Agent يدعم كل المسرّعات:** يكتشف المتاح تلقائياً ويختار `-accel kvm` ← `whpx` ← `hvf` ← `tcg` بالترتيب، ويسجّل نوع التسريع لكل آلة (يظهر في لوحة التحكم ويؤثر على الجدولة).
+2. **الإنتاج على KVM فقط:** خوادم bare-metal أو أنواع سحابية تدعم Nested Virtualization صراحةً. يُفحص ذلك عند تسجيل أي خادم جديد (`/dev/kvm` + اختبار إقلاع)، والخادم بدون تسريع لا يستقبل آلات مستخدمين.
+3. **TCG للتطوير وCI فقط:** مع تخفيف البطء عن طريق:
+   - **لقطة ذاكرة جاهزة (savevm/loadvm):** النظام يُقلع ويُثبّت مرة واحدة، ثم كل تشغيل يبدأ من اللقطة ← تسريع **الإقلاع فقط** وليس سرعة التشغيل نفسها.
+   - Kush خفيف أصلاً مقارنة بويندوز، فهو أنسب نظام للتجربة تحت TCG.
+   - `-accel tcg,thread=multi` + تقليل الدقة وعدد الأجهزة الافتراضية.
+4. **عقدة محلية (Local Node / Bring Your Own Host):** المستخدم أو المطوّر يقدر يشغّل الآلة على **جهازه الخاص** (مثلاً لابتوب Lenovo ThinkPad L440: ويندوز حقيقي + VT-x)
+   باستخدام **QEMU + WHPX** (أو VirtualBox)، فيشتغل النظام الضيف بسرعة قريبة من الطبيعي. نسخة Windows من Node Agent تتصل بالمنصة عبر نفق صادر (WebSocket/gRPC over TLS)،
+   فتظهر الآلة المحلية في المنصة كأي آلة سحابية ويتحكم فيها الوكيل والنماذج الخارجية بنفس Tool API.
+   - فائدة إضافية: الآلة المحلية تحمل **هوية شبكة المستخدم** (الـ IP المنزلي)، وهو ما ينقص الكمبيوتر السحابي في نموذج Instinct.
+   - على WHPX: تُفعّل الميزة من "Turn Windows features on or off" ← Windows Hypervisor Platform، ويُشغَّل QEMU بـ `-accel whpx` (مع `-accel tcg` كبديل تلقائي إن فشل).
+
+```bash
+# Linux مع KVM (الإنتاج)
+qemu-system-x86_64 -accel kvm -cpu host ...
+# Windows مع WHPX (العقدة المحلية، مثل L440)
+qemu-system-x86_64.exe -accel whpx -accel tcg -cpu qemu64 ...
+# بدون تسريع (التطوير/CI في السحابة الحالية)
+qemu-system-x86_64 -accel tcg,thread=multi -cpu qemu64 -loadvm ready ...
+```
 
 ---
 
@@ -234,7 +270,9 @@ snapshot(name) / restore(name)       → عبر QMP
 
 | الطبقة | الاختيار المقترح |
 |---|---|
-| الخوادم | bare-metal يدعم KVM (Hetzner، OVH، AWS `.metal`، أو GCP مع Nested Virtualization). |
+| الخوادم | bare-metal يدعم KVM (Hetzner، OVH، AWS `.metal`، أو GCP مع Nested Virtualization). **شرط إلزامي:** `/dev/kvm` موجود، وإلا لا يُستخدم الخادم للإنتاج (انظر 4.5). |
+| العقد المحلية | أجهزة المستخدمين/المطورين (Windows + WHPX أو Linux + KVM) متصلة بالمنصة عبر نفق صادر. |
+| بيئة التطوير/CI | TCG بدون تسريع + لقطات ذاكرة جاهزة لتسريع الإقلاع. |
 | تنسيق الحاويات للخدمات | Kubernetes (للـ Control Plane والـ Agent Runtime). |
 | الآلات الافتراضية | Node Agent مخصص يدير QEMU مباشرة (أو KubeVirt كبديل). |
 | قاعدة البيانات | PostgreSQL + Redis (طوابير وحالة الجلسات). |
@@ -285,7 +323,9 @@ snapshot(name) / restore(name)       → عبر QMP
 ## 10. مراحل التنفيذ (Roadmap)
 
 ### المرحلة 0 — إثبات المفهوم (2–3 أسابيع)
-- [ ] سكربت Python يشغّل Kush OS في QEMU محلياً مع QMP.
+- [ ] سكربت Python يشغّل Kush OS في QEMU مع QMP، ويختار المسرّع تلقائياً (kvm/whpx/tcg).
+- [ ] في السحابة الحالية (TCG فقط): تثبيت Kush مرة واحدة + `savevm ready` واستخدامها لكل تشغيل.
+- [ ] على لابتوب L440 (Windows + VT-x): تشغيل نفس السكربت بـ `-accel whpx` ومقارنة السرعة مع TCG.
 - [ ] دوال: `screenshot` (screendump) و`click`/`type` (input-send-event) مع usb-tablet.
 - [ ] ربط حلقة وكيل بسيطة بنموذج لغة: مهمة "افتح Notepad واكتب Hello".
 - [ ] قياس: دقة النقر، زمن كل خطوة، تكلفة المهمة.
@@ -360,6 +400,7 @@ snapshot(name) / restore(name)       → عبر QMP
 | تكلفة نماذج اللغة عالية | تصغير الصور، تقليل اللقطات، كشف "الشاشة لم تتغير"، نماذج أصغر للخطوات البسيطة. |
 | بطء الإقلاع | لقطات ذاكرة جاهزة + Warm Pool. |
 | Prompt Injection وأفعال ضارة | Policy Engine + موافقات بشرية + عزل الشبكة + سجل تدقيق. |
+| لا يوجد تسريع بالهاردوير (TCG فقط) في بعض البيئات السحابية | KVM إلزامي للإنتاج، TCG + لقطات للتطوير، وعقد محلية بـ WHPX/KVM للسرعة. |
 | تكلفة الخوادم | Kush خفيف، overcommit للذاكرة (KSM)، إيقاف الآلات الخاملة. |
 | توافق البرامج مع Kush | قائمة برامج مختبرة (Firefox وغيرها كما في `docs/`)، وتوفير Linux/Windows كبديل. |
 
@@ -376,6 +417,8 @@ snapshot(name) / restore(name)       → عبر QMP
 
 ## 14. الخطوة التالية المباشرة
 1. إنشاء مجلد `platform/poc/` وكتابة `qmp_client.py` (screenshot + click + type).
-2. تشغيل ISO الحالي لـ Kush من Releases في QEMU مع `-qmp` و`-device usb-tablet`.
+2. تشغيل ISO الحالي لـ Kush من Releases في QEMU مع `-qmp` و`-device usb-tablet`:
+   - هنا في السحابة بـ TCG + لقطة `ready` بعد التثبيت (تسرّع الإقلاع فقط).
+   - وعلى L440 بـ WHPX للسرعة الحقيقية.
 3. ربط حلقة وكيل بسيطة وتجربة مهمة "افتح Notepad واكتب جملة".
 4. توثيق النتائج والقياسات ثم بدء المرحلة 1.
