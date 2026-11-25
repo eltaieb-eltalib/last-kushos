@@ -86,6 +86,8 @@ static PADAPTER_OBJECT HalpEisaAdapter[8];
 static BOOLEAN HalpEisaDma;
 #ifndef _MINIHAL_
 static PADAPTER_OBJECT HalpMasterAdapter;
+/* Kush: map buffers below 4 GB for 32-bit bus masters (no ISA 64 KB gaps) */
+static PADAPTER_OBJECT HalpMasterAdapter32;
 #endif
 
 static const ULONG_PTR HalpEisaPortPage[8] = {
@@ -385,7 +387,10 @@ HalpGrowMapBuffers(IN PADAPTER_OBJECT AdapterObject,
                 PreviousEntry = CurrentEntry - 1;
                 if ((PreviousEntry->PhysicalAddress.LowPart + PAGE_SIZE) == PhysicalAddress.LowPart)
                 {
-                    if (!HalpEisaDma)
+                    /* Kush: the 64 KB rule is for the ISA DMA controller; a pool
+                       for bus masters (MasterDevice) has no such limit, and
+                       its gaps made a 17-page USB transfer wait forever. */
+                    if (!HalpEisaDma && !AdapterObject->MasterDevice)
                     {
                         if ((PreviousEntry->PhysicalAddress.LowPart ^ PhysicalAddress.LowPart) & 0xFFFF0000)
                         {
@@ -428,9 +433,20 @@ HalpGrowMapBuffers(IN PADAPTER_OBJECT AdapterObject,
  *
  * @see HalpInitDma
  */
+static
+PADAPTER_OBJECT
+HalpDmaAllocateMasterAdapterEx(IN BOOLEAN BusMaster32);
+
 PADAPTER_OBJECT
 NTAPI
 HalpDmaAllocateMasterAdapter(VOID)
+{
+    return HalpDmaAllocateMasterAdapterEx(FALSE);
+}
+
+static
+PADAPTER_OBJECT
+HalpDmaAllocateMasterAdapterEx(IN BOOLEAN BusMaster32)
 {
     PADAPTER_OBJECT MasterAdapter;
     ULONG Size, SizeOfBitmap;
@@ -468,6 +484,14 @@ HalpDmaAllocateMasterAdapter(VOID)
 
     RtlZeroMemory(MasterAdapter->MapRegisterBase,
                   SizeOfBitmap * sizeof(ROS_MAP_REGISTER_ENTRY));
+
+    if (BusMaster32)
+    {
+        /* Buffers anywhere below 4 GB, without the ISA 64 KB gaps */
+        MasterAdapter->MasterDevice = TRUE;
+        MasterAdapter->Dma32BitAddresses = TRUE;
+    }
+
     if (!HalpGrowMapBuffers(MasterAdapter, 0x10000))
     {
         ExFreePool(MasterAdapter);
@@ -698,6 +722,7 @@ HalGetAdapter(IN PDEVICE_DESCRIPTION DeviceDescription,
 {
     PADAPTER_OBJECT AdapterObject = NULL;
     BOOLEAN EisaAdapter;
+    BOOLEAN BusMasterBounce = FALSE;
     ULONG MapRegisters;
     ULONG MaximumLength;
     KIRQL OldIrql;
@@ -763,6 +788,7 @@ HalGetAdapter(IN PDEVICE_DESCRIPTION DeviceDescription,
         {
             MapRegisters = BYTES_TO_PAGES(MaximumLength) + 1;
             if (MapRegisters > MAX_MAP_REGISTERS) MapRegisters = MAX_MAP_REGISTERS;
+            BusMasterBounce = TRUE;
         }
         else
         {
@@ -826,6 +852,15 @@ HalGetAdapter(IN PDEVICE_DESCRIPTION DeviceDescription,
         {
             AdapterObject->NeedsMapRegisters = TRUE;
             AdapterObject->MapRegistersPerChannel = MapRegisters;
+
+            /* Kush: 32-bit bus masters bounce through their own pool below 4 GB */
+            if (BusMasterBounce)
+            {
+                if (!HalpMasterAdapter32)
+                    HalpMasterAdapter32 = HalpDmaAllocateMasterAdapterEx(TRUE);
+                if (HalpMasterAdapter32)
+                    AdapterObject->MasterAdapter = HalpMasterAdapter32;
+            }
         }
         else
         {
