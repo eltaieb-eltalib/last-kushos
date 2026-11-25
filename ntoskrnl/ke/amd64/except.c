@@ -95,6 +95,44 @@ KeInitExceptions(VOID)
 /* Kush 1.1: name the file mapped at a user address (image or data section),
  * for crashes that happen before the PEB loader list exists, e.g. early
  * in a WoW64 process. */
+/* Kush: diagnostics read user memory only where every page is present, so
+   they never fault from here. A fault inside these reports, on a thread whose
+   user stack was exhausted, ended in a kernel unwind failure and a double
+   fault (BSOD 0x1E) instead of just terminating the process. */
+static
+BOOLEAN
+KushUserValid(ULONG_PTR Address, SIZE_T Length)
+{
+    ULONG_PTR Page, End = Address + Length;
+    if (Address < 0x10000 || End < Address || End > (ULONG_PTR)MmHighestUserAddress)
+        return FALSE;
+    for (Page = Address & ~(ULONG_PTR)(PAGE_SIZE - 1); Page < End; Page += PAGE_SIZE)
+    {
+        if (!MmIsAddressValid((PVOID)Page))
+            return FALSE;
+    }
+    return TRUE;
+}
+
+static
+BOOLEAN
+KushModuleValid(PLDR_DATA_TABLE_ENTRY Mod)
+{
+    return KushUserValid((ULONG_PTR)Mod, sizeof(*Mod)) &&
+           KushUserValid((ULONG_PTR)Mod->BaseDllName.Buffer, Mod->BaseDllName.Length + sizeof(WCHAR));
+}
+
+static
+PLIST_ENTRY
+KushLoaderListHead(VOID)
+{
+    PPEB Peb = PsGetCurrentProcess()->Peb;
+    if (!KushUserValid((ULONG_PTR)Peb, sizeof(*Peb)) ||
+        !KushUserValid((ULONG_PTR)Peb->Ldr, sizeof(*Peb->Ldr)))
+        return NULL;
+    return &Peb->Ldr->InLoadOrderModuleList;
+}
+
 static
 VOID
 KushPrintMappedFile(
@@ -442,7 +480,7 @@ KiDispatchException(IN PEXCEPTION_RECORD ExceptionRecord,
             volatile ULONG_PTR StackBase = 0, StackLimit = 0;
             _SEH2_TRY
             {
-                if (Teb)
+                if (Teb && KushUserValid((ULONG_PTR)Teb, sizeof(NT_TIB)))
                 {
                     StackBase = (ULONG_PTR)Teb->NtTib.StackBase;
                     StackLimit = (ULONG_PTR)Teb->NtTib.StackLimit;
@@ -463,12 +501,12 @@ KiDispatchException(IN PEXCEPTION_RECORD ExceptionRecord,
             /* Name the module that contains the faulting address (PEB loader list). */
             _SEH2_TRY
             {
-                PPEB Peb = PsGetCurrentProcess()->Peb;
-                PLIST_ENTRY Head = &Peb->Ldr->InLoadOrderModuleList, Entry;
+                PLIST_ENTRY Head = KushLoaderListHead(), Entry;
                 ULONG Count = 0;
-                for (Entry = Head->Flink; Entry != Head && Count < 512; Entry = Entry->Flink, Count++)
+                for (Entry = Head ? Head->Flink : NULL; Entry && Entry != Head && Count < 512; Entry = Entry->Flink, Count++)
                 {
                     PLDR_DATA_TABLE_ENTRY Mod = CONTAINING_RECORD(Entry, LDR_DATA_TABLE_ENTRY, InLoadOrderLinks);
+                    if (!KushModuleValid(Mod)) break;
                     ULONG_PTR Base = (ULONG_PTR)Mod->DllBase;
                     ULONG_PTR Addr = (ULONG_PTR)ExceptionRecord->ExceptionAddress;
                     if (Addr >= Base && Addr < Base + Mod->SizeOfImage)
@@ -491,22 +529,27 @@ KiDispatchException(IN PEXCEPTION_RECORD ExceptionRecord,
              * tools/breakpad_sym.py). Heuristic, may include stale values. */
             _SEH2_TRY
             {
-                PPEB Peb = PsGetCurrentProcess()->Peb;
-                PLIST_ENTRY Head = &Peb->Ldr->InLoadOrderModuleList, Entry;
+                PLIST_ENTRY Head = KushLoaderListHead(), Entry;
                 PULONG_PTR Slot = (PULONG_PTR)(Context.Rsp & ~7ULL);
                 PULONG_PTR End = (PULONG_PTR)min((ULONG_PTR)StackBase, Context.Rsp + 0x4000);
                 ULONG Found = 0;
 
-                for (; Slot < End && Found < 32; Slot++)
+                for (; Head && Slot < End && Found < 32; Slot++)
                 {
-                    ULONG_PTR Value = *Slot;
+                    ULONG_PTR Value;
                     ULONG Count = 0;
+                    if ((Slot == (PULONG_PTR)(Context.Rsp & ~7ULL) || ((ULONG_PTR)Slot & (PAGE_SIZE - 1)) == 0) &&
+                        !KushUserValid((ULONG_PTR)Slot, sizeof(*Slot)))
+                        break;
+                    Value = *Slot;
                     if (Value < 0x10000 || Value >= (ULONG_PTR)MmHighestUserAddress)
                         continue;
-                    for (Entry = Head->Flink; Entry != Head && Count < 512; Entry = Entry->Flink, Count++)
+                    for (Entry = Head->Flink; Entry && Entry != Head && Count < 512; Entry = Entry->Flink, Count++)
                     {
                         PLDR_DATA_TABLE_ENTRY Mod = CONTAINING_RECORD(Entry, LDR_DATA_TABLE_ENTRY, InLoadOrderLinks);
-                        ULONG_PTR Base = (ULONG_PTR)Mod->DllBase;
+                        ULONG_PTR Base;
+                        if (!KushModuleValid(Mod)) break;
+                        Base = (ULONG_PTR)Mod->DllBase;
                         if (Value > Base + 0x1000 && Value < Base + Mod->SizeOfImage)
                         {
                             DbgPrint("KUSH-EXC: stack +%04Ix %wZ +0x%Ix\n",
@@ -530,7 +573,14 @@ KiDispatchException(IN PEXCEPTION_RECORD ExceptionRecord,
                 _SEH2_TRY
                 {
                     PCSTR Src = (PCSTR)Context.R8;
-                    for (n = 0; n < sizeof(Reason) - 1 && Src[n]; n++) Reason[n] = Src[n];
+                    for (n = 0; n < sizeof(Reason) - 1; n++)
+                    {
+                        if ((n == 0 || (((ULONG_PTR)&Src[n]) & (PAGE_SIZE - 1)) == 0) &&
+                            !KushUserValid((ULONG_PTR)&Src[n], 1))
+                            break;
+                        if (!Src[n]) break;
+                        Reason[n] = Src[n];
+                    }
                 }
                 _SEH2_EXCEPT(EXCEPTION_EXECUTE_HANDLER) {} _SEH2_END;
                 Reason[n] = 0;
@@ -546,9 +596,17 @@ KiDispatchException(IN PEXCEPTION_RECORD ExceptionRecord,
                 _SEH2_TRY
                 {
                     PUCHAR Dli = (PUCHAR)ExceptionRecord->ExceptionInformation[0];
-                    PCSTR Dll = *(PCSTR*)(Dli + 0x18);
-                    ULONG ByName = *(PULONG)(Dli + 0x20);
-                    ULONG_PTR Proc = *(PULONG_PTR)(Dli + 0x28);
+                    PCSTR Dll = NULL;
+                    ULONG ByName = 0;
+                    ULONG_PTR Proc = 0;
+                    if (KushUserValid((ULONG_PTR)Dli, 0x30))
+                    {
+                        Dll = *(PCSTR*)(Dli + 0x18);
+                        ByName = *(PULONG)(Dli + 0x20);
+                        Proc = *(PULONG_PTR)(Dli + 0x28);
+                    }
+                    if (!KushUserValid((ULONG_PTR)Dll, 1)) Dll = "?";
+                    if (ByName && !KushUserValid(Proc, 1)) ByName = 0;
                     if (ByName)
                         DbgPrint("KUSH-EXC: delay-load %s!%s not found\n", Dll, (PCSTR)Proc);
                     else

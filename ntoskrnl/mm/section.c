@@ -1628,7 +1628,7 @@ MmNotPresentFaultSectionView(PMMSUPPORT AddressSpace,
         /* Remove it */
         Status = MmAlterRegion(AddressSpace, (PVOID)MA_GetStartingAddress(MemoryArea),
                 &MemoryArea->SectionData.RegionListHead,
-                Address, PAGE_SIZE, Region->Type, Region->Protect & ~PAGE_GUARD,
+                MM_ROUND_DOWN(Address, PAGE_SIZE), PAGE_SIZE, Region->Type, Region->Protect & ~PAGE_GUARD, /* Kush: this page only */
                 MmAlterViewAttributes);
 
         if (!NT_SUCCESS(Status))
@@ -2011,9 +2011,14 @@ MmAccessFaultSectionView(PMMSUPPORT AddressSpace,
             NewProtect |= PAGE_EXECUTE_READWRITE;
         else
             NewProtect |= PAGE_READWRITE;
+        /* Kush: the faulting page only. Address is the faulting byte; passing
+           it unaligned with PAGE_SIZE also changed the start of the NEXT page
+           (to read/write, not executable): after Chromium's sandbox patched
+           ntdll in a child, the following page of syscall stubs could no
+           longer run (NX fault at NtWaitForSingleObject, endless exceptions). */
         MmAlterRegion(AddressSpace, (PVOID)MA_GetStartingAddress(MemoryArea),
                 &MemoryArea->SectionData.RegionListHead,
-                Address, PAGE_SIZE, Region->Type, NewProtect,
+                MM_ROUND_DOWN(Address, PAGE_SIZE), PAGE_SIZE, Region->Type, NewProtect,
                 MmAlterViewAttributes);
     }
 
