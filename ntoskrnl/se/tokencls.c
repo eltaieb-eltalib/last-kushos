@@ -55,7 +55,61 @@ static const INFORMATION_CLASS_INFO SeTokenInformationClass[] = {
     IQS_SAME(TOKEN_AUDIT_POLICY_INFORMATION, ULONG, ICIF_SET | ICIF_SET_SIZE_VARIABLE),
     /* TokenOrigin */
     IQS_SAME(TOKEN_ORIGIN, ULONG, ICIF_QUERY | ICIF_SET),
+    /* TokenElevationType */
+    IQS_NONE,
+    /* TokenLinkedToken */
+    IQS_NONE,
+    /* TokenElevation */
+    IQS_NONE,
+    /* TokenHasRestrictions */
+    IQS_SAME(ULONG, ULONG, ICIF_QUERY),
+    /* TokenAccessInformation */
+    IQS_NONE,
+    /* TokenVirtualizationAllowed */
+    IQS_NONE,
+    /* TokenVirtualizationEnabled */
+    IQS_NONE,
+    /* TokenIntegrityLevel */
+    IQS_SAME(TOKEN_MANDATORY_LABEL, ULONG, ICIF_QUERY | ICIF_SET | ICIF_SIZE_VARIABLE),
+    /* TokenUIAccess */
+    IQS_NONE,
+    /* TokenMandatoryPolicy */
+    IQS_SAME(TOKEN_MANDATORY_POLICY, ULONG, ICIF_QUERY),
+    /* TokenLogonSid */
+    IQS_NONE,
+    /* TokenIsAppContainer */
+    IQS_SAME(ULONG, ULONG, ICIF_QUERY),
+    /* TokenCapabilities */
+    IQS_NONE,
+    /* TokenAppContainerSid */
+    IQS_SAME(PSID, ULONG, ICIF_QUERY | ICIF_QUERY_SIZE_VARIABLE),
+    /* TokenAppContainerNumber */
+    IQS_SAME(ULONG, ULONG, ICIF_QUERY),
 };
+
+/*
+ * Kush: mandatory integrity level of a token (Vista+). Chromium's sandbox
+ * (Firefox, Chrome, Edge, Electron apps) gives its children a Low or
+ * Untrusted token through SetTokenInformation(TokenIntegrityLevel), and
+ * many programs read it back. The level is kept in the token, copied by
+ * duplication and filtering, and may only be lowered without SeTcbPrivilege,
+ * as on Windows. Access checks do not compare levels yet (open issue).
+ */
+#define KUSH_TOKEN_IL_SET 0x80000000
+
+static
+ULONG
+SepGetTokenIntegrityRid(
+    _In_ PTOKEN Token)
+{
+    if (Token->IntegrityLevelRid & KUSH_TOKEN_IL_SET)
+        return Token->IntegrityLevelRid & ~KUSH_TOKEN_IL_SET;
+
+    /* No label given at creation: SYSTEM runs at System, everybody else at Medium */
+    if (RtlEqualSid(Token->UserAndGroups[0].Sid, SeLocalSystemSid))
+        return SECURITY_MANDATORY_SYSTEM_RID;
+    return SECURITY_MANDATORY_MEDIUM_RID;
+}
 
 /* PUBLIC FUNCTIONS *****************************************************************/
 
@@ -1072,6 +1126,78 @@ NtQueryInformationToken(
                 break;
             }
 
+            case TokenIntegrityLevel:
+            {
+                PTOKEN_MANDATORY_LABEL Label = (PTOKEN_MANDATORY_LABEL)TokenInformation;
+                static SID_IDENTIFIER_AUTHORITY MandatoryAuthority = {SECURITY_MANDATORY_LABEL_AUTHORITY};
+                PSID Sid;
+
+                RequiredLength = sizeof(TOKEN_MANDATORY_LABEL) + RtlLengthRequiredSid(1);
+                _SEH2_TRY
+                {
+                    if (TokenInformationLength >= RequiredLength)
+                    {
+                        Sid = (PSID)(Label + 1);
+                        RtlInitializeSid(Sid, &MandatoryAuthority, 1);
+                        *RtlSubAuthoritySid(Sid, 0) = SepGetTokenIntegrityRid(Token);
+                        Label->Label.Sid = Sid;
+                        Label->Label.Attributes = SE_GROUP_INTEGRITY | SE_GROUP_INTEGRITY_ENABLED;
+                    }
+                    else
+                    {
+                        Status = STATUS_BUFFER_TOO_SMALL;
+                    }
+                    *ReturnLength = RequiredLength;
+                }
+                _SEH2_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
+                {
+                    Status = _SEH2_GetExceptionCode();
+                }
+                _SEH2_END;
+                break;
+            }
+
+            case TokenMandatoryPolicy:
+            case TokenHasRestrictions:
+            case TokenIsAppContainer:
+            case TokenAppContainerNumber:
+            {
+                ULONG Value = 0;
+
+                if (TokenInformationClass == TokenMandatoryPolicy)
+                    Value = TOKEN_MANDATORY_POLICY_NO_WRITE_UP | TOKEN_MANDATORY_POLICY_NEW_PROCESS_MIN;
+                else if (TokenInformationClass == TokenHasRestrictions)
+                    Value = (Token->RestrictedSidCount != 0) || (Token->TokenFlags & TOKEN_IS_FILTERED);
+
+                _SEH2_TRY
+                {
+                    *(PULONG)TokenInformation = Value;
+                    *ReturnLength = sizeof(ULONG);
+                }
+                _SEH2_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
+                {
+                    Status = _SEH2_GetExceptionCode();
+                }
+                _SEH2_END;
+                break;
+            }
+
+            case TokenAppContainerSid:
+            {
+                /* Not an AppContainer token: TOKEN_APPCONTAINER_INFORMATION { NULL } */
+                _SEH2_TRY
+                {
+                    *(PSID *)TokenInformation = NULL;
+                    *ReturnLength = sizeof(PSID);
+                }
+                _SEH2_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
+                {
+                    Status = _SEH2_GetExceptionCode();
+                }
+                _SEH2_END;
+                break;
+            }
+
             default:
                 DPRINT1("NtQueryInformationToken(%d) invalid information class\n", TokenInformationClass);
                 Status = STATUS_INVALID_INFO_CLASS;
@@ -1688,6 +1814,56 @@ NtSetInformationToken(
                 /* Unlock the token */
                 SepReleaseTokenLock(Token);
 
+                break;
+            }
+
+            case TokenIntegrityLevel:
+            {
+                static SID_IDENTIFIER_AUTHORITY MandatoryAuthority = {SECURITY_MANDATORY_LABEL_AUTHORITY};
+                UCHAR SidBuffer[SECURITY_MAX_SID_SIZE];
+                PSID NewSid = (PSID)SidBuffer;
+                ULONG NewRid, CurrentRid;
+
+                _SEH2_TRY
+                {
+                    PSID UserSid = ((PTOKEN_MANDATORY_LABEL)TokenInformation)->Label.Sid;
+                    if (PreviousMode != KernelMode)
+                        ProbeForRead(UserSid, RtlLengthRequiredSid(1), sizeof(UCHAR));
+                    if (*RtlSubAuthorityCountSid(UserSid) != 1)
+                    {
+                        Status = STATUS_INVALID_SID;
+                        _SEH2_YIELD(goto Cleanup);
+                    }
+                    RtlCopyMemory(NewSid, UserSid, RtlLengthRequiredSid(1));
+                }
+                _SEH2_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
+                {
+                    Status = _SEH2_GetExceptionCode();
+                    _SEH2_YIELD(goto Cleanup);
+                }
+                _SEH2_END;
+
+                if (!RtlValidSid(NewSid) ||
+                    !RtlEqualMemory(RtlIdentifierAuthoritySid(NewSid), &MandatoryAuthority, sizeof(MandatoryAuthority)))
+                {
+                    Status = STATUS_INVALID_SID;
+                    break;
+                }
+                NewRid = *RtlSubAuthoritySid(NewSid, 0);
+
+                SepAcquireTokenLockExclusive(Token);
+                CurrentRid = SepGetTokenIntegrityRid(Token);
+                /* Raising the level needs SeTcbPrivilege, lowering it does not */
+                if (NewRid > CurrentRid && !SeSinglePrivilegeCheck(SeTcbPrivilege, PreviousMode))
+                {
+                    Status = STATUS_PRIVILEGE_NOT_HELD;
+                }
+                else
+                {
+                    Token->IntegrityLevelRid = KUSH_TOKEN_IL_SET | NewRid;
+                    ExAllocateLocallyUniqueId(&Token->ModifiedId);
+                }
+                SepReleaseTokenLock(Token);
                 break;
             }
 

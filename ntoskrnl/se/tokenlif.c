@@ -233,6 +233,20 @@ SepCreateToken(
 
     AccessToken->TokenFlags = TokenFlags & ~TOKEN_SESSION_NOT_REFERENCED;
 
+    /* Kush: integrity level from a mandatory-label group (SE_GROUP_INTEGRITY), if any */
+    AccessToken->IntegrityLevelRid = 0;
+    for (i = 0; i < GroupCount; i++)
+    {
+        static SID_IDENTIFIER_AUTHORITY MandatoryAuthority = {SECURITY_MANDATORY_LABEL_AUTHORITY};
+        PSID GroupSid = Groups[i].Sid;
+        if ((Groups[i].Attributes & SE_GROUP_INTEGRITY) &&
+            *RtlSubAuthorityCountSid(GroupSid) == 1 &&
+            RtlEqualMemory(RtlIdentifierAuthoritySid(GroupSid), &MandatoryAuthority, sizeof(MandatoryAuthority)))
+        {
+            AccessToken->IntegrityLevelRid = 0x80000000 | *RtlSubAuthoritySid(GroupSid, 0);
+        }
+    }
+
     /* Copy and reference the logon session */
     AccessToken->AuthenticationId = *AuthenticationId;
     Status = SepRmReferenceLogonSession(&AccessToken->AuthenticationId);
@@ -551,6 +565,7 @@ SepDuplicateToken(
     AccessToken->ModifiedId = Token->ModifiedId;
 
     AccessToken->TokenFlags = Token->TokenFlags & ~TOKEN_SESSION_NOT_REFERENCED;
+    AccessToken->IntegrityLevelRid = Token->IntegrityLevelRid;
 
     /* Reference the logon session */
     Status = SepRmReferenceLogonSession(&AccessToken->AuthenticationId);
@@ -992,6 +1007,7 @@ SepPerformTokenFiltering(
     /* Copy the mutable fields */
     AccessToken->SessionId = Token->SessionId;
     AccessToken->TokenFlags = Token->TokenFlags & ~TOKEN_SESSION_NOT_REFERENCED;
+    AccessToken->IntegrityLevelRid = Token->IntegrityLevelRid;
 
     /* Reference the logon session */
     Status = SepRmReferenceLogonSession(&AccessToken->AuthenticationId);

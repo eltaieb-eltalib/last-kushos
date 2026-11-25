@@ -244,6 +244,7 @@ typedef struct _TOKEN
     PSECURITY_TOKEN_AUDIT_DATA AuditData;             /* 0x94 */
     PSEP_LOGON_SESSION_REFERENCES LogonSession;       /* 0x98 */
     LUID OriginatingLogonSession;                     /* 0x9C */
+    ULONG IntegrityLevelRid;                          /* Kush: 0x80000000 | mandatory label RID; 0 = default (System/Medium) */
 #if DBG
     UCHAR ImageFileName[16];                          /* 0xA4 */
     HANDLE ProcessCid;                                /* 0xB4 */
