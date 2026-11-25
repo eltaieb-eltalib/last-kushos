@@ -1055,3 +1055,66 @@ Wow64LdrpInitialize(PCONTEXT pContext)
     
     Wow64InitThread(pContext);
 }
+
+/*
+ * Kush: NtSetInformationThread for 32-bit programs (Mesa, Chromium-based
+ * apps and runtimes name their threads, set priorities, affinity and
+ * impersonation tokens). Classes whose data has pointers or handles are
+ * converted; plain data is passed through.
+ */
+NTSTATUS
+NTAPI
+wow64_NtSetInformationThread(UINT* pArgs)
+{
+    HANDLE hThread = get_handle(&pArgs);
+    THREADINFOCLASS InfoClass = get_ulong(&pArgs);
+    PVOID pInfo32 = get_ptr(&pArgs);
+    ULONG Length32 = get_ulong(&pArgs);
+
+    switch (InfoClass)
+    {
+        case ThreadAffinityMask:
+        {
+            KAFFINITY Mask;
+            if (Length32 != sizeof(ULONG)) return STATUS_INFO_LENGTH_MISMATCH;
+            Mask = *(PULONG)pInfo32;
+            return NtSetInformationThread(hThread, InfoClass, &Mask, sizeof(Mask));
+        }
+        case ThreadImpersonationToken:
+        {
+            HANDLE Token;
+            if (Length32 != sizeof(ULONG)) return STATUS_INFO_LENGTH_MISMATCH;
+            Token = ULongToHandle(*(PULONG)pInfo32);
+            return NtSetInformationThread(hThread, InfoClass, &Token, sizeof(Token));
+        }
+        case ThreadQuerySetWin32StartAddress:
+        {
+            PVOID Address;
+            if (Length32 != sizeof(ULONG)) return STATUS_INFO_LENGTH_MISMATCH;
+            Address = ULongToPtr(*(PULONG)pInfo32);
+            return NtSetInformationThread(hThread, InfoClass, &Address, sizeof(Address));
+        }
+        case ThreadGroupInformation:
+        {
+            /* GROUP_AFFINITY: KAFFINITY Mask; WORD Group; WORD Reserved[3] */
+            GROUP_AFFINITY Affinity;
+            if (Length32 != 12) return STATUS_INFO_LENGTH_MISMATCH;
+            RtlZeroMemory(&Affinity, sizeof(Affinity));
+            Affinity.Mask = *(PULONG)pInfo32;
+            Affinity.Group = *(PUSHORT)((PUCHAR)pInfo32 + 4);
+            return NtSetInformationThread(hThread, InfoClass, &Affinity, sizeof(Affinity));
+        }
+        case ThreadNameInformation:
+        {
+            UNICODE_STRING Name;
+            if (Length32 != sizeof(UNICODE_STRING32)) return STATUS_INFO_LENGTH_MISMATCH;
+            unicode_str_32to64(&Name, pInfo32);
+            return NtSetInformationThread(hThread, InfoClass, &Name, sizeof(Name));
+        }
+        default:
+            /* ThreadPriority, ThreadBasePriority, ThreadIdealProcessor,
+               ThreadPriorityBoost, ThreadHideFromDebugger, ThreadBreakOnTermination,
+               ThreadZeroTlsCell, ...: same layout in 32 and 64 bit */
+            return NtSetInformationThread(hThread, InfoClass, pInfo32, Length32);
+    }
+}

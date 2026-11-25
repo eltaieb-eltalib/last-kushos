@@ -198,6 +198,13 @@ static VOID InitServiceTable(VOID)
     IMPLEMENT_SERVICE(UserSetWindowPos);
     IMPLEMENT_SERVICE(UserDestroyMenu);
     IMPLEMENT_SERVICE(GdiSetLayout);
+    /* Kush: OpenGL from 32-bit programs (opengl32 + ICD: pixel formats, the
+       OPENGL_GETINFO escape, SwapBuffers). Same arguments as ReactOS' ntgdi.h. */
+    IMPLEMENT_SERVICE(GdiDescribePixelFormat);
+    IMPLEMENT_SERVICE(GdiSetPixelFormat);
+    IMPLEMENT_SERVICE(GdiSwapBuffers);
+    IMPLEMENT_SERVICE(GdiExtEscape);
+    IMPLEMENT_SERVICE(GdiGetDCDword);
     IMPLEMENT_SERVICE(GdiGetCharWidthW);
     IMPLEMENT_SERVICE(UserAlterWindowStyle);
     IMPLEMENT_SERVICE(UserSetWindowRgn);
