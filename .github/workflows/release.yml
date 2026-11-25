@@ -38,9 +38,9 @@ jobs:
 
       - name: Name the files after the release
         run: |
-          ls -la iso
-          test -f iso/bootcd.iso
-          mv iso/bootcd.iso "iso/kush-${{ inputs.tag }}.iso"
+          ISO=$(find iso -name bootcd.iso | head -1)
+          test -n "$ISO"
+          mv "$ISO" "iso/kush-${{ inputs.tag }}.iso"
           (cd iso && sha256sum "kush-${{ inputs.tag }}.iso" > "kush-${{ inputs.tag }}.iso.sha256")
           cat iso/*.sha256
 
