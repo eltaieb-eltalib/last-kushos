@@ -2055,6 +2055,14 @@ HKLM,"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows","USERProcessHandleQu
 
 ;-------------------------------- STRINGS -------------------------------
 
+; Kush 1.1: Mesa llvmpipe (software OpenGL 4.5) as the default ICD for display
+; drivers without OpenGL (dll/opengl/mesa_llvmpipe, opengl32 icdload.c)
+HKLM,"SOFTWARE\Microsoft\Windows NT\CurrentVersion\OpenGLDrivers\MesaLLVMpipe","Dll",0x00000000,"libgallium_wgl.dll"
+HKLM,"SOFTWARE\Microsoft\Windows NT\CurrentVersion\OpenGLDrivers\MesaLLVMpipe","Version",0x00010001,2
+HKLM,"SOFTWARE\Microsoft\Windows NT\CurrentVersion\OpenGLDrivers\MesaLLVMpipe","DriverVersion",0x00010001,1
+HKLM,"SOFTWARE\Microsoft\Windows NT\CurrentVersion\OpenGLDrivers\MesaLLVMpipe","Flags",0x00010001,1
+HKLM,"SOFTWARE\Kush\OpenGL","DefaultICD",0x00000000,"MesaLLVMpipe"
+
 [Strings]
 COUNTRY_AD="Andorra"
 COUNTRY_AE="United Arab Emirates"
@@ -7661,11 +7669,3 @@ COUNTRY_ZM="贊比亞"
 COUNTRY_ZW="津巴布韋"
 
 ; EOF
-
-; Kush 1.1: Mesa llvmpipe (software OpenGL 4.5) as the default ICD for display
-; drivers without OpenGL (dll/opengl/mesa_llvmpipe, opengl32 icdload.c)
-HKLM,"SOFTWARE\Microsoft\Windows NT\CurrentVersion\OpenGLDrivers\MesaLLVMpipe","Dll",0x00000000,"libgallium_wgl.dll"
-HKLM,"SOFTWARE\Microsoft\Windows NT\CurrentVersion\OpenGLDrivers\MesaLLVMpipe","Version",0x00010001,2
-HKLM,"SOFTWARE\Microsoft\Windows NT\CurrentVersion\OpenGLDrivers\MesaLLVMpipe","DriverVersion",0x00010001,1
-HKLM,"SOFTWARE\Microsoft\Windows NT\CurrentVersion\OpenGLDrivers\MesaLLVMpipe","Flags",0x00010001,1
-HKLM,"SOFTWARE\Kush\OpenGL","DefaultICD",0x00000000,"MesaLLVMpipe"
