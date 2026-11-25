@@ -2546,7 +2546,21 @@ QSI_DEF(SystemEmulationBasicInformation)
     Sbi->HighestPhysicalPageNumber = (ULONG)MmHighestPhysicalPage;
     Sbi->AllocationGranularity = MM_VIRTMEM_GRANULARITY; /* hard coded on Intel? */
     Sbi->MinimumUserModeAddress = 0x10000; /* Top of 64k */
-    Sbi->MaximumUserModeAddress = (ULONG_PTR)0xFFFFFFFF; /* FIXME */
+    /* Kush: as on Windows, a 32-bit program gets 4 GB (minus 64 KB) only when
+       its image is large-address-aware; otherwise its pointers must stay below
+       2 GB (it may treat them as signed). WOW64 derives its allocation limit
+       from this value. Was 0xFFFFFFFF for everyone, so non-LAA programs (the
+       InstallShield setup of SPSS 25) got heap blocks above 2 GB. */
+    {
+        SECTION_IMAGE_INFORMATION ImageInfo;
+        BOOLEAN LargeAddressAware = TRUE;
+        if (PsGetCurrentProcess()->SectionObject)
+        {
+            MmGetImageInformation(&ImageInfo);
+            LargeAddressAware = !!(ImageInfo.ImageCharacteristics & IMAGE_FILE_LARGE_ADDRESS_AWARE);
+        }
+        Sbi->MaximumUserModeAddress = LargeAddressAware ? (ULONG_PTR)0xFFFEFFFF : (ULONG_PTR)0x7FFEFFFF;
+    }
     Sbi->ActiveProcessorsAffinityMask = KeActiveProcessors;
     Sbi->NumberOfProcessors = KeNumberProcessors;
 

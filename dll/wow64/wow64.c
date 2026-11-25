@@ -823,7 +823,21 @@ Wow64InitProcess(PCONTEXT pContext)
     PRTL_USER_PROCESS_PARAMETERS32 ProcParams32 = NULL;
     PPEB Peb = NtCurrentPeb();
     IMAGE_NT_HEADERS32 *NtHeaders = NULL;
-    
+    SYSTEM_BASIC_INFORMATION EmulationInfo;
+
+    /* Kush: the 32-bit address limit, as Wine's process_init (not built here)
+       sets it: 4 GB for large-address-aware programs, 2 GB for the others.
+       It stayed at "below 4 GB" (ZeroBits 32) for every program, so one that
+       is not large-address-aware got memory above 2 GB, which it may handle as
+       negative numbers (the InstallShield setup of SPSS 25). The kernel takes
+       ZeroBits as a count of high zero bits: 33 means below 2 GB. */
+    if (NT_SUCCESS(NtQuerySystemInformation(SystemEmulationBasicInformation,
+                                            &EmulationInfo, sizeof(EmulationInfo), NULL)))
+    {
+        highest_user_address = EmulationInfo.MaximumUserModeAddress;
+        default_zero_bits = (highest_user_address > 0x7FFFFFFF) ? 32 : 33;
+    }
+
     Status = Wow64InitEntrypointTranslation();
     if (!NT_SUCCESS(Status))
     {
