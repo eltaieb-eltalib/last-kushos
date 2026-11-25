@@ -33,6 +33,21 @@ int main(void)
     hwnd = CreateWindowA("kushgltest", "gl", WS_OVERLAPPEDWINDOW, 0, 0, 64, 64,
                          NULL, NULL, wc.hInstance, NULL);
     hdc = GetDC(hwnd);
+    {
+        DWORD q = 0x1101; /* OPENGL_GETINFO */
+        HMODULE icd = GetModuleHandleA("libgallium_wgl.dll");
+        printf("%d-bit ExtEscape(QUERYESCSUPPORT, OPENGL_GETINFO)=%d\n", (int)sizeof(void*) * 8,
+               ExtEscape(hdc, QUERYESCSUPPORT, sizeof(q), (LPCSTR)&q, 0, NULL));
+        if (icd)
+        {
+            BOOL (WINAPI *pValidate)(DWORD) = (void*)GetProcAddress(icd, "DrvValidateVersion");
+            LONG (WINAPI *pDescribe)(HDC, INT, ULONG, PIXELFORMATDESCRIPTOR*) =
+                (void*)GetProcAddress(icd, "DrvDescribePixelFormat");
+            printf("%d-bit DrvValidateVersion(1)=%d DrvDescribePixelFormat count=%ld\n",
+                   (int)sizeof(void*) * 8, pValidate ? pValidate(1) : -1,
+                   pDescribe ? pDescribe(hdc, 1, 0, NULL) : -1);
+        }
+    }
     pfd.nSize = sizeof(pfd);
     pfd.nVersion = 1;
     pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
