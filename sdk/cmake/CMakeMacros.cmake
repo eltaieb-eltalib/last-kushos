@@ -528,6 +528,9 @@ function(create_iso_lists)
 
     if (BUILD_WOW64_ENABLED)
         add_dependencies(reactos_cab wow64-binaries)
+        # Kush: reactos.inf (cabman -I) lists the SysWOW64 files too; generating it
+        # before the i386 sub-build finished failed with "File not found" (CI race)
+        add_dependencies(reactos_cab_inf wow64-binaries)
     endif()
 
     # Add reactos.cab into the BootCD
