@@ -174,6 +174,22 @@ else()
     include(sdk/cmake/host-tools.cmake)
     setup_host_tools()
 
+    # Kush: 32-bit programs (WoW64, SysWOW64) are part of the system. Build them
+    # by default whenever the i686 MinGW compiler is installed; a build without
+    # them cannot start any 32-bit program (0xC0000135, e.g. most installers).
+    if (ARCH STREQUAL "amd64" AND NOT SYSWOW64_BUILD AND NOT MSVC AND NOT DEFINED BUILD_WOW64_ENABLED)
+        find_program(KUSH_I686_GCC NAMES i686-w64-mingw32-gcc${WOW64_MINGW_TOOLCHAIN_SUFFIX} i686-w64-mingw32-gcc)
+        if (KUSH_I686_GCC)
+            message(STATUS "Kush: building WoW64 (32-bit programs) with ${KUSH_I686_GCC}")
+            set(BUILD_WOW64_ENABLED ON CACHE BOOL "Build WoW64 (32-bit programs on amd64)")
+        else()
+            message(WARNING "Kush: no i686-w64-mingw32-gcc found, building WITHOUT WoW64: "
+                            "32-bit programs will not start (0xC0000135). Install the i686 MinGW "
+                            "toolchain or pass -DBUILD_WOW64_ENABLED=0 to silence this.")
+            set(BUILD_WOW64_ENABLED OFF CACHE BOOL "Build WoW64 (32-bit programs on amd64)")
+        endif()
+    endif()
+
     if (ARCH STREQUAL "amd64" AND BUILD_WOW64_ENABLED AND NOT SYSWOW64_BUILD)
         # Add Wow64
         include(sdk/cmake/wow64.cmake)
