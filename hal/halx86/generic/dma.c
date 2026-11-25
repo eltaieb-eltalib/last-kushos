@@ -230,6 +230,43 @@ HalpInitDma(VOID)
  */
 PHYSICAL_ADDRESS
 NTAPI
+HalpGetAdapterMaximumPhysicalAddress(IN PADAPTER_OBJECT AdapterObject);
+
+/*
+ * Kush: does the machine have RAM a 32-bit DMA device cannot reach?
+ * Computed once from the memory manager's physical memory ranges.
+ */
+static
+BOOLEAN
+HalpHasMemoryAbove4Gb(VOID)
+{
+    static LONG Cached = -1;
+    PPHYSICAL_MEMORY_RANGE Ranges;
+    BOOLEAN Above = FALSE;
+    ULONG i;
+
+    if (Cached >= 0)
+        return (BOOLEAN)Cached;
+
+    Ranges = MmGetPhysicalMemoryRanges();
+    if (!Ranges)
+        return TRUE; /* unknown: be safe, use map registers */
+
+    for (i = 0; Ranges[i].BaseAddress.QuadPart || Ranges[i].NumberOfBytes.QuadPart; i++)
+    {
+        if ((ULONGLONG)Ranges[i].BaseAddress.QuadPart + (ULONGLONG)Ranges[i].NumberOfBytes.QuadPart > 0x100000000ULL)
+        {
+            Above = TRUE;
+            break;
+        }
+    }
+    ExFreePool(Ranges);
+    Cached = Above;
+    return Above;
+}
+
+PHYSICAL_ADDRESS
+NTAPI
 HalpGetAdapterMaximumPhysicalAddress(IN PADAPTER_OBJECT AdapterObject)
 {
     PHYSICAL_ADDRESS HighestAddress;
@@ -713,7 +750,24 @@ HalGetAdapter(IN PDEVICE_DESCRIPTION DeviceDescription,
         ((DeviceDescription->InterfaceType == Eisa) ||
          (DeviceDescription->InterfaceType == PCIBus)))
     {
-        MapRegisters = 0;
+        /*
+         * Kush: a bus master with S/G can use any page it can address. One
+         * limited to 32-bit addresses on a machine with RAM above 4 GB still
+         * needs map registers, so that IoMapTransfer bounces the pages above
+         * 4 GB through buffers below it (as Windows does). Without them the
+         * EHCI controller got physical addresses above 4 GB: on a laptop
+         * with 8 GB a USB stick behind EHCI never appeared and booting from
+         * it stopped with INACCESSIBLE_BOOT_DEVICE (0x7B).
+         */
+        if (!DeviceDescription->Dma64BitAddresses && HalpHasMemoryAbove4Gb())
+        {
+            MapRegisters = BYTES_TO_PAGES(MaximumLength) + 1;
+            if (MapRegisters > MAX_MAP_REGISTERS) MapRegisters = MAX_MAP_REGISTERS;
+        }
+        else
+        {
+            MapRegisters = 0;
+        }
     }
     else if ((DeviceDescription->ScatterGather) && !(DeviceDescription->Master))
     {
