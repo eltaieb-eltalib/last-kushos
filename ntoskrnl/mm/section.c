@@ -2130,6 +2130,20 @@ MmProtectSectionView(PMMSUPPORT AddressSpace,
 
     if (OldProtect != NULL)
         *OldProtect = Region->Protect;
+
+    /* Kush: an image page that stops being executable is almost always a bug
+       somewhere (it crashed Firefox's parent in its own ntdll): name who did it */
+    if (MemoryArea->VadNode.u.VadFlags.VadType == VadImageMap &&
+        (Region->Protect & PAGE_IS_EXECUTABLE) && !(Protect & PAGE_IS_EXECUTABLE))
+    {
+        DbgPrint("KUSH-MM: %s (pid %p) makes image page %p+%Ix in %s non-executable: %lx -> %lx\n",
+                 PsGetCurrentThread()->ThreadsProcess->ImageFileName,
+                 PsGetCurrentThread()->ThreadsProcess->UniqueProcessId,
+                 BaseAddress, Length,
+                 MmGetAddressSpaceOwner(AddressSpace)->ImageFileName,
+                 Region->Protect, Protect);
+    }
+
     Status = MmAlterRegion(AddressSpace, (PVOID)MA_GetStartingAddress(MemoryArea),
                            &MemoryArea->SectionData.RegionListHead,
                            BaseAddress, Length, Region->Type, Protect,
