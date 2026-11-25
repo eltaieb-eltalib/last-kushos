@@ -400,6 +400,38 @@ IopCreateRootDirectories(VOID)
 #define IOP_BOOT_PARTITION_POLL_INTERVAL    200
 #define IOP_BOOT_PARTITION_MAX_TIMEOUT      180000
 
+/*
+ * Kush: list the device tree before INACCESSIBLE_BOOT_DEVICE: every PCI
+ * device and every device that did not start, one short line each
+ * (enumerator\id, state - 0x300, problem, service). On a ThinkPad L440 the
+ * kernel saw no disk at all, not even the internal SATA one.
+ */
+static
+VOID
+IopKushDumpDeviceTree(PDEVICE_NODE Node, ULONG Depth, PULONG Count)
+{
+    for (; Node && *Count < 400; Node = Node->Sibling)
+    {
+        UNICODE_STRING Id = Node->InstancePath;
+        USHORT i, Slashes = 0;
+        BOOLEAN IsPci = (Id.Length >= 8 && Id.Buffer && _wcsnicmp(Id.Buffer, L"PCI\\", 4) == 0);
+
+        (*Count)++;
+        /* enumerator\device id only */
+        for (i = 0; Id.Buffer && i < Id.Length / sizeof(WCHAR); i++)
+        {
+            if (Id.Buffer[i] == L'\\' && ++Slashes == 2) { Id.Length = i * sizeof(WCHAR); break; }
+        }
+        if (IsPci || Node->State != DeviceNodeStarted || Node->Problem)
+        {
+            DbgPrint("KUSH-DEV: %wZ s%lx p%lu %wZ\n", &Id, (ULONG)Node->State - 0x300,
+                     Node->Problem, &Node->ServiceName);
+        }
+        if (Node->Child && Depth < 12)
+            IopKushDumpDeviceTree(Node->Child, Depth + 1, Count);
+    }
+}
+
 CODE_SEG("INIT")
 static
 LONG
@@ -529,6 +561,11 @@ IopMarkBootPartition(IN PLOADER_PARAMETER_BLOCK LoaderBlock)
         extern BOOLEAN IopArcDiagnose;
         DbgPrint("KUSH-ARC: cannot open %wZ (%lx) after waiting %ld ms\n",
                  &DeviceName, Status, IopGetBootPartitionTimeout());
+        {
+            ULONG Count = 0;
+            IopKushDumpDeviceTree(IopRootDeviceNode, 0, &Count);
+            DbgPrint("KUSH-DEV: %lu device nodes (s8 = started)\n", Count);
+        }
         IopArcDiagnose = TRUE;
         IopCreateArcNames(LoaderBlock);
         KeBugCheckEx(INACCESSIBLE_BOOT_DEVICE,
