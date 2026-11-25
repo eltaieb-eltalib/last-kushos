@@ -336,13 +336,34 @@ NtOpenKey(OUT PHANDLE KeyHandle,
           IN ACCESS_MASK DesiredAccess,
           IN POBJECT_ATTRIBUTES ObjectAttributes)
 {
+    return NtOpenKeyEx(KeyHandle, DesiredAccess, ObjectAttributes, 0);
+}
+
+/*
+ * Kush: NtOpenKeyEx (Windows 7+). Programs call it (RegOpenKeyEx with
+ * options, Chromium's sandbox intercepts it in every child and refuses to
+ * start the child when ntdll does not export it). OpenOptions:
+ * REG_OPTION_OPEN_LINK opens a symbolic link key itself;
+ * REG_OPTION_BACKUP_RESTORE is accepted and opens with the normal access check.
+ */
+NTSTATUS
+NTAPI
+NtOpenKeyEx(OUT PHANDLE KeyHandle,
+            IN ACCESS_MASK DesiredAccess,
+            IN POBJECT_ATTRIBUTES ObjectAttributes,
+            IN ULONG OpenOptions)
+{
     CM_PARSE_CONTEXT ParseContext = {0};
     HANDLE Handle;
     NTSTATUS Status;
     KPROCESSOR_MODE PreviousMode = ExGetPreviousMode();
     PAGED_CODE();
-    DPRINT("NtOpenKey(Path: %wZ, Root %x, Access: %x)\n",
-            ObjectAttributes->ObjectName, ObjectAttributes->RootDirectory, DesiredAccess);
+    DPRINT("NtOpenKeyEx(Path: %wZ, Root %x, Access: %x, Options %lx)\n",
+            ObjectAttributes->ObjectName, ObjectAttributes->RootDirectory, DesiredAccess, OpenOptions);
+
+    if (OpenOptions & ~(REG_OPTION_OPEN_LINK | REG_OPTION_BACKUP_RESTORE | 0x10 /* REG_OPTION_DONT_VIRTUALIZE */))
+        return STATUS_INVALID_PARAMETER;
+    ParseContext.CreateOptions = OpenOptions & REG_OPTION_OPEN_LINK;
 
     /* Ignore the WOW64 flag, it's not valid in the kernel */
     DesiredAccess &= ~KEY_WOW64_RES;

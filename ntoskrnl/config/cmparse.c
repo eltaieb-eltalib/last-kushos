@@ -625,6 +625,10 @@ CmpDoOpen(IN PHHIVE Hive,
         return STATUS_OBJECT_NAME_NOT_FOUND;
     }
 
+    /* Kush: NtOpenKeyEx(REG_OPTION_OPEN_LINK) opens the link itself, like OBJ_OPENLINK */
+    if (Context && (Context->CreateOptions & REG_OPTION_OPEN_LINK))
+        Attributes |= OBJ_OPENLINK;
+
     /* Check if we have a context */
     if (Context)
     {

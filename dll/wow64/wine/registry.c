@@ -289,7 +289,6 @@ NTSTATUS WINAPI wow64_NtOpenKey( UINT *args )
     return status;
 }
 
-#ifndef __REACTOS__
 /**********************************************************************
  *           wow64_NtOpenKeyEx
  */
@@ -311,6 +310,7 @@ NTSTATUS WINAPI wow64_NtOpenKeyEx( UINT *args )
 }
 
 
+#ifndef __REACTOS__
 /**********************************************************************
  *           wow64_NtOpenKeyTransacted
  */

@@ -437,7 +437,9 @@ KiDispatchException(IN PEXCEPTION_RECORD ExceptionRecord,
          * this, a process killed by CSRSS (STATUS_ABANDONED) leaves no trace. */
         {
             PTEB Teb = (PTEB)KeGetCurrentThread()->Teb;
-            ULONG_PTR StackBase = 0, StackLimit = 0;
+            /* volatile: written inside _SEH2_TRY and read after it (PSEH keeps
+               non-volatile locals in registers that the except path does not restore) */
+            volatile ULONG_PTR StackBase = 0, StackLimit = 0;
             _SEH2_TRY
             {
                 if (Teb)
@@ -522,7 +524,9 @@ KiDispatchException(IN PEXCEPTION_RECORD ExceptionRecord,
                 Context.R8 < (ULONG64)MmHighestUserAddress)
             {
                 CHAR Reason[400];
-                ULONG n = 0;
+                /* volatile: a fault in the copy left a stale length here, and
+                   Reason[n] = 0 then wrote far outside the kernel stack (BSOD 0x1E) */
+                volatile ULONG n = 0;
                 _SEH2_TRY
                 {
                     PCSTR Src = (PCSTR)Context.R8;

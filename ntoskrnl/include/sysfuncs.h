@@ -295,6 +295,7 @@
     SVC_(QueryPortInformationProcess, 0)
     SVC_(GetCurrentProcessorNumber, 0)
     SVC_(WaitForMultipleObjects32, 5)
+    SVC_(OpenKeyEx, 4) /* Kush: Windows 7+, intercepted by Chromium's sandbox */
 #ifdef BUILD_WOW6432
     SVC_(Wow64AllocateVirtualMemory64, 7)
     SVC_(Wow64ReadVirtualMemory64, 7)

@@ -129,6 +129,7 @@ Wow64SystemServiceInner(ULONG syscallNum,
         /* registry.c */
         WINE_WOW_IMPL_CASE(QuerySystemInformation);
         WINE_WOW_IMPL_CASE(OpenKey);
+        WINE_WOW_IMPL_CASE(OpenKeyEx); /* Kush */
         WINE_WOW_IMPL_CASE(QueryValueKey);
         WINE_WOW_IMPL_CASE(QueryKey);
         WINE_WOW_IMPL_CASE(DeleteValueKey);

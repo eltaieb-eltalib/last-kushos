@@ -403,6 +403,7 @@
 @ stdcall NtOpenIoCompletion(ptr long ptr)
 @ stdcall NtOpenJobObject(ptr long ptr)
 @ stdcall NtOpenKey(ptr long ptr)
+@ stdcall NtOpenKeyEx(ptr long ptr long)
 @ stdcall -stub -version=0x600+ NtOpenKeyTransacted(ptr long ptr ptr)
 @ stdcall NtOpenKeyedEvent(ptr long ptr)
 @ stdcall NtOpenMutant(ptr long ptr)
