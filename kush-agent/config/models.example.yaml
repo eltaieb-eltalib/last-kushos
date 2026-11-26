@@ -1,0 +1,39 @@
+# Copy to config/models.yaml and edit. Secrets are read from environment variables, never stored here.
+os_name: "Kush OS (based on ReactOS)"
+
+models:
+  # Claude through the Anthropic API (native computer-use toolset). Key: $ANTHROPIC_API_KEY
+  claude:
+    provider: anthropic
+    model: claude-opus-5-5
+    effort: high          # low | medium | high | xhigh | max
+    fallbacks: true       # server-side fallback model if a turn is declined
+
+  # A local vision model behind an OpenAI-compatible server (Ollama, vLLM, LM Studio ...)
+  local:
+    provider: openai_compat
+    base_url: "http://localhost:11434/v1"
+    model: "qwen2.5vl:7b"   # any vision + function-calling model you have pulled
+
+  # Any hosted OpenAI-compatible endpoint, including your own model
+  mine:
+    provider: openai_compat
+    base_url: "https://your-endpoint.example.com/v1"
+    model: "your-model-name"
+    api_key_env: MY_MODEL_API_KEY
+
+# Rules are tried in order (case-insensitive regex). "@alias" at the start of a prompt wins over all rules.
+routes:
+  - match: "install|setup|تثبيت|ثبّت|ثبت|نزّل"
+    model: claude
+  - match: "notepad|اكتب|type"
+    model: local
+
+default: claude
+fallback: [claude, local]   # tried in this order if the chosen model fails
+
+policy:
+  ask_keys: ["ctrl+alt+delete", "ctrl+alt+del"]
+  # add regexes; typed text matching them waits for the user's approval
+  # ask_text_patterns: ["(?i)visa|mastercard"]
+  deny_actions: []
