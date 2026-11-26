@@ -20,11 +20,22 @@
 | حلقة الوكيل + سجل الخطوات واللقطات + التبديل لنموذج احتياطي | ✅ مختبر | |
 | واجهة الأوامر `kush-agent` | ✅ مختبرة على QEMU حقيقي | |
 | REST API للتحكم الخارجي | ✅ مختبرة على QEMU حقيقي | |
+| **لوحة الإدارة** (ويب، عربي): أجهزة، شاشة حية بالنقر، مهام، موافقات، إعدادات | ✅ مختبرة على QEMU حقيقي ومتصفح | [12-admin-panel.md](docs/12-admin-panel.md) |
+| تثبيت على VPS بأمر واحد (systemd + HTTPS اختياري) | 🟡 السكربت جاهز | لم يُجرّب على VPS حقيقي بعد |
+| DeepSeek (`deepseek-flash` يقبل الصور) | 🟡 إعداد جاهز | لم يُجرّب بمفتاح حقيقي |
 | `kushagent.exe` داخل النظام (أوامر، كتابة عربي، النوافذ، الملفات) | 🟡 يُبنى بدون أخطاء (mingw x64) | **لم يُشغَّل داخل Kush بعد** |
 | صورة Kush ذهبية + إقلاع Kush فعلي تحت الوكيل | ⏳ التالي | |
-| MCP Server، بوابة الرسائل (واتساب/SMS)، بريد الوكيل، واجهة الويب | ⏳ مخطط | انظر [خارطة الطريق](docs/09-roadmap.md) |
+| MCP Server، بوابة الرسائل (واتساب/SMS)، بريد الوكيل | ⏳ مخطط | انظر [خارطة الطريق](docs/09-roadmap.md) |
 
-## البدء السريع
+## على VPS (الأسهل)
+
+```bash
+bash deploy/check-host.sh          # هل الخادم يدعم KVM؟
+sudo bash deploy/install.sh        # يثبّت كل شيء ويطبع كلمة مرور لوحة الإدارة
+```
+التفاصيل واستخدام DeepSeek: [`docs/11-deploy-vps.md`](docs/11-deploy-vps.md).
+
+## البدء السريع (محلياً)
 
 ```bash
 # 1) المتطلبات: Python 3.10+ و QEMU
@@ -67,10 +78,12 @@ kush-agent/
 │   ├── tools/         # computer.py: الأفعال الـ 17 (Tool API)
 │   ├── models/        # base.py, anthropic_adapter.py, openai_compat.py, router.py
 │   ├── agent/         # loop.py (حلقة الوكيل) policy.py (القواعد والموافقات)
+│   ├── admin/         # لوحة الإدارة: app.py (الخادم) + static/ (الواجهة)
 │   ├── server.py      # REST API للتحكم الخارجي
 │   └── cli.py         # واجهة الأوامر kush-agent
 ├── guest/kushagent/   # kushagent.exe (C/Win32) يعمل داخل Kush
 ├── config/            # models.example.yaml
+├── deploy/            # install.sh, check-host.sh, kush-admin.service, Caddyfile
 ├── tests/             # pytest (وحدات + تكامل مع QEMU حقيقي)
 └── docs/              # التوثيق الكامل بالعربي
 ```
@@ -90,6 +103,8 @@ kush-agent/
 | [08-instinct-channels.md](docs/08-instinct-channels.md) | قنوات Instinct: رسائل، مكالمات، بريد الوكيل (مخطط) |
 | [09-roadmap.md](docs/09-roadmap.md) | خارطة الطريق وما أُنجز |
 | [10-development.md](docs/10-development.md) | التطوير والاختبارات والتشغيل على ويندوز |
+| [11-deploy-vps.md](docs/11-deploy-vps.md) | التثبيت على VPS، شرط KVM، استخدام DeepSeek |
+| [12-admin-panel.md](docs/12-admin-panel.md) | لوحة الإدارة: الصفحات والأمان والـ API |
 
 ## الترخيص
 GPL-2.0-or-later (مثل ReactOS / Kush).

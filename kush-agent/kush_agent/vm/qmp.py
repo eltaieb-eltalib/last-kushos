@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import socket
+import threading
 import time
 from typing import Any
 
@@ -26,6 +27,7 @@ class QMPClient:
         self._id = 0
         self.events: list[dict[str, Any]] = []
         self.greeting: dict[str, Any] | None = None
+        self._lock = threading.RLock()  # one command at a time: the agent and the admin panel share a VM
 
     # -- connection -----------------------------------------------------------------
     def connect(self, retries: int = 50, delay: float = 0.1) -> "QMPClient":
@@ -79,6 +81,10 @@ class QMPClient:
         return json.loads(line)
 
     def execute(self, command: str, arguments: dict[str, Any] | None = None) -> Any:
+        with self._lock:
+            return self._execute(command, arguments)
+
+    def _execute(self, command: str, arguments: dict[str, Any] | None = None) -> Any:
         if self.sock is None:
             raise QMPError("not connected")
         self._id += 1

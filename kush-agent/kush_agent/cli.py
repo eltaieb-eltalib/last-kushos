@@ -10,6 +10,7 @@
     kush-agent route "@local open notepad" --config config/models.yaml
     kush-agent run kush "Open Notepad and type hello" --config config/models.yaml
     kush-agent serve --port 8765                (REST control API, needs KUSH_API_TOKEN)
+    kush-agent admin --config config/models.yaml (web admin panel, needs KUSH_ADMIN_PASSWORD)
 """
 
 from __future__ import annotations
@@ -164,6 +165,21 @@ def cmd_serve(a: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_admin(a: argparse.Namespace) -> int:
+    import os
+
+    from .admin.app import Panel, serve
+
+    if not os.path.exists(a.config):
+        print(f"config not found: {a.config} (copy config/models.example.yaml)", file=sys.stderr)
+        return 1
+    panel = Panel(a.config, os.environ.get("KUSH_ADMIN_PASSWORD", ""), os.environ.get("KUSH_ADMIN_SECRET"))
+    srv = serve(panel, a.host, a.port, secure_cookie=a.secure_cookie)
+    print(f"Kush admin panel on http://{a.host}:{a.port}  (images dir: {panel.images_dir})")
+    srv.serve_forever()
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="kush-agent", description="External AI models controlling an OS in QEMU")
     p.add_argument("--version", action="version", version=__version__)
@@ -235,6 +251,13 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--config")
     s.add_argument("--approve-all", action="store_true")
     s.set_defaults(fn=cmd_serve)
+
+    s = sub.add_parser("admin", help="web admin panel (needs KUSH_ADMIN_PASSWORD)")
+    s.add_argument("--config", required=True)
+    s.add_argument("--host", default="127.0.0.1")
+    s.add_argument("--port", type=int, default=8080)
+    s.add_argument("--secure-cookie", action="store_true", help="set when served over HTTPS (behind Caddy/nginx)")
+    s.set_defaults(fn=cmd_admin)
     return p
 
 

@@ -25,6 +25,9 @@ kush-agent = "kush_agent.cli:main"
 [tool.setuptools.packages.find]
 include = ["kush_agent*"]
 
+[tool.setuptools.package-data]
+kush_agent = ["admin/static/*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = ["integration: needs qemu-system-x86_64 installed"]

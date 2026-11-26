@@ -8,6 +8,7 @@ takes over with a fresh conversation, told what has happened so far.
 from __future__ import annotations
 
 import json
+import threading
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -42,7 +43,7 @@ class RunReport:
     models_used: list[str] = field(default_factory=list)
     steps: int = 0
     actions: int = 0
-    status: str = "running"   # done | failed | limit
+    status: str = "running"   # done | failed | limit | stopped
     final_text: str = ""
     error: str | None = None
     seconds: float = 0.0
@@ -52,7 +53,8 @@ class RunReport:
 class Agent:
     def __init__(self, computer: Computer, policy: Policy | None = None, approver: Approver = deny_all,
                  max_steps: int = 60, max_seconds: float = 1800, run_dir: str | None = None,
-                 os_name: str = "Kush OS (based on ReactOS)", on_event: Callable[[str, dict], None] | None = None):
+                 os_name: str = "Kush OS (based on ReactOS)", on_event: Callable[[str, dict], None] | None = None,
+                 stop_event: threading.Event | None = None):
         self.computer = computer
         self.policy = policy or Policy()
         self.approver = approver
@@ -62,6 +64,7 @@ class Agent:
         self.system = SYSTEM_PROMPT.format(os_name=os_name)
         self.on_event = on_event or (lambda kind, data: None)
         self._shot_no = 0
+        self.stop_event = stop_event or threading.Event()
 
     # -- logging --------------------------------------------------------------------
     def _log(self, record: dict) -> None:
@@ -130,6 +133,9 @@ class Agent:
 
     def _drive(self, adapter: ModelAdapter, report: RunReport, t0: float, history: list[str]) -> str:
         while True:
+            if self.stop_event.is_set():
+                report.status, report.error = "stopped", "stopped by the user"
+                return "stopped"
             if report.steps >= self.max_steps:
                 report.status, report.error = "limit", f"step limit {self.max_steps} reached"
                 return "limit"

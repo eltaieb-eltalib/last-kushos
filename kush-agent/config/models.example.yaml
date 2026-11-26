@@ -9,6 +9,13 @@ models:
     effort: high          # low | medium | high | xhigh | max
     fallbacks: true       # server-side fallback model if a turn is declined
 
+  # DeepSeek (OpenAI-compatible). deepseek-flash accepts screenshots. Key: $DEEPSEEK_API_KEY
+  deepseek:
+    provider: openai_compat
+    base_url: "https://api.deepseek.com"
+    model: "deepseek-flash"
+    api_key_env: DEEPSEEK_API_KEY
+
   # A local vision model behind an OpenAI-compatible server (Ollama, vLLM, LM Studio ...)
   local:
     provider: openai_compat

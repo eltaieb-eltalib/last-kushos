@@ -1,0 +1,22 @@
+[Unit]
+Description=Kush Agent admin panel
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=kush
+Group=kush
+EnvironmentFile=/etc/kush-agent/env
+WorkingDirectory=/var/lib/kush-agent
+ExecStart=/opt/kush-agent/venv/bin/kush-agent admin --config /etc/kush-agent/models.yaml --host 127.0.0.1 --port 8080 @EXTRA@
+Restart=on-failure
+# Keep the VMs running when the panel restarts or is upgraded
+KillMode=process
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/kush-agent /etc/kush-agent
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target
