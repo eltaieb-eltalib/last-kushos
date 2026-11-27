@@ -33,6 +33,10 @@ KUSH_ADMIN_SECRET=$(openssl rand -hex 32)
 KUSH_STATE_DIR=$STATE
 DEEPSEEK_API_KEY=
 ANTHROPIC_API_KEY=
+TELEGRAM_BOT_TOKEN=
+WHATSAPP_TOKEN=
+WHATSAPP_APP_SECRET=
+WHATSAPP_VERIFY_TOKEN=$(openssl rand -hex 16)
 ENV
   echo ">>> admin password: $PASS   (stored in $ETC/env)"
 fi

@@ -174,6 +174,11 @@ def cmd_admin(a: argparse.Namespace) -> int:
         print(f"config not found: {a.config} (copy config/models.example.yaml)", file=sys.stderr)
         return 1
     panel = Panel(a.config, os.environ.get("KUSH_ADMIN_PASSWORD", ""), os.environ.get("KUSH_ADMIN_SECRET"))
+    from .channels.gateway import build_gateway
+
+    gw = build_gateway(panel, panel.conf)
+    if gw:
+        print("messaging channels: " + ", ".join(gw.channels))
     srv = serve(panel, a.host, a.port, secure_cookie=a.secure_cookie)
     print(f"Kush admin panel on http://{a.host}:{a.port}  (images dir: {panel.images_dir})")
     srv.serve_forever()

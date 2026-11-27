@@ -78,7 +78,13 @@ async function overview() {
       stat("الأجهزة العاملة", `${o.vms_running} / ${o.vms_total}`),
       stat("مهام تعمل الآن", o.runs_active, h("span", { class: "muted" }, `من ${o.runs_total}`)),
       stat("موافقات تنتظر", o.approvals)),
-    h("div", { class: "card" }, h("h2", {}, "النماذج"), h("div", { class: "tbl-wrap" }, models)));
+    h("div", { class: "card", style: "margin-bottom:16px" }, h("h2", {}, "النماذج"), h("div", { class: "tbl-wrap" }, models)),
+    h("div", { class: "card" }, h("h2", {}, "قنوات المحادثة"), o.channels.length ? h("table", {},
+      h("thead", {}, h("tr", {}, ["القناة", "الحالة", "المستخدمون المسموح لهم", "آخر خطأ"].map((t) => h("th", {}, t)))),
+      h("tbody", {}, o.channels.map((c) => h("tr", {}, h("td", {}, h("b", {}, c.name === "telegram" ? "تيليغرام" : c.name === "whatsapp" ? "واتساب" : c.name)),
+        h("td", {}, c.connected ? h("span", { class: "pill ok" }, "متصل") : h("span", { class: "pill warn" }, "بانتظار أول اتصال")),
+        h("td", {}, c.allowed || h("span", { class: "pill bad" }, "لا أحد")), h("td", { class: "mono muted" }, c.error || "—"))))))
+      : h("p", { class: "muted" }, "غير مفعّلة. فعّل تيليغرام أو واتساب من قسم channels في الإعدادات ثم أعد تشغيل اللوحة.")));
 }
 
 async function vms() {

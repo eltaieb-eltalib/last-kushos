@@ -44,3 +44,20 @@ policy:
   # add regexes; typed text matching them waits for the user's approval
   # ask_text_patterns: ["(?i)visa|mastercard"]
   deny_actions: []
+
+# Talk to the agent from Telegram / WhatsApp (see docs/13-telegram-whatsapp.md).
+# Secrets come from environment variables (/etc/kush-agent/env on a VPS).
+channels:
+  default_vm: kush1          # VM used for chat tasks (users can switch with /vm name)
+  progress: true             # send the model's notes while it works
+  telegram:
+    enabled: false
+    token_env: TELEGRAM_BOT_TOKEN
+    allowed_users: []        # numeric Telegram user ids, e.g. [123456789]
+  whatsapp:
+    enabled: false
+    token_env: WHATSAPP_TOKEN
+    phone_number_id: ""      # from the Meta app: WhatsApp > API Setup
+    app_secret_env: WHATSAPP_APP_SECRET
+    verify_token_env: WHATSAPP_VERIFY_TOKEN
+    allowed_numbers: []      # international format, digits only, e.g. ["249912345678"]

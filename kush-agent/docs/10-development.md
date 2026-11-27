@@ -20,6 +20,7 @@ make -C guest/kushagent test        # بروتوكول kushagent
 | `tests/test_router_policy.py` | الموجّه (عربي، @alias، fallback) والسياسة |
 | `tests/test_adapters_loop.py` | محوّل Claude (شكل toolset، toolset_name، الدفعات، الرفض) ومحوّل OpenAI والحلقة |
 | `tests/test_guest_client.py` | عميل kushagent وكتابة العربي عبره |
+| `tests/test_channels.py` | **QEMU حقيقي**: تيليغرام وواتساب بواجهات محاكاة (الأوامر، المهام، الموافقات، التوقيع، الـ webhook) |
 | `tests/test_admin_integration.py` | **QEMU حقيقي**: لوحة الإدارة كاملة (الدخول، CSRF، الأجهزة، الشاشة، المهام، الموافقات، الإعدادات) |
 
 الاختبارات الحقيقية تقلع QEMU بدون قرص (شاشة SeaBIOS) بـ TCG، فتعمل في أي بيئة.

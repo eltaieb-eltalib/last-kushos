@@ -25,7 +25,8 @@
 | DeepSeek (`deepseek-flash` يقبل الصور) | 🟡 إعداد جاهز | لم يُجرّب بمفتاح حقيقي |
 | `kushagent.exe` داخل النظام (أوامر، كتابة عربي، النوافذ، الملفات) | 🟡 يُبنى بدون أخطاء (mingw x64) | **لم يُشغَّل داخل Kush بعد** |
 | صورة Kush ذهبية + إقلاع Kush فعلي تحت الوكيل | ⏳ التالي | |
-| MCP Server، بوابة الرسائل (واتساب/SMS)، بريد الوكيل | ⏳ مخطط | انظر [خارطة الطريق](docs/09-roadmap.md) |
+| **تيليغرام وواتساب**: مهام بالرسائل، أزرار موافقة، النتيجة مع صورة الشاشة | ✅ مختبر بواجهات محاكاة | [13-telegram-whatsapp.md](docs/13-telegram-whatsapp.md) — لم يُجرّب ببوت/رقم حقيقي |
+| MCP Server، الرسائل الصوتية، بريد الوكيل | ⏳ مخطط | انظر [خارطة الطريق](docs/09-roadmap.md) |
 
 ## على VPS (الأسهل)
 
@@ -78,6 +79,7 @@ kush-agent/
 │   ├── tools/         # computer.py: الأفعال الـ 17 (Tool API)
 │   ├── models/        # base.py, anthropic_adapter.py, openai_compat.py, router.py
 │   ├── agent/         # loop.py (حلقة الوكيل) policy.py (القواعد والموافقات)
+│   ├── channels/      # تيليغرام وواتساب: gateway.py telegram.py whatsapp.py
 │   ├── admin/         # لوحة الإدارة: app.py (الخادم) + static/ (الواجهة)
 │   ├── server.py      # REST API للتحكم الخارجي
 │   └── cli.py         # واجهة الأوامر kush-agent
@@ -105,6 +107,7 @@ kush-agent/
 | [10-development.md](docs/10-development.md) | التطوير والاختبارات والتشغيل على ويندوز |
 | [11-deploy-vps.md](docs/11-deploy-vps.md) | التثبيت على VPS، شرط KVM، استخدام DeepSeek |
 | [12-admin-panel.md](docs/12-admin-panel.md) | لوحة الإدارة: الصفحات والأمان والـ API |
+| [13-telegram-whatsapp.md](docs/13-telegram-whatsapp.md) | التواصل مع الوكيل من تيليغرام وواتساب: الإعداد والأوامر |
 
 ## الترخيص
 GPL-2.0-or-later (مثل ReactOS / Kush).

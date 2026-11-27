@@ -66,12 +66,18 @@ class ApprovalQueue:
         self.timeout = timeout
         self.items: dict[str, PendingApproval] = {}
         self.lock = threading.Lock()
+        self.listeners: list[Callable[[PendingApproval], None]] = []  # e.g. Telegram/WhatsApp buttons
 
     def approver_for(self, run_id: str, stop: threading.Event) -> Callable[[Action, Decision], bool]:
         def approve(action: Action, decision: Decision) -> bool:
             p = PendingApproval(uuid.uuid4().hex[:10], run_id, action.name, action.input, decision.reason, time.time())
             with self.lock:
                 self.items[p.id] = p
+            for fn in self.listeners:
+                try:
+                    fn(p)
+                except Exception:
+                    pass
             deadline = time.time() + self.timeout
             while not p.event.wait(0.5):
                 if stop.is_set() or time.time() > deadline:
@@ -89,6 +95,10 @@ class ApprovalQueue:
         p.allowed = allowed
         p.event.set()
         return True
+
+    def get(self, pid: str) -> PendingApproval | None:
+        with self.lock:
+            return self.items.get(pid)
 
     def list(self) -> list[dict[str, Any]]:
         with self.lock:
@@ -108,11 +118,12 @@ class Run:
     created: float
     status: str = "running"
     report: dict[str, Any] | None = None
+    owner: str | None = None  # "telegram:<chat>" / "whatsapp:<number>" / None (panel)
     stop: threading.Event = field(default_factory=threading.Event, repr=False)
 
     def public(self) -> dict[str, Any]:
         return {"id": self.id, "vm": self.vm, "task": self.task, "model": self.model, "chain": self.chain,
-                "created": self.created, "status": self.status, "report": self.report}
+                "created": self.created, "status": self.status, "report": self.report, "owner": self.owner}
 
 
 class Panel:
@@ -137,6 +148,9 @@ class Panel:
         self._computers: dict[str, Computer] = {}
         self._lock = threading.Lock()
         self._failed_logins = 0
+        self.run_listeners: list[Callable[[Run, str, dict[str, Any]], None]] = []  # progress to chat channels
+        self.webhooks: dict[str, Callable[..., Any]] = {}
+        self.channels_status: Callable[[], list[dict[str, Any]]] | None = None  # set by the messaging gateway  # path -> handler(method, query, headers, body)
         self.conf: dict[str, Any] = {}
         self.reload_config()
 
@@ -275,7 +289,15 @@ class Panel:
         (q.savevm if op == "save" else q.loadvm)(tag)
 
     # -- runs ---------------------------------------------------------------------------------
-    def start_run(self, vm: str, task: str, model: str | None = None, max_steps: int = 60) -> Run:
+    def _notify(self, run: Run, kind: str, data: dict[str, Any]) -> None:
+        for fn in self.run_listeners:
+            try:
+                fn(run, kind, data)
+            except Exception:
+                pass
+
+    def start_run(self, vm: str, task: str, model: str | None = None, max_steps: int = 60,
+                  owner: str | None = None) -> Run:
         if not task.strip():
             raise ValueError("empty task")
         if any(r.vm == vm and r.status == "running" for r in self.runs.values()):
@@ -285,14 +307,14 @@ class Panel:
         adapters = [self.adapter_factory(router, n) for n in decision.chain]
         q = self.qmp(vm)
         run = Run(time.strftime("%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:4], vm, decision.prompt, decision.model,
-                  decision.chain, time.time())
+                  decision.chain, time.time(), owner=owner)
         self.runs[run.id] = run
         run_dir = self.runs_root / run.id
         run_dir.mkdir(parents=True, exist_ok=True)
         agent = Agent(Computer(q), Policy.from_dict(self.conf.get("policy")),
                       self.approvals.approver_for(run.id, run.stop), max_steps=max_steps,
                       run_dir=str(run_dir), os_name=self.conf.get("os_name", "Kush OS (based on ReactOS)"),
-                      stop_event=run.stop)
+                      stop_event=run.stop, on_event=lambda kind, data: self._notify(run, kind, data))
 
         def work() -> None:
             try:
@@ -301,6 +323,7 @@ class Panel:
                 run.status = rep.status
             except Exception as e:  # never kill the panel
                 run.status, run.report = "failed", {"error": f"{type(e).__name__}: {e}"}
+            self._notify(run, "finished", run.report or {})
             (run_dir / "run.json").write_text(json.dumps(run.public(), ensure_ascii=False, indent=2), encoding="utf-8")
 
         (run_dir / "run.json").write_text(json.dumps(run.public(), ensure_ascii=False, indent=2), encoding="utf-8")
@@ -356,7 +379,8 @@ class Panel:
                 "vms_total": len(vms), "vms_running": sum(v["running"] for v in vms),
                 "runs_total": len(runs), "runs_active": sum(r["status"] == "running" for r in runs),
                 "approvals": len(self.approvals.list()), "models": self.models(),
-                "qemu": bool(shutil.which("qemu-system-x86_64"))}
+                "qemu": bool(shutil.which("qemu-system-x86_64")),
+                "channels": self.channels_status() if self.channels_status else []}
 
 
 # ---------------------------------------------------------------------------------------------
@@ -517,6 +541,11 @@ def make_handler(panel: Panel, secure_cookie: bool = False) -> type[BaseHTTPRequ
             url = urlparse(self.path)
             path = url.path
             try:
+                if path.startswith("/webhooks/") and path in panel.webhooks:
+                    n = int(self.headers.get("Content-Length") or 0)
+                    raw = self.rfile.read(min(n, 4 << 20)) if n else b""
+                    code, ctype, data = panel.webhooks[path](method, parse_qs(url.query), self.headers, raw)
+                    return self._send(code, ctype, data)
                 if not path.startswith("/api/"):
                     if method != "GET":
                         raise HTTPError(405, "method not allowed")
